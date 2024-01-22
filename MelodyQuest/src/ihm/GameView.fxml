@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+<?import javafx.scene.text.Text?>
+
+
+<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ihm.GameViewController">
+   <center>
+      <ImageView fx:id="img_Soluce" fitHeight="209.0" fitWidth="373.0" pickOnBounds="true" preserveRatio="true" BorderPane.alignment="CENTER" />
+   </center>
+   <top>
+      <BorderPane prefHeight="53.0" prefWidth="600.0" BorderPane.alignment="CENTER">
+         <left>
+            <Button fx:id="btn_Leave" maxWidth="60.0" minWidth="60.0" mnemonicParsing="false" prefHeight="26.0" prefWidth="60.0" text="Quitter" BorderPane.alignment="CENTER" />
+         </left>
+         <center>
+            <VBox alignment="CENTER" prefHeight="109.0" prefWidth="546.0" BorderPane.alignment="CENTER">
+               <children>
+                  <Text fx:id="txt_Round" strokeType="OUTSIDE" strokeWidth="0.0" text="Tour: n/x">
+                     <font>
+                        <Font size="24.0" />
+                     </font>
+                  </Text>
+                  <Text fx:id="txt_Theme" strokeType="OUTSIDE" strokeWidth="0.0" text="Thème: xxx">
+                     <font>
+                        <Font size="23.0" />
+                     </font>
+                  </Text>
+               </children>
+            </VBox>
+         </center>
+         <right>
+            <AnchorPane maxWidth="60.0" minWidth="60.0" prefHeight="200.0" prefWidth="60.0" BorderPane.alignment="CENTER" />
+         </right>
+      </BorderPane>
+   </top>
+   <opaqueInsets>
+      <Insets />
+   </opaqueInsets>
+   <padding>
+      <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+   </padding>
+   <bottom>
+      <GridPane alignment="CENTER" prefHeight="89.0" prefWidth="580.0" BorderPane.alignment="CENTER">
+        <columnConstraints>
+          <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+        </columnConstraints>
+        <rowConstraints>
+          <RowConstraints maxHeight="81.40000381469726" minHeight="10.0" prefHeight="81.40000381469726" vgrow="SOMETIMES" />
+          <RowConstraints maxHeight="52.60000839233398" minHeight="10.0" prefHeight="33.39999618530274" vgrow="SOMETIMES" />
+        </rowConstraints>
+         <children>
+            <HBox alignment="CENTER" prefHeight="100.0" prefWidth="200.0" spacing="50.0" GridPane.halignment="CENTER" GridPane.rowIndex="1" GridPane.valignment="CENTER">
+               <children>
+                  <Button fx:id="btn_PausePlay" mnemonicParsing="false" text="Pause / play" />
+                  <Button fx:id="btn_Reset" mnemonicParsing="false" text="Reset" />
+                  <Button fx:id="btn_SoluceNext" mnemonicParsing="false" text="Solution/Suivant" />
+               </children>
+            </HBox>
+            <HBox alignment="CENTER" prefHeight="62.0" prefWidth="580.0">
+               <children>
+                  <Text fx:id="txt_Soluce" strokeType="OUTSIDE" strokeWidth="0.0" text="Réponse">
+                     <font>
+                        <Font name="System Bold" size="30.0" />
+                     </font>
+                  </Text>
+               </children>
+            </HBox>
+         </children>
+      </GridPane>
+   </bottom>
+</BorderPane>
