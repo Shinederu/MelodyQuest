@@ -1,0 +1,11 @@
+/* 
+    Created on : 27 déc. 2022, 22:09:39
+    Author     : Mario Ramalho(EMF - Fribourg)
+*/
+.root {
+    -fx-background-color: black;
+}
+
+.Label {
+    -fx-text-fill: lightgray;
+}
