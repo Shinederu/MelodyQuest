@@ -1,4 +1,5 @@
 const AUTH_BASE_URL = 'https://api.shinederu.lol/auth/';
+const MELODY_BASE_URL = 'https://api.shinederu.lol/melody/'
 
 export class HttpService {
 
@@ -37,6 +38,10 @@ export class HttpService {
         };
     }
 
+    /*//========================================
+    *       Authentication API Section
+    *///========================================
+
     accountDetails() {
         return this.request(AUTH_BASE_URL, 'GET', 'me');
     }
@@ -52,4 +57,11 @@ export class HttpService {
     logout() {
         return this.request(AUTH_BASE_URL, 'POST', 'logout');
     }
+
+    /*//========================================
+    *          MelodyQuest API Section
+    *///========================================
+
+    
+
 }

@@ -1,11 +1,14 @@
-import { PublicController } from "./PublicController.js";
 import { HttpService } from "../utils/HttpService.js";
+import { PublicController } from "./PublicController.js";
 import { MenuController } from "./MenuController.js";
+import { AdminController } from "./AdminController.js";
+import { HeaderModel } from "../model/HeaderModel.js";
 
 
 // Initialize global variables
 
 let currentUser = null;
+let headerManager = null;
 
 export class AppController {
     constructor() {
@@ -13,6 +16,9 @@ export class AppController {
 
         // Initialize the HTTP service
         window.httpClient = new HttpService();
+
+        // Initialize header model
+        let headerManager = new HeaderModel();
 
         // Prevent default form submission globally
         document.addEventListener('submit', (e) => e.preventDefault());
@@ -72,7 +78,7 @@ export class AppController {
 
                 // Only admin can access admin view
                 if (view === 'admin' && currentUser.role !== 'admin') {
-                    view = 'public';
+                    view = 'admin';
                 }
 
             } else {
@@ -90,7 +96,7 @@ export class AppController {
 
         // Initialize the appropriate controller based on the view
         switch (view) {
-            case 'admin': this.ctrl = new OrganizerController(); break;
+            case 'admin': this.ctrl = new AdminController(); break;
             case 'menu': this.ctrl = new MenuController(); break;
             default: this.ctrl = new PublicController(); break;
         }
@@ -104,6 +110,10 @@ export class AppController {
         // Charge le fichier HTML de la vue
         const res = await fetch(`assets/views/${view}View.html`);
         app.innerHTML = await res.text();
+
+        const head = document.getElementById("header");
+        if (!head) return;
+        headerManager.refresh(head, view, currentUser.role);
     }
 }
 
