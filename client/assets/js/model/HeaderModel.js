@@ -1,33 +1,39 @@
-export class HeaderModel {
+﻿export class HeaderModel {
+  constructor() {
+    console.log("HeaderModel initialized");
+  }
 
-    constructor() {
-        console.log("HeaderModel initialized");
-    }
+  refresh(headerElement, view, role, username) {
+    const canLogout = view !== "public";
 
-    refresh(headerId, view, role) {
+    const buttonHtml = canLogout
+      ? `<button id="header-btn-logout" type="button" style="padding: 8px 12px; cursor: pointer;">Deconnexion</button>`
+      : "";
 
-        let buttonHtml = "";
-        if (view !== "public") {
-            buttonHtml = `
-                <button type="button" style="padding: 8px 12px; cursor: pointer;">
-                    Déconnexion
-                </button>
-            `;
-        }
-        let message = `<div>Bonjour !</div>`
-        if (!role) {
-           message = `<div>Bonjour ! ${role}</div>`
+    const greeting = role
+      ? `<div>Bonjour ${username || "joueur"} (${role})</div>`
+      : `<div>Bonjour !</div>`;
+
+    const headerHtml = `
+      <div style="width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; box-sizing: border-box; border: 1px solid #ddd; border-radius: 8px;">
+        ${greeting}
+        ${buttonHtml}
+      </div>
+    `;
+
+    headerElement.innerHTML = headerHtml;
+
+    if (canLogout) {
+      const logoutButton = document.getElementById("header-btn-logout");
+      logoutButton?.addEventListener("click", async () => {
+        const response = await window.httpClient.logout();
+        if (response.success) {
+          localStorage.removeItem("user");
+          window.appCtrl.changeView("public");
         } else {
-
+          alert("Logout failed: " + response.error);
         }
-
-        const headerHtml = `
-            <div style="width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; box-sizing: border-box; border: 1px solid #ddd; border-radius: 8px;">
-                ${message}
-                ${buttonHtml}
-            </div>
-        `;
-
-        headerId.innerHTML = headerHtml;
+      });
     }
+  }
 }

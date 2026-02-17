@@ -1,6 +1,5 @@
-export class AdminController {
-
-    constructor() {
-        console.log("PublicController initialized");
-    }
+﻿export class AdminController {
+  constructor() {
+    console.log("AdminController initialized");
+  }
 }

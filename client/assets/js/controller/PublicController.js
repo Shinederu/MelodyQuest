@@ -1,27 +1,29 @@
-import { UserModel } from '../model/UserModel.js';
+﻿import { UserModel } from "../model/UserModel.js";
 
 export class PublicController {
+  constructor() {
+    this.userModel = new UserModel();
 
-    constructor() {
-        this.userModel = new UserModel();
+    const loginBtn = document.getElementById("btn-login");
+    const registerBtn = document.getElementById("btn-register");
 
-        document.getElementById("btn-login").addEventListener("click", () => this.submitLogin());
-        document.getElementById("btn-register").addEventListener("click", () => this.submitRegister());
+    loginBtn?.addEventListener("click", () => this.submitLogin());
+    registerBtn?.addEventListener("click", () => this.submitRegister());
 
-        console.log("PublicController initialized");
-    }
+    console.log("PublicController initialized");
+  }
 
-    submitLogin() {
-        let username = document.getElementById("login-username").value;
-        let password = document.getElementById("login-password").value;
-        this.userModel.submitLogin(username, password);
-    }
+  submitLogin() {
+    const username = document.getElementById("login-username")?.value ?? "";
+    const password = document.getElementById("login-password")?.value ?? "";
+    this.userModel.submitLogin(username, password);
+  }
 
-    submitRegister() {
-        let username = document.getElementById("register-username").value;
-        let email = document.getElementById("register-email").value;
-        let password = document.getElementById("register-password").value;
-        let confirmPassword = document.getElementById("register-confirm-password").value;
-        this.userModel.submitRegister(username, email, password, confirmPassword);
-    }
+  submitRegister() {
+    const username = document.getElementById("register-username")?.value ?? "";
+    const email = document.getElementById("register-email")?.value ?? "";
+    const password = document.getElementById("register-password")?.value ?? "";
+    const confirmPassword = document.getElementById("register-confirm-password")?.value ?? "";
+    this.userModel.submitRegister(username, email, password, confirmPassword);
+  }
 }
