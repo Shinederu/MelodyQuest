@@ -8,6 +8,15 @@ Repository MelodyQuest (client + backend historique).
 - `assets/` : copie racine conservee pour compatibilite historique
 - `backend/` : backend historique du projet
 
+## Base de donnees
+
+MelodyQuest partage la meme instance MySQL que les autres projets Shinederu, mais avec son propre schema et ses propres credentials:
+
+- schema MelodyQuest: `MelodyQuest`
+- variables backend: `MQ_DB_*`
+
+L'API `auth` utilise la meme instance MySQL avec un autre schema (`ShinedeCore`) et d'autres credentials (`DB_*`).
+
 ## Authentification (client)
 
 Le client utilise maintenant `shinederu-auth-core` (version browser embarquee):
