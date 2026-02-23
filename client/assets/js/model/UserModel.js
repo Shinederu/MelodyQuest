@@ -7,7 +7,7 @@
     const response = await window.httpClient.submitLogin({ username, password });
 
     if (response.success) {
-      window.appCtrl.changeView("menu");
+      window.appCtrl.changeView("main");
     } else {
       alert("Login failed: " + response.error);
     }

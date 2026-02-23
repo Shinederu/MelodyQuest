@@ -1,37 +1,38 @@
-<h1>MelodyQuest</h1>
-<h3> Bientôt disponible </h3>
-<p>Connectez-vous ou créer un compte pour accéder au contenu !</p>
+<section class="mq-card">
+  <h1>MelodyQuest</h1>
+  <p class="mq-subtitle">Connecte-toi pour rejoindre un blindtest multijoueur.</p>
 
-<main id="auth-page">
-    <section id="login-form">
-        <h2>Connexion</h2>
-        <form>
-            <label for="login-username">Nom d'utilisateur:</label>
-            <input type="text" id="login-username" maxlength="254" size="30" />
+  <div class="mq-grid">
+    <section>
+      <h2>Connexion</h2>
+      <form>
+        <label for="login-username">Nom d'utilisateur</label>
+        <input type="text" id="login-username" maxlength="254" size="30" />
 
-            <label for="login-password">Mot de passe:</label>
-            <input type="password" id="login-password" maxlength="254" size="30" />
+        <label for="login-password">Mot de passe</label>
+        <input type="password" id="login-password" maxlength="254" size="30" />
 
-            <button id="btn-login" type="submit">Se connecter</button>
-        </form>
+        <button id="btn-login" type="submit">Se connecter</button>
+      </form>
     </section>
 
-    <section id="register-form">
-        <h2>Inscription</h2>
-        <form>
-            <label for="register-username">Nom d'utilisateur:</label>
-            <input type="text" id="register-username" required minlength="1" maxlength="254" size="30" />
+    <section>
+      <h2>Inscription</h2>
+      <form>
+        <label for="register-username">Nom d'utilisateur</label>
+        <input type="text" id="register-username" required minlength="1" maxlength="254" size="30" />
 
-            <label for="register-email">Adresse e-mail:</label>
-            <input type="text" id="register-email" required minlength="1" maxlength="254" size="30" />
+        <label for="register-email">Adresse e-mail</label>
+        <input type="text" id="register-email" required minlength="1" maxlength="254" size="30" />
 
-            <label for="register-password">Mot de passe:</label>
-            <input type="password" id="register-password" maxlength="254" size="30" />
+        <label for="register-password">Mot de passe</label>
+        <input type="password" id="register-password" maxlength="254" size="30" />
 
-            <label for="register-confirm-password">Confirmer le mot de passe:</label>
-            <input type="password" id="register-confirm-password" maxlength="254" size="30" />
+        <label for="register-confirm-password">Confirmer le mot de passe</label>
+        <input type="password" id="register-confirm-password" maxlength="254" size="30" />
 
-            <button id="btn-register" type="submit">S'inscrire</button>
-        </form>
+        <button id="btn-register" type="submit">S'inscrire</button>
+      </form>
     </section>
-</main>
+  </div>
+</section>

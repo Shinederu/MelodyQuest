@@ -1,0 +1,57 @@
+<section class="mq-card">
+  <h1>Lobby</h1>
+  <div class="mq-row">
+    <button id="btn-lobby-main" type="button">Main</button>
+    <button id="btn-lobby-back" type="button">Lobby List</button>
+    <button id="btn-lobby-leave" type="button" class="mq-danger">Quitter</button>
+  </div>
+
+  <p id="lobby-status" class="status"></p>
+  <p id="lobby-info">Aucun lobby charge.</p>
+  <ul id="lobby-players"></ul>
+
+  <h2>Pool de musiques</h2>
+  <div class="mq-row owner-only">
+    <input id="pool-track-id" type="number" min="1" placeholder="Track ID" />
+    <button id="btn-pool-add" type="button">Ajouter</button>
+    <button id="btn-pool-remove" type="button">Retirer</button>
+  </div>
+  <div class="mq-row">
+    <button id="btn-pool-refresh" type="button">Rafraichir pool</button>
+  </div>
+  <p id="pool-status" class="status"></p>
+  <ul id="pool-list"></ul>
+
+  <h2>Manche</h2>
+  <div class="mq-row owner-only">
+    <input id="round-track-id" type="number" min="1" placeholder="Track force (optionnel)" />
+    <button id="btn-round-start" type="button">Start</button>
+    <button id="btn-round-reveal" type="button">Reveal</button>
+    <button id="btn-round-finish" type="button">Finish</button>
+  </div>
+  <div class="mq-row">
+    <button id="btn-round-refresh" type="button">Rafraichir round</button>
+  </div>
+  <p id="round-status" class="status"></p>
+  <p id="round-info"></p>
+  <ul id="round-answers"></ul>
+
+  <h2>Reponse</h2>
+  <div class="mq-grid">
+    <input id="guess-title" type="text" placeholder="Titre" />
+    <input id="guess-artist" type="text" placeholder="Artiste" />
+  </div>
+  <button id="btn-submit-answer" type="button">Envoyer ma reponse</button>
+  <p id="answer-status" class="status"></p>
+
+  <h2>Playback / Scoreboard</h2>
+  <div class="mq-row">
+    <button id="btn-refresh-playback" type="button">Rafraichir playback</button>
+    <p id="playback-state" class="status"></p>
+  </div>
+  <div class="mq-row">
+    <button id="btn-refresh-scoreboard" type="button">Rafraichir scoreboard</button>
+    <p id="scoreboard-status" class="status"></p>
+  </div>
+  <ul id="scoreboard-list"></ul>
+</section>

@@ -7,7 +7,7 @@
     const canLogout = view !== "public";
 
     const buttonHtml = canLogout
-      ? `<button id="header-btn-logout" type="button" style="padding: 8px 12px; cursor: pointer;">Deconnexion</button>`
+      ? `<button id="header-btn-logout" type="button">Deconnexion</button>`
       : "";
 
     const greeting = role
@@ -15,7 +15,7 @@
       : `<div>Bonjour !</div>`;
 
     const headerHtml = `
-      <div style="width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; box-sizing: border-box; border: 1px solid #ddd; border-radius: 8px;">
+      <div style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border:2px solid #6a11cb;border-radius:12px;background:#1a1a1a;color:#f0f0f0;">
         ${greeting}
         ${buttonHtml}
       </div>

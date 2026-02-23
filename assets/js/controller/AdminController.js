@@ -1,5 +1,6 @@
-﻿export class AdminController {
+// Deprecated view controller kept for backward compatibility.
+export class AdminController {
   constructor() {
-    console.log("AdminController initialized");
+    window.appCtrl.changeView("management");
   }
 }
