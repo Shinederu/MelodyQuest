@@ -1,4 +1,4 @@
-﻿# MelodyQuest
+# MelodyQuest
 
 Repository MelodyQuest (client + backend historique).
 
@@ -37,7 +37,7 @@ L'API `auth` utilise aussi ce meme schema partage avec ses variables (`DB_*`).
 - Aucune piste audio stockee en DB: uniquement des URL YouTube
 - Lecture via player YouTube avec video cachee
 - Lecture synchronisee entre tous les joueurs d'un lobby
-- Administrateurs definis uniquement par modification manuelle de la DB
+- Administrateurs definis par users.is_admin (ou users.role='admin') via modification manuelle DB
 - Administrateurs: gestion du catalogue (categories, familles, musiques)
 
 ## Authentification (client)
@@ -110,3 +110,5 @@ Avec le routage hash, les pages sont accessibles via:
 - `https://melodyquest.shinederu.lol/#/lobby-list`
 - `https://melodyquest.shinederu.lol/#/lobby`
 - `https://melodyquest.shinederu.lol/#/management`
+
+

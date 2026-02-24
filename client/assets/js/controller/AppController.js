@@ -23,6 +23,22 @@ const ROUTES = {
   "management-tracks": { auth: true, admin: true, controller: ManagementTracksController },
 };
 
+function toBool(value) {
+  if (value === null || value === undefined) return false;
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value === 1;
+
+  const v = String(value).trim().toLowerCase();
+  return ["1", "true", "yes", "on", "admin"].includes(v);
+}
+
+function normalizeUser(rawUser) {
+  const user = { ...(rawUser || {}) };
+  user.role = String(user.role ?? "").toLowerCase();
+  user.is_admin = toBool(user.is_admin) || user.role === "admin";
+  return user;
+}
+
 export class AppController {
   constructor() {
     this.ctrl = null;
@@ -53,7 +69,7 @@ export class AppController {
     if (!requested) requested = "public";
 
     const session = await this.resolveSession();
-    const isAdmin = String(currentUser?.role ?? "").toLowerCase() === "admin";
+    const isAdmin = Boolean(currentUser?.is_admin);
 
     if (!ROUTES[requested]) {
       requested = session ? "main" : "public";
@@ -83,8 +99,7 @@ export class AppController {
     try {
       const response = await window.httpClient.accountDetails();
       if (response.success && response.data?.user) {
-        currentUser = response.data.user;
-        currentUser.role = String(currentUser.role ?? "").toLowerCase();
+        currentUser = normalizeUser(response.data.user);
         localStorage.setItem("user", JSON.stringify(currentUser));
         return true;
       }
@@ -107,7 +122,7 @@ export class AppController {
     const head = document.getElementById("header");
     if (!head || !headerManager) return;
 
-    headerManager.refresh(head, view, currentUser?.role ?? "", currentUser?.username ?? "");
+    headerManager.refresh(head, view, currentUser?.role ?? "", currentUser?.username ?? "", Boolean(currentUser?.is_admin));
   }
 }
 

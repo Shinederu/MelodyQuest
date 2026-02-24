@@ -256,7 +256,34 @@ export class HttpService {
   async deleteTrack(id) {
     return this.request(MELODY_BASE_URL, "DELETE", "deleteTrack", { id });
   }
+
+  buildStreamUrl(action, query = {}) {
+    const url = new URL(MELODY_BASE_URL);
+    url.searchParams.set("action", action);
+
+    Object.entries(query).forEach(([key, value]) => {
+      if (value === undefined || value === null || value === "") return;
+      url.searchParams.set(key, String(value));
+    });
+
+    return url;
+  }
+
+  openLobbyStream(lobbyId, since = null) {
+    const url = this.buildStreamUrl("streamLobby", {
+      lobby_id: lobbyId,
+      since,
+    });
+
+    return new EventSource(url.toString(), { withCredentials: true });
+  }
+
+  openPublicLobbiesStream(since = null) {
+    const url = this.buildStreamUrl("streamPublicLobbies", { since });
+    return new EventSource(url.toString(), { withCredentials: true });
+  }
 }
+
 
 
 

@@ -1,15 +1,22 @@
-<section class="mq-card">
-  <h1>Lobby List</h1>
-  <div class="mq-row">
-    <button id="btn-lobbylist-back" type="button">Retour Main</button>
-    <button id="btn-lobbylist-refresh" type="button">Rafraichir</button>
-  </div>
+<section class="mq-page">
+  <header class="mq-page-header">
+    <h1>Lobby List</h1>
+    <p>Rejoins un lobby public en cours ou entre un code direct.</p>
+  </header>
 
-  <div class="mq-row">
-    <input id="lobbylist-code" type="text" maxlength="8" placeholder="CODE LOBBY" />
-    <button id="btn-lobbylist-join" type="button">Rejoindre</button>
-  </div>
+  <section class="mq-card">
+    <div class="mq-row">
+      <button id="btn-lobbylist-back" type="button" class="mq-secondary">Retour Main</button>
+      <button id="btn-lobbylist-refresh" type="button">Rafraichir</button>
+      <span id="lobbylist-count" class="mq-chip">0 lobby actif</span>
+    </div>
 
-  <p id="lobbylist-status" class="status"></p>
-  <ul id="lobbylist-items"></ul>
+    <div class="mq-row">
+      <input id="lobbylist-code" type="text" maxlength="8" placeholder="CODE LOBBY" />
+      <button id="btn-lobbylist-join" type="button">Rejoindre par code</button>
+    </div>
+
+    <p id="lobbylist-status" class="status"></p>
+    <ul id="lobbylist-items"></ul>
+  </section>
 </section>

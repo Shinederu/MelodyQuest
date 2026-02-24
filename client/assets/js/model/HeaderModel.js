@@ -1,21 +1,16 @@
-﻿export class HeaderModel {
-  constructor() {
-    console.log("HeaderModel initialized");
-  }
-
-  refresh(headerElement, view, role, username) {
+export class HeaderModel {
+  refresh(headerElement, view, role, username, isAdmin = false) {
     const canLogout = view !== "public";
 
     const buttonHtml = canLogout
-      ? `<button id="header-btn-logout" type="button">Deconnexion</button>`
+      ? `<button id="header-btn-logout" type="button" class="mq-danger">Deconnexion</button>`
       : "";
 
-    const greeting = role
-      ? `<div>Bonjour ${username || "joueur"} (${role})</div>`
-      : `<div>Bonjour !</div>`;
+    const roleLabel = isAdmin ? "admin" : (role || "user");
+    const greeting = `<div>Bonjour ${username || "joueur"} (${roleLabel})</div>`;
 
     const headerHtml = `
-      <div style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border:2px solid #6a11cb;border-radius:12px;background:#1a1a1a;color:#f0f0f0;">
+      <div class="mq-card" style="display:flex;align-items:center;justify-content:space-between;gap:0.75rem;">
         ${greeting}
         ${buttonHtml}
       </div>

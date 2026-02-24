@@ -1,23 +1,29 @@
-<section class="mq-card">
-  <h1>Management Families</h1>
-  <div class="mq-row">
-    <button id="btn-fam-back" type="button">Retour Management</button>
-    <button id="btn-fam-refresh" type="button">Rafraichir</button>
-  </div>
+<section class="mq-page">
+  <header class="mq-page-header">
+    <h1>Management Families</h1>
+    <p>Gère les familles de musiques par catégorie.</p>
+  </header>
 
-  <div class="mq-grid">
-    <input id="fam-id" type="number" min="1" placeholder="ID" />
-    <input id="fam-category-id" type="number" min="1" placeholder="Category ID" />
-    <input id="fam-name" type="text" placeholder="Nom" />
-    <input id="fam-slug" type="text" placeholder="Slug" />
-    <input id="fam-description" type="text" placeholder="Description" />
-  </div>
-  <div class="mq-row">
-    <button id="btn-fam-create" type="button">Creer</button>
-    <button id="btn-fam-update" type="button">Mettre a jour</button>
-    <button id="btn-fam-delete" type="button" class="mq-danger">Supprimer</button>
-  </div>
+  <section class="mq-card">
+    <div class="mq-row">
+      <button id="btn-fam-back" type="button" class="mq-secondary">Retour Management</button>
+      <button id="btn-fam-refresh" type="button">Rafraichir</button>
+    </div>
 
-  <p id="fam-status" class="status"></p>
-  <ul id="fam-list"></ul>
+    <div class="mq-grid">
+      <input id="fam-id" type="number" min="1" placeholder="ID" />
+      <input id="fam-category-id" type="number" min="1" placeholder="Category ID" />
+      <input id="fam-name" type="text" placeholder="Nom" />
+      <input id="fam-slug" type="text" placeholder="Slug" />
+      <input id="fam-description" type="text" placeholder="Description" />
+    </div>
+    <div class="mq-actions">
+      <button id="btn-fam-create" type="button">Creer</button>
+      <button id="btn-fam-update" type="button">Mettre a jour</button>
+      <button id="btn-fam-delete" type="button" class="mq-danger">Supprimer</button>
+    </div>
+
+    <p id="fam-status" class="status"></p>
+    <ul id="fam-list"></ul>
+  </section>
 </section>

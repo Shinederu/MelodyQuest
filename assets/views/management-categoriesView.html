@@ -1,21 +1,27 @@
-<section class="mq-card">
-  <h1>Management Categories</h1>
-  <div class="mq-row">
-    <button id="btn-cat-back" type="button">Retour Management</button>
-    <button id="btn-cat-refresh" type="button">Rafraichir</button>
-  </div>
+<section class="mq-page">
+  <header class="mq-page-header">
+    <h1>Management Categories</h1>
+    <p>Créer, modifier et supprimer des catégories de musiques.</p>
+  </header>
 
-  <div class="mq-grid">
-    <input id="cat-id" type="number" min="1" placeholder="ID" />
-    <input id="cat-name" type="text" placeholder="Nom" />
-    <input id="cat-slug" type="text" placeholder="Slug" />
-  </div>
-  <div class="mq-row">
-    <button id="btn-cat-create" type="button">Creer</button>
-    <button id="btn-cat-update" type="button">Mettre a jour</button>
-    <button id="btn-cat-delete" type="button" class="mq-danger">Supprimer</button>
-  </div>
+  <section class="mq-card">
+    <div class="mq-row">
+      <button id="btn-cat-back" type="button" class="mq-secondary">Retour Management</button>
+      <button id="btn-cat-refresh" type="button">Rafraichir</button>
+    </div>
 
-  <p id="cat-status" class="status"></p>
-  <ul id="cat-list"></ul>
+    <div class="mq-grid">
+      <input id="cat-id" type="number" min="1" placeholder="ID" />
+      <input id="cat-name" type="text" placeholder="Nom" />
+      <input id="cat-slug" type="text" placeholder="Slug" />
+    </div>
+    <div class="mq-actions">
+      <button id="btn-cat-create" type="button">Creer</button>
+      <button id="btn-cat-update" type="button">Mettre a jour</button>
+      <button id="btn-cat-delete" type="button" class="mq-danger">Supprimer</button>
+    </div>
+
+    <p id="cat-status" class="status"></p>
+    <ul id="cat-list"></ul>
+  </section>
 </section>

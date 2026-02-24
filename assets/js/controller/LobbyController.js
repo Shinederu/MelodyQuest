@@ -6,9 +6,12 @@ export class LobbyController {
     this.user = JSON.parse(localStorage.getItem("user") || "null");
     this.liveInterval = null;
     this.isLiveRefreshing = false;
+    this.stream = null;
+    this.lastStreamRevision = 0;
+
     this.visibilityHandler = () => {
       if (!document.hidden) {
-        this.liveRefresh();
+        this.refreshNow();
       }
     };
 
@@ -28,6 +31,7 @@ export class LobbyController {
     document.getElementById("btn-submit-answer")?.addEventListener("click", () => this.submitAnswer());
     document.getElementById("btn-refresh-playback")?.addEventListener("click", () => this.refreshPlayback());
     document.getElementById("btn-refresh-scoreboard")?.addEventListener("click", () => this.refreshScoreboard());
+
     document.addEventListener("visibilitychange", this.visibilityHandler);
 
     this.bootstrap();
@@ -57,7 +61,55 @@ export class LobbyController {
     this.currentLobby = detail.data.lobby;
     this.renderLobbyInfo(detail.data);
     await Promise.all([this.refreshPool(), this.refreshRoundState(), this.refreshPlayback(), this.refreshScoreboard()]);
+    this.startRealtime();
+  }
+
+  startRealtime() {
+    this.stopLiveRefresh();
+    this.stopStream();
+
+    if (typeof EventSource === "function") {
+      try {
+        this.startStream();
+        return;
+      } catch {
+        // fallback polling
+      }
+    }
+
     this.startLiveRefresh();
+  }
+
+  startStream() {
+    const lobbyId = this.getLobbyId();
+    if (!lobbyId) {
+      this.startLiveRefresh();
+      return;
+    }
+
+    this.stream = window.httpClient.openLobbyStream(lobbyId, this.lastStreamRevision || null);
+
+    this.stream.addEventListener("lobby", (evt) => {
+      if (!evt?.data) return;
+
+      const payload = JSON.parse(evt.data);
+      this.lastStreamRevision = Number(payload?.revision || evt.lastEventId || this.lastStreamRevision || 0);
+      this.applyRealtimeSnapshot(payload);
+      this.setStatus("lobby-status", "Synchronise en direct", true);
+    });
+
+    this.stream.onerror = () => {
+      this.stopStream();
+      this.startLiveRefresh();
+      this.setStatus("lobby-status", "Flux direct indisponible, bascule en rafraichissement auto", false);
+    };
+  }
+
+  stopStream() {
+    if (this.stream) {
+      this.stream.close();
+      this.stream = null;
+    }
   }
 
   startLiveRefresh() {
@@ -72,6 +124,10 @@ export class LobbyController {
     }
   }
 
+  async refreshNow() {
+    await this.liveRefresh();
+  }
+
   async liveRefresh() {
     if (this.isLiveRefreshing) return;
     const code = this.getLobbyCode();
@@ -83,8 +139,6 @@ export class LobbyController {
       if (detail.success && detail.data?.lobby) {
         this.currentLobby = detail.data.lobby;
         this.renderLobbyInfo(detail.data);
-      } else if (detail.error) {
-        this.setStatus("lobby-status", detail.error, false);
       }
 
       await Promise.all([
@@ -96,6 +150,24 @@ export class LobbyController {
     } finally {
       this.isLiveRefreshing = false;
     }
+  }
+
+  applyRealtimeSnapshot(snapshot) {
+    if (!snapshot || typeof snapshot !== "object") return;
+
+    if (snapshot.lobby) {
+      this.currentLobby = snapshot.lobby;
+      this.renderLobbyInfo({ lobby: snapshot.lobby, players: snapshot.players || [] });
+    }
+
+    if (snapshot.pool?.items) this.renderPool(snapshot.pool.items);
+    if (snapshot.round) this.renderRound(snapshot.round);
+    if (snapshot.playback) {
+      const txt = `state=${snapshot.playback.playback_state ?? "?"}, track=${snapshot.playback.current_track_id ?? "none"}, rev=${snapshot.playback.sync_revision ?? 0}`;
+      const el = document.getElementById("playback-state");
+      if (el) el.textContent = txt;
+    }
+    if (snapshot.scoreboard?.items) this.renderScoreboard(snapshot.scoreboard.items);
   }
 
   renderLobbyInfo(data) {
@@ -238,11 +310,12 @@ export class LobbyController {
     const text = res.success
       ? `state=${res.data?.playback_state ?? "?"}, track=${res.data?.current_track_id ?? "none"}, rev=${res.data?.sync_revision ?? 0}`
       : (res.error || "Erreur");
+
+    const el = document.getElementById("playback-state");
+    if (el) el.textContent = text;
+
     if (!silent || !res.success) {
-      this.setStatus("playback-state", text, res.success);
-    } else {
-      const el = document.getElementById("playback-state");
-      if (el) el.textContent = text;
+      this.setStatus("playback-status", res.success ? "Playback charge" : (res.error || "Erreur"), res.success);
     }
   }
 
@@ -270,6 +343,7 @@ export class LobbyController {
   }
 
   destroy() {
+    this.stopStream();
     this.stopLiveRefresh();
     document.removeEventListener("visibilitychange", this.visibilityHandler);
   }
