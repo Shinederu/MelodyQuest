@@ -1,7 +1,7 @@
 <?php
 include_once('Controller/UserController.php');
 
-header("Access-Control-Allow-Origin: https://melodyquest.shinederu.lol");
+header("Access-Control-Allow-Origin: https://melodyquest.shinederu.ch");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
 

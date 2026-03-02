@@ -1,4 +1,4 @@
-const API_ROOT = window.__SHINEDERU_API_ROOT__ || "https://api.shinederu.lol";
+const API_ROOT = window.__SHINEDERU_API_ROOT__ || "https://api.shinederu.ch";
 const AUTH_BASE_URL = `${API_ROOT}/auth/`;
 const MELODY_BASE_URL = `${API_ROOT}/melodyquest/`;
 

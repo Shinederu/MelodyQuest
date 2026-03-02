@@ -13,8 +13,8 @@ Repository MelodyQuest (client + backend historique).
 - Dossier front deploye: `MelodyQuest/`
 - Entry point front: `MelodyQuest/index.html`
 - Assets front: `MelodyQuest/assets/*`
-- API MelodyQuest: `https://api.shinederu.lol/melodyquest/` (dossier serveur `API/melodyquest/`)
-- API Auth: `https://api.shinederu.lol/auth/` (dossier serveur `API/auth/`)
+- API MelodyQuest: `https://api.shinederu.ch/melodyquest/` (dossier serveur `API/melodyquest/`)
+- API Auth: `https://api.shinederu.ch/auth/` (dossier serveur `API/auth/`)
 
 ## Base de donnees
 
@@ -69,8 +69,8 @@ Servir le dossier statique avec un serveur HTTP (ex: nginx, caddy, vite static, 
 ## Adaptation hebergement actuel
 
 - Front route en hash (`#/main`, `#/lobby-list`, etc.) pour eviter toute dependance au rewrite Nginx.
-- API auth: `https://api.shinederu.lol/auth/`
-- API MelodyQuest: `https://api.shinederu.lol/melodyquest/`
+- API auth: `https://api.shinederu.ch/auth/`
+- API MelodyQuest: `https://api.shinederu.ch/melodyquest/`
 - Surcharge possible via `window.__SHINEDERU_API_ROOT__` dans `index.html`.
 
 ## Nginx (exemple)
@@ -80,7 +80,7 @@ server {
     listen 443 ssl;
     listen [::]:443 ssl;
     http2 on;
-    server_name melodyquest.shinederu.lol;
+    server_name melodyquest.shinederu.ch;
     root /var/www/MelodyQuest;
 
     index index.html;
@@ -105,10 +105,10 @@ server {
 
 Avec le routage hash, les pages sont accessibles via:
 
-- `https://melodyquest.shinederu.lol/#/public`
-- `https://melodyquest.shinederu.lol/#/main`
-- `https://melodyquest.shinederu.lol/#/lobby-list`
-- `https://melodyquest.shinederu.lol/#/lobby`
-- `https://melodyquest.shinederu.lol/#/management`
+- `https://melodyquest.shinederu.ch/#/public`
+- `https://melodyquest.shinederu.ch/#/main`
+- `https://melodyquest.shinederu.ch/#/lobby-list`
+- `https://melodyquest.shinederu.ch/#/lobby`
+- `https://melodyquest.shinederu.ch/#/management`
 
 
