@@ -1,12 +1,11 @@
 # MelodyQuest
 
-Repository MelodyQuest (client + backend historique).
+Repository MelodyQuest (frontend statique).
 
 ## Structure
 
-- `client/` : client web principal (entrypoint `client/index.html`)
-- `assets/` : copie racine conservee pour compatibilite historique
-- `backend/` : backend historique du projet
+- `index.html` : entrypoint frontend
+- `assets/` : JS/CSS/views du client
 
 ## Mapping deploiement (serveur actuel)
 
@@ -42,10 +41,10 @@ L'API `auth` utilise aussi ce meme schema partage avec ses variables (`DB_*`).
 
 ## Authentification (client)
 
-Le client utilise maintenant `shinederu-auth-core` (version browser embarquee):
+Le client utilise `shinederu-auth-core` (version browser embarquee):
 
-- `client/assets/js/vendor/shinederu-auth-core/`
-- `client/assets/js/utils/HttpService.js`
+- `assets/js/vendor/shinederu-auth-core/`
+- `assets/js/utils/HttpService.js`
 
 Les flux `login/register/logout/me` passent par ce client auth partage.
 
@@ -64,7 +63,7 @@ Les flux `login/register/logout/me` passent par ce client auth partage.
 
 Servir le dossier statique avec un serveur HTTP (ex: nginx, caddy, vite static, etc.), puis ouvrir:
 
-- `client/index.html`
+- `index.html`
 
 ## Adaptation hebergement actuel
 
