@@ -8,6 +8,7 @@ export class GameController {
     this.lastRevision = 0;
     this.timerInterval = null;
     this.heartbeatInterval = null;
+    this.isDestroyed = false;
 
     document.getElementById("btn-game-submit")?.addEventListener("click", () => this.submitAnswer());
     document.getElementById("btn-game-reveal")?.addEventListener("click", () => this.revealNow());
@@ -213,8 +214,7 @@ export class GameController {
     const res = await window.httpClient.submitAnswer(this.getLobbyId(), answer, answer);
     this.setStatus(res.success ? "Reponse envoyee" : (res.error || "Erreur"), res.success);
     if (!res.success && this.shouldExitLobby(res.error)) {
-      clearCurrentLobby();
-      window.appCtrl.changeView("main");
+      this.exitLobbyIfActive();
     }
   }
 
@@ -226,8 +226,7 @@ export class GameController {
       return;
     }
     if (this.shouldExitLobby(res.error)) {
-      clearCurrentLobby();
-      window.appCtrl.changeView("main");
+      this.exitLobbyIfActive();
     }
   }
 
@@ -239,8 +238,7 @@ export class GameController {
       return;
     }
     if (this.shouldExitLobby(res.error)) {
-      clearCurrentLobby();
-      window.appCtrl.changeView("main");
+      this.exitLobbyIfActive();
     }
   }
 
@@ -277,14 +275,19 @@ export class GameController {
 
     const res = await window.httpClient.touchLobby(lobbyId);
     if (!res.success && this.shouldExitLobby(res.error)) {
-      clearCurrentLobby();
-      window.appCtrl.changeView("main");
+      this.exitLobbyIfActive();
     }
   }
 
   shouldExitLobby(error) {
     const text = String(error || "");
     return /lobby introuvable/i.test(text) || /utilisateur non present/i.test(text);
+  }
+
+  exitLobbyIfActive() {
+    if (this.isDestroyed) return;
+    clearCurrentLobby();
+    window.appCtrl.changeView("main");
   }
 
   escapeHtml(value) {
@@ -306,6 +309,7 @@ export class GameController {
   }
 
   destroy() {
+    this.isDestroyed = true;
     this.stopRealtime();
     this.stopHeartbeat();
     if (this.timerInterval) {

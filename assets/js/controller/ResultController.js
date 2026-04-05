@@ -4,6 +4,7 @@ export class ResultController {
   constructor() {
     this.currentLobby = getCurrentLobby();
     this.heartbeatInterval = null;
+    this.isDestroyed = false;
     document.getElementById("btn-result-continue")?.addEventListener("click", () => window.appCtrl.changeView("lobby"));
     this.bootstrap();
   }
@@ -24,8 +25,7 @@ export class ResultController {
       if (res.success) {
         scoreboard = res.data?.items ?? [];
       } else if (this.shouldExitLobby(res.error)) {
-        clearCurrentLobby();
-        window.appCtrl.changeView("main");
+        this.exitLobbyIfActive();
         return;
       }
     }
@@ -64,14 +64,19 @@ export class ResultController {
 
     const res = await window.httpClient.touchLobby(lobbyId);
     if (!res.success && this.shouldExitLobby(res.error)) {
-      clearCurrentLobby();
-      window.appCtrl.changeView("main");
+      this.exitLobbyIfActive();
     }
   }
 
   shouldExitLobby(error) {
     const text = String(error || "");
     return /lobby introuvable/i.test(text) || /utilisateur non present/i.test(text);
+  }
+
+  exitLobbyIfActive() {
+    if (this.isDestroyed) return;
+    clearCurrentLobby();
+    window.appCtrl.changeView("main");
   }
 
   escapeHtml(value) {
@@ -82,6 +87,7 @@ export class ResultController {
   }
 
   destroy() {
+    this.isDestroyed = true;
     this.stopHeartbeat();
   }
 }

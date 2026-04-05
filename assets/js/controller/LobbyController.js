@@ -8,6 +8,7 @@ export class LobbyController {
     this.lastStreamRevision = 0;
     this.categories = [];
     this.heartbeatInterval = null;
+    this.isDestroyed = false;
 
     this.visibilityHandler = () => {
       if (!document.hidden) {
@@ -108,8 +109,7 @@ export class LobbyController {
       return;
     }
 
-    clearCurrentLobby();
-    window.appCtrl.changeView("main");
+    this.exitLobbyIfActive();
   }
 
   applyRealtimeSnapshot(snapshot) {
@@ -293,8 +293,7 @@ export class LobbyController {
     }
 
     if (!res.success && /lobby introuvable/i.test(String(res.error || ""))) {
-      clearCurrentLobby();
-      window.appCtrl.changeView("main");
+      this.exitLobbyIfActive();
     }
   }
 
@@ -318,9 +317,14 @@ export class LobbyController {
     if (res.success) return;
 
     if (/lobby introuvable/i.test(String(res.error || "")) || /utilisateur non present/i.test(String(res.error || ""))) {
-      clearCurrentLobby();
-      window.appCtrl.changeView("main");
+      this.exitLobbyIfActive();
     }
+  }
+
+  exitLobbyIfActive() {
+    if (this.isDestroyed) return;
+    clearCurrentLobby();
+    window.appCtrl.changeView("main");
   }
 
   isOwner() {
@@ -342,6 +346,7 @@ export class LobbyController {
   }
 
   destroy() {
+    this.isDestroyed = true;
     this.stopStream();
     this.stopHeartbeat();
     document.removeEventListener("visibilitychange", this.visibilityHandler);
