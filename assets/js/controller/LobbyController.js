@@ -9,6 +9,8 @@ export class LobbyController {
     this.categories = [];
     this.heartbeatInterval = null;
     this.isDestroyed = false;
+    this.configDirty = false;
+    this.configDraft = null;
 
     this.visibilityHandler = () => {
       if (!document.hidden) {
@@ -187,17 +189,57 @@ export class LobbyController {
     const categoriesForm = document.getElementById("lobby-config-categories");
     const roundsInput = document.getElementById("lobby-config-rounds");
     const timerInput = document.getElementById("lobby-config-timer");
-    if (roundsInput) roundsInput.value = String(Number(lobby?.total_rounds || 5));
-    if (timerInput) timerInput.value = String(Number(lobby?.round_duration_seconds || 30));
     if (!categoriesForm) return;
 
-    const selected = new Set((Array.isArray(lobby?.selected_category_ids) ? lobby.selected_category_ids : []).map((id) => Number(id)));
+    const source = this.configDirty ? this.getDraftConfig(lobby) : this.getServerConfig(lobby);
+    if (roundsInput) roundsInput.value = String(Number(source.total_rounds || 5));
+    if (timerInput) timerInput.value = String(Number(source.round_duration_seconds || 30));
+
+    const selected = new Set((source.selected_category_ids || []).map((id) => Number(id)));
     categoriesForm.innerHTML = this.categories.map((category) => `
       <label class="mq-check">
         <input type="checkbox" value="${Number(category.id || 0)}" ${selected.has(Number(category.id || 0)) ? "checked" : ""} />
         <span>${this.escapeHtml(category.name || "Categorie")}</span>
       </label>
     `).join("");
+
+    this.bindConfigInputs(lobby);
+  }
+
+  bindConfigInputs(lobby) {
+    const roundsInput = document.getElementById("lobby-config-rounds");
+    const timerInput = document.getElementById("lobby-config-timer");
+    const categoryInputs = document.querySelectorAll("#lobby-config-categories input");
+
+    roundsInput?.addEventListener("input", () => this.captureDraftConfig(lobby));
+    timerInput?.addEventListener("input", () => this.captureDraftConfig(lobby));
+    categoryInputs.forEach((input) => {
+      input.addEventListener("change", () => this.captureDraftConfig(lobby));
+    });
+  }
+
+  getServerConfig(lobby) {
+    return {
+      total_rounds: Number(lobby?.total_rounds || 5),
+      round_duration_seconds: Number(lobby?.round_duration_seconds || 30),
+      selected_category_ids: (Array.isArray(lobby?.selected_category_ids) ? lobby.selected_category_ids : []).map(Number),
+    };
+  }
+
+  getDraftConfig(lobby) {
+    if (this.configDraft) return this.configDraft;
+    return this.getServerConfig(lobby);
+  }
+
+  captureDraftConfig(lobby) {
+    this.configDirty = true;
+    this.configDraft = {
+      total_rounds: Number(document.getElementById("lobby-config-rounds")?.value || lobby?.total_rounds || 5),
+      round_duration_seconds: Number(document.getElementById("lobby-config-timer")?.value || lobby?.round_duration_seconds || 30),
+      selected_category_ids: Array.from(document.querySelectorAll("#lobby-config-categories input:checked"))
+        .map((input) => Number(input.value))
+        .filter((value) => value > 0),
+    };
   }
 
   async leaveLobby() {
@@ -233,6 +275,8 @@ export class LobbyController {
     this.setStatus(res.success ? "Configuration enregistree" : (res.error || "Erreur"), res.success);
 
     if (res.success && res.data?.lobby) {
+      this.configDirty = false;
+      this.configDraft = null;
       this.currentLobby = res.data.lobby;
       setCurrentLobby(this.currentLobby);
       this.renderLobby(res.data);
