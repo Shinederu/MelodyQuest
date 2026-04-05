@@ -7,6 +7,7 @@ export class LobbyController {
     this.stream = null;
     this.lastStreamRevision = 0;
     this.categories = [];
+    this.heartbeatInterval = null;
 
     this.visibilityHandler = () => {
       if (!document.hidden) {
@@ -59,6 +60,7 @@ export class LobbyController {
     this.renderLobby(detail.data);
     await this.refreshRoundState(true);
     this.startRealtime();
+    this.startHeartbeat();
   }
 
   startRealtime() {
@@ -103,7 +105,11 @@ export class LobbyController {
       setCurrentLobby(this.currentLobby);
       this.renderLobby(detail.data);
       await this.refreshRoundState(true);
+      return;
     }
+
+    clearCurrentLobby();
+    window.appCtrl.changeView("main");
   }
 
   applyRealtimeSnapshot(snapshot) {
@@ -283,6 +289,37 @@ export class LobbyController {
         localStorage.removeItem("mq_last_scoreboard");
         window.appCtrl.changeView("game");
       }
+      return;
+    }
+
+    if (!res.success && /lobby introuvable/i.test(String(res.error || ""))) {
+      clearCurrentLobby();
+      window.appCtrl.changeView("main");
+    }
+  }
+
+  startHeartbeat() {
+    this.stopHeartbeat();
+    this.heartbeatInterval = setInterval(() => this.touchPresence(), 15000);
+  }
+
+  stopHeartbeat() {
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = null;
+    }
+  }
+
+  async touchPresence() {
+    const lobbyId = this.getLobbyId();
+    if (!lobbyId) return;
+
+    const res = await window.httpClient.touchLobby(lobbyId);
+    if (res.success) return;
+
+    if (/lobby introuvable/i.test(String(res.error || "")) || /utilisateur non present/i.test(String(res.error || ""))) {
+      clearCurrentLobby();
+      window.appCtrl.changeView("main");
     }
   }
 
@@ -306,6 +343,7 @@ export class LobbyController {
 
   destroy() {
     this.stopStream();
+    this.stopHeartbeat();
     document.removeEventListener("visibilitychange", this.visibilityHandler);
   }
 }

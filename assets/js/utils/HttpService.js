@@ -124,6 +124,12 @@ export class HttpService {
     });
   }
 
+  async touchLobby(lobbyId) {
+    return this.request(MELODY_BASE_URL, "POST", "touchLobby", {
+      lobby_id: lobbyId,
+    });
+  }
+
   async kickPlayer(lobbyId, targetUserId) {
     return this.request(MELODY_BASE_URL, "POST", "kickPlayer", {
       lobby_id: lobbyId,

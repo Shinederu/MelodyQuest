@@ -7,6 +7,7 @@ export class GameController {
     this.stream = null;
     this.lastRevision = 0;
     this.timerInterval = null;
+    this.heartbeatInterval = null;
 
     document.getElementById("btn-game-submit")?.addEventListener("click", () => this.submitAnswer());
     document.getElementById("btn-game-reveal")?.addEventListener("click", () => this.revealNow());
@@ -44,6 +45,7 @@ export class GameController {
     this.applyRoundState(roundState.data || { round: null, answers: [] });
     this.renderOwnerActions();
     this.startRealtime();
+    this.startHeartbeat();
   }
 
   startRealtime() {
@@ -210,6 +212,10 @@ export class GameController {
 
     const res = await window.httpClient.submitAnswer(this.getLobbyId(), answer, answer);
     this.setStatus(res.success ? "Reponse envoyee" : (res.error || "Erreur"), res.success);
+    if (!res.success && this.shouldExitLobby(res.error)) {
+      clearCurrentLobby();
+      window.appCtrl.changeView("main");
+    }
   }
 
   async revealNow() {
@@ -217,6 +223,11 @@ export class GameController {
     this.setStatus(res.success ? "Reponse affichee" : (res.error || "Erreur"), res.success);
     if (res.success) {
       this.applyRoundState(res.data);
+      return;
+    }
+    if (this.shouldExitLobby(res.error)) {
+      clearCurrentLobby();
+      window.appCtrl.changeView("main");
     }
   }
 
@@ -225,6 +236,11 @@ export class GameController {
     this.setStatus(res.success ? "Manche terminee" : (res.error || "Erreur"), res.success);
     if (res.success) {
       this.finishToResult(res.data?.scoreboard?.items ?? []);
+      return;
+    }
+    if (this.shouldExitLobby(res.error)) {
+      clearCurrentLobby();
+      window.appCtrl.changeView("main");
     }
   }
 
@@ -241,6 +257,34 @@ export class GameController {
   finishToResult(scoreboard) {
     localStorage.setItem("mq_last_scoreboard", JSON.stringify(scoreboard || []));
     window.appCtrl.changeView("result");
+  }
+
+  startHeartbeat() {
+    this.stopHeartbeat();
+    this.heartbeatInterval = setInterval(() => this.touchPresence(), 15000);
+  }
+
+  stopHeartbeat() {
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = null;
+    }
+  }
+
+  async touchPresence() {
+    const lobbyId = this.getLobbyId();
+    if (!lobbyId) return;
+
+    const res = await window.httpClient.touchLobby(lobbyId);
+    if (!res.success && this.shouldExitLobby(res.error)) {
+      clearCurrentLobby();
+      window.appCtrl.changeView("main");
+    }
+  }
+
+  shouldExitLobby(error) {
+    const text = String(error || "");
+    return /lobby introuvable/i.test(text) || /utilisateur non present/i.test(text);
   }
 
   escapeHtml(value) {
@@ -263,6 +307,7 @@ export class GameController {
 
   destroy() {
     this.stopRealtime();
+    this.stopHeartbeat();
     if (this.timerInterval) {
       clearInterval(this.timerInterval);
       this.timerInterval = null;
