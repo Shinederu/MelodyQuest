@@ -4,11 +4,11 @@ export class PublicController {
   constructor() {
     this.userModel = new UserModel();
 
-    const loginBtn = document.getElementById("btn-login");
-    const registerBtn = document.getElementById("btn-register");
+    const loginForm = document.getElementById("login-form");
+    const registerForm = document.getElementById("register-form");
 
-    loginBtn?.addEventListener("click", () => this.submitLogin());
-    registerBtn?.addEventListener("click", () => this.submitRegister());
+    loginForm?.addEventListener("submit", () => this.submitLogin());
+    registerForm?.addEventListener("submit", () => this.submitRegister());
 
     console.log("PublicController initialized");
   }
