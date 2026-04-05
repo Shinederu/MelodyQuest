@@ -7,7 +7,7 @@
   <div class="mq-two-cols">
     <section class="mq-card">
       <h2>Connexion</h2>
-      <form id="login-form" autocomplete="on">
+      <form id="login-form" method="post" action="#/public" autocomplete="on">
         <label for="login-username">Nom d'utilisateur</label>
         <input type="text" id="login-username" name="username" autocomplete="username" maxlength="254" size="30" />
 
@@ -19,8 +19,11 @@
     </section>
 
     <section class="mq-card">
-      <h2>Inscription</h2>
-      <form id="register-form" autocomplete="on">
+      <div class="mq-row" style="justify-content:space-between;">
+        <h2>Inscription</h2>
+        <button id="btn-toggle-register" type="button" class="mq-secondary">Afficher</button>
+      </div>
+      <form id="register-form" method="post" action="#/public" autocomplete="on" hidden>
         <label for="register-username">Nom d'utilisateur</label>
         <input type="text" id="register-username" name="username" autocomplete="username" required minlength="1" maxlength="254" size="30" />
 
