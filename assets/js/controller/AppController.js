@@ -56,15 +56,19 @@ export class AppController {
   }
 
   changeView(path) {
-    this.navigateTo(path);
-    this.selectView();
+    const changed = this.navigateTo(path);
+    if (!changed) {
+      this.selectView();
+    }
   }
 
   navigateTo(path) {
     const wanted = `#/${path}`;
     if (window.location.hash !== wanted) {
       window.location.hash = wanted;
+      return true;
     }
+    return false;
   }
 
   async selectView() {
@@ -91,7 +95,10 @@ export class AppController {
       this.ctrl.destroy();
     }
 
-    this.navigateTo(requested);
+    if (this.navigateTo(requested)) {
+      return;
+    }
+
     await this.loadView(requested);
 
     const Controller = ROUTES[requested].controller;
