@@ -1,13 +1,12 @@
-import { getCurrentLobby, clearCurrentLobby } from "../utils/LobbyState.js";
+import { getCurrentLobby, setCurrentLobby, clearCurrentLobby } from "../utils/LobbyState.js";
 
 export class LobbyController {
   constructor() {
     this.currentLobby = getCurrentLobby();
     this.user = JSON.parse(localStorage.getItem("user") || "null");
-    this.liveInterval = null;
-    this.isLiveRefreshing = false;
     this.stream = null;
     this.lastStreamRevision = 0;
+    this.categories = [];
 
     this.visibilityHandler = () => {
       if (!document.hidden) {
@@ -15,22 +14,11 @@ export class LobbyController {
       }
     };
 
-    document.getElementById("btn-lobby-back")?.addEventListener("click", () => window.appCtrl.changeView("lobby-list"));
     document.getElementById("btn-lobby-main")?.addEventListener("click", () => window.appCtrl.changeView("main"));
     document.getElementById("btn-lobby-leave")?.addEventListener("click", () => this.leaveLobby());
-
-    document.getElementById("btn-pool-add")?.addEventListener("click", () => this.addTrackToPool());
-    document.getElementById("btn-pool-remove")?.addEventListener("click", () => this.removeTrackFromPool());
-    document.getElementById("btn-pool-refresh")?.addEventListener("click", () => this.refreshPool());
-
-    document.getElementById("btn-round-start")?.addEventListener("click", () => this.startRound());
-    document.getElementById("btn-round-reveal")?.addEventListener("click", () => this.revealRound());
-    document.getElementById("btn-round-finish")?.addEventListener("click", () => this.finishRound());
-    document.getElementById("btn-round-refresh")?.addEventListener("click", () => this.refreshRoundState());
-
-    document.getElementById("btn-submit-answer")?.addEventListener("click", () => this.submitAnswer());
-    document.getElementById("btn-refresh-playback")?.addEventListener("click", () => this.refreshPlayback());
-    document.getElementById("btn-refresh-scoreboard")?.addEventListener("click", () => this.refreshScoreboard());
+    document.getElementById("btn-lobby-save-config")?.addEventListener("click", () => this.saveConfig());
+    document.getElementById("btn-lobby-delete")?.addEventListener("click", () => this.deleteLobby());
+    document.getElementById("btn-lobby-start")?.addEventListener("click", () => this.startGame());
 
     document.addEventListener("visibilitychange", this.visibilityHandler);
 
@@ -48,61 +36,54 @@ export class LobbyController {
   async bootstrap() {
     const code = this.getLobbyCode();
     if (!code) {
-      this.setStatus("lobby-status", "Aucun lobby selectionne", false);
+      this.setStatus("Aucun lobby selectionne", false);
       return;
     }
 
-    const detail = await window.httpClient.getLobbyByCode(code);
+    const [categoriesRes, detail] = await Promise.all([
+      window.httpClient.listCategories(),
+      window.httpClient.getLobbyByCode(code),
+    ]);
+
+    if (categoriesRes.success) {
+      this.categories = categoriesRes.data?.items ?? [];
+    }
+
     if (!detail.success || !detail.data?.lobby) {
-      this.setStatus("lobby-status", detail.error || "Lobby introuvable", false);
+      this.setStatus(detail.error || "Lobby introuvable", false);
       return;
     }
 
     this.currentLobby = detail.data.lobby;
-    this.renderLobbyInfo(detail.data);
-    await Promise.all([this.refreshPool(), this.refreshRoundState(), this.refreshPlayback(), this.refreshScoreboard()]);
+    setCurrentLobby(this.currentLobby);
+    this.renderLobby(detail.data);
+    await this.refreshRoundState(true);
     this.startRealtime();
   }
 
   startRealtime() {
-    this.stopLiveRefresh();
     this.stopStream();
 
-    if (typeof EventSource === "function") {
-      try {
-        this.startStream();
-        return;
-      } catch {
-        // fallback polling
-      }
-    }
+    if (typeof EventSource !== "function") return;
 
-    this.startLiveRefresh();
-  }
+    try {
+      this.stream = window.httpClient.openLobbyStream(this.getLobbyId(), this.lastStreamRevision || null);
+      this.stream.addEventListener("lobby", (evt) => {
+        if (!evt?.data) return;
 
-  startStream() {
-    const lobbyId = this.getLobbyId();
-    if (!lobbyId) {
-      this.startLiveRefresh();
-      return;
-    }
+        const payload = JSON.parse(evt.data);
+        this.lastStreamRevision = Number(payload?.revision || evt.lastEventId || this.lastStreamRevision || 0);
+        this.applyRealtimeSnapshot(payload);
+        this.setStatus("Synchronise en direct", true);
+      });
 
-    this.stream = window.httpClient.openLobbyStream(lobbyId, this.lastStreamRevision || null);
-
-    this.stream.addEventListener("lobby", (evt) => {
-      if (!evt?.data) return;
-
-      const payload = JSON.parse(evt.data);
-      this.lastStreamRevision = Number(payload?.revision || evt.lastEventId || this.lastStreamRevision || 0);
-      this.applyRealtimeSnapshot(payload);
-      this.setStatus("lobby-status", "Synchronise en direct", true);
-    });
-
-    this.stream.onerror = () => {
+      this.stream.onerror = () => {
+        this.stopStream();
+        this.setStatus("Flux direct indisponible", false);
+      };
+    } catch {
       this.stopStream();
-      this.startLiveRefresh();
-      this.setStatus("lobby-status", "Flux direct indisponible, bascule en rafraichissement auto", false);
-    };
+    }
   }
 
   stopStream() {
@@ -112,43 +93,16 @@ export class LobbyController {
     }
   }
 
-  startLiveRefresh() {
-    this.stopLiveRefresh();
-    this.liveInterval = setInterval(() => this.liveRefresh(), 2500);
-  }
-
-  stopLiveRefresh() {
-    if (this.liveInterval) {
-      clearInterval(this.liveInterval);
-      this.liveInterval = null;
-    }
-  }
-
   async refreshNow() {
-    await this.liveRefresh();
-  }
-
-  async liveRefresh() {
-    if (this.isLiveRefreshing) return;
     const code = this.getLobbyCode();
     if (!code) return;
 
-    this.isLiveRefreshing = true;
-    try {
-      const detail = await window.httpClient.getLobbyByCode(code);
-      if (detail.success && detail.data?.lobby) {
-        this.currentLobby = detail.data.lobby;
-        this.renderLobbyInfo(detail.data);
-      }
-
-      await Promise.all([
-        this.refreshPool(true),
-        this.refreshRoundState(true),
-        this.refreshPlayback(true),
-        this.refreshScoreboard(true),
-      ]);
-    } finally {
-      this.isLiveRefreshing = false;
+    const detail = await window.httpClient.getLobbyByCode(code);
+    if (detail.success && detail.data?.lobby) {
+      this.currentLobby = detail.data.lobby;
+      setCurrentLobby(this.currentLobby);
+      this.renderLobby(detail.data);
+      await this.refreshRoundState(true);
     }
   }
 
@@ -157,37 +111,87 @@ export class LobbyController {
 
     if (snapshot.lobby) {
       this.currentLobby = snapshot.lobby;
-      this.renderLobbyInfo({ lobby: snapshot.lobby, players: snapshot.players || [] });
+      setCurrentLobby(snapshot.lobby);
+      this.renderLobby({ lobby: snapshot.lobby, players: snapshot.players || [] });
     }
 
-    if (snapshot.pool?.items) this.renderPool(snapshot.pool.items);
-    if (snapshot.round) this.renderRound(snapshot.round);
-    if (snapshot.playback) {
-      const txt = `state=${snapshot.playback.playback_state ?? "?"}, track=${snapshot.playback.current_track_id ?? "none"}, rev=${snapshot.playback.sync_revision ?? 0}`;
-      const el = document.getElementById("playback-state");
-      if (el) el.textContent = txt;
+    if (snapshot.round?.round) {
+      const status = String(snapshot.round.round.status || "").toLowerCase();
+      if (status === "running" || status === "reveal") {
+        localStorage.removeItem("mq_last_scoreboard");
+        window.appCtrl.changeView("game");
+      }
     }
-    if (snapshot.scoreboard?.items) this.renderScoreboard(snapshot.scoreboard.items);
   }
 
-  renderLobbyInfo(data) {
+  renderLobby(data) {
     const lobby = data?.lobby;
     const players = data?.players ?? [];
-    const lobbyInfo = document.getElementById("lobby-info");
-    const playerList = document.getElementById("lobby-players");
+    const categoriesHost = document.getElementById("lobby-categories-selected");
+    const playersHost = document.getElementById("lobby-players");
     const ownerOnly = document.querySelectorAll(".owner-only");
+    const header = document.getElementById("lobby-title");
+    const meta = document.getElementById("lobby-meta");
+    const rounds = document.getElementById("lobby-rounds");
+    const timer = document.getElementById("lobby-timer");
 
-    if (lobbyInfo && lobby) {
-      lobbyInfo.textContent = `${lobby.name} (${lobby.lobby_code}) - ${players.length}/${lobby.max_players}`;
+    if (header) header.textContent = lobby?.name || "Lobby";
+    if (meta) meta.textContent = `Code ${lobby?.lobby_code || ""} · ${players.length}/${lobby?.max_players || 0} joueurs`;
+    if (rounds) rounds.textContent = `${Number(lobby?.rounds_finished || 0)} / ${Number(lobby?.total_rounds || 0)} manches jouees`;
+    if (timer) timer.textContent = `${Number(lobby?.round_duration_seconds || 0)} secondes par manche`;
+
+    if (playersHost) {
+      playersHost.innerHTML = players.map((player) => {
+        const canKick = this.isOwner() && Number(player.user_id || 0) !== Number(this.user?.id || 0);
+        return `
+          <li class="mq-list-row">
+            <div>
+              <strong>${this.escapeHtml(player.username || "joueur")}</strong>
+              <span class="mq-muted">${this.escapeHtml(player.role || "player")} · ${Number(player.score || 0)} pt</span>
+            </div>
+            ${canKick ? `<button type="button" class="mq-danger mq-inline-btn" data-kick-user="${Number(player.user_id || 0)}">Exclure</button>` : ""}
+          </li>
+        `;
+      }).join("");
+
+      playersHost.querySelectorAll("[data-kick-user]").forEach((button) => {
+        button.addEventListener("click", () => this.kickPlayer(Number(button.dataset.kickUser || 0)));
+      });
     }
-    if (playerList) {
-      playerList.innerHTML = players.map((p) => `<li>${p.username} (${p.role}) - ${p.score}</li>`).join("");
+
+    if (categoriesHost) {
+      const selected = Array.isArray(lobby?.selected_category_ids) ? lobby.selected_category_ids.map(Number) : [];
+      const names = this.categories
+        .filter((category) => selected.includes(Number(category.id || 0)))
+        .map((category) => category.name);
+      categoriesHost.innerHTML = names.length
+        ? names.map((name) => `<span class="mq-chip">${this.escapeHtml(name)}</span>`).join("")
+        : `<span class="mq-muted">Toutes les categories actives</span>`;
     }
 
     const isOwner = Number(lobby?.owner_user_id || 0) === Number(this.user?.id || 0);
     ownerOnly.forEach((el) => {
       el.style.display = isOwner ? "" : "none";
     });
+
+    this.renderOwnerForm(lobby);
+  }
+
+  renderOwnerForm(lobby) {
+    const categoriesForm = document.getElementById("lobby-config-categories");
+    const roundsInput = document.getElementById("lobby-config-rounds");
+    const timerInput = document.getElementById("lobby-config-timer");
+    if (roundsInput) roundsInput.value = String(Number(lobby?.total_rounds || 5));
+    if (timerInput) timerInput.value = String(Number(lobby?.round_duration_seconds || 30));
+    if (!categoriesForm) return;
+
+    const selected = new Set((Array.isArray(lobby?.selected_category_ids) ? lobby.selected_category_ids : []).map((id) => Number(id)));
+    categoriesForm.innerHTML = this.categories.map((category) => `
+      <label class="mq-check">
+        <input type="checkbox" value="${Number(category.id || 0)}" ${selected.has(Number(category.id || 0)) ? "checked" : ""} />
+        <span>${this.escapeHtml(category.name || "Categorie")}</span>
+      </label>
+    `).join("");
   }
 
   async leaveLobby() {
@@ -195,72 +199,74 @@ export class LobbyController {
     if (!lobbyId) return;
 
     const res = await window.httpClient.leaveLobby(lobbyId);
-    this.setStatus("lobby-status", res.success ? "Lobby quitte" : (res.error || "Erreur"), res.success);
+    this.setStatus(res.success ? "Lobby quitte" : (res.error || "Erreur"), res.success);
     if (res.success) {
       clearCurrentLobby();
       window.appCtrl.changeView("main");
     }
   }
 
-  async addTrackToPool() {
-    const lobbyId = this.getLobbyId();
-    const trackId = Number(document.getElementById("pool-track-id")?.value ?? 0);
-    if (!lobbyId || !trackId) return this.setStatus("pool-status", "track_id requis", false);
-    const res = await window.httpClient.addTrackToPool(lobbyId, trackId);
-    this.setStatus("pool-status", res.success ? "Track ajoute" : (res.error || "Erreur"), res.success);
-    if (res.success) this.renderPool(res.data?.items ?? []);
-  }
-
-  async removeTrackFromPool() {
-    const lobbyId = this.getLobbyId();
-    const trackId = Number(document.getElementById("pool-track-id")?.value ?? 0);
-    if (!lobbyId || !trackId) return this.setStatus("pool-status", "track_id requis", false);
-    const res = await window.httpClient.removeTrackFromPool(lobbyId, trackId);
-    this.setStatus("pool-status", res.success ? "Track retire" : (res.error || "Erreur"), res.success);
-    if (res.success) this.renderPool(res.data?.items ?? []);
-  }
-
-  async refreshPool(silent = false) {
+  async saveConfig() {
     const lobbyId = this.getLobbyId();
     if (!lobbyId) return;
-    const res = await window.httpClient.listTrackPool(lobbyId);
-    if (!silent || !res.success) {
-      this.setStatus("pool-status", res.success ? "Pool charge" : (res.error || "Erreur"), res.success);
+
+    const rounds = Number(document.getElementById("lobby-config-rounds")?.value || 5);
+    const timer = Number(document.getElementById("lobby-config-timer")?.value || 30);
+    const selectedCategoryIds = Array.from(document.querySelectorAll("#lobby-config-categories input:checked"))
+      .map((input) => Number(input.value))
+      .filter((value) => value > 0);
+
+    const res = await window.httpClient.updateLobbyConfig({
+      lobby_id: lobbyId,
+      total_rounds: rounds,
+      round_duration_seconds: timer,
+      selected_category_ids: selectedCategoryIds,
+      guess_mode: "title",
+    });
+
+    this.setStatus(res.success ? "Configuration enregistree" : (res.error || "Erreur"), res.success);
+
+    if (res.success && res.data?.lobby) {
+      this.currentLobby = res.data.lobby;
+      setCurrentLobby(this.currentLobby);
+      this.renderLobby(res.data);
     }
-    if (res.success) this.renderPool(res.data?.items ?? []);
   }
 
-  renderPool(items) {
-    const el = document.getElementById("pool-list");
-    if (!el) return;
-    el.innerHTML = items.map((x) => `<li>#${x.track_id} - ${x.title}</li>`).join("");
-  }
-
-  async startRound() {
-    const lobbyId = this.getLobbyId();
-    const trackId = Number(document.getElementById("round-track-id")?.value ?? 0);
-    if (!lobbyId) return;
-    const res = await window.httpClient.startRound(lobbyId, trackId || null);
-    this.setStatus("round-status", res.success ? "Manche demarree" : (res.error || "Erreur"), res.success);
-    if (res.success) this.renderRound(res.data);
-  }
-
-  async revealRound() {
+  async startGame() {
     const lobbyId = this.getLobbyId();
     if (!lobbyId) return;
-    const res = await window.httpClient.revealRound(lobbyId);
-    this.setStatus("round-status", res.success ? "Reveal" : (res.error || "Erreur"), res.success);
-    if (res.success) this.renderRound(res.data);
-  }
 
-  async finishRound() {
-    const lobbyId = this.getLobbyId();
-    if (!lobbyId) return;
-    const res = await window.httpClient.finishRound(lobbyId);
-    this.setStatus("round-status", res.success ? "Manche terminee" : (res.error || "Erreur"), res.success);
+    const res = await window.httpClient.startRound(lobbyId);
+    this.setStatus(res.success ? "Partie demarree" : (res.error || "Erreur"), res.success);
     if (res.success) {
-      this.renderRound(res.data?.round || null);
-      this.renderScoreboard(res.data?.scoreboard?.items ?? []);
+      localStorage.removeItem("mq_last_scoreboard");
+      window.appCtrl.changeView("game");
+    }
+  }
+
+  async deleteLobby() {
+    const lobbyId = this.getLobbyId();
+    if (!lobbyId) return;
+
+    const res = await window.httpClient.deleteLobby(lobbyId);
+    this.setStatus(res.success ? "Lobby supprime" : (res.error || "Erreur"), res.success);
+    if (res.success) {
+      clearCurrentLobby();
+      window.appCtrl.changeView("main");
+    }
+  }
+
+  async kickPlayer(targetUserId) {
+    const lobbyId = this.getLobbyId();
+    if (!lobbyId || targetUserId <= 0) return;
+
+    const res = await window.httpClient.kickPlayer(lobbyId, targetUserId);
+    this.setStatus(res.success ? "Utilisateur exclu" : (res.error || "Erreur"), res.success);
+    if (res.success && res.data?.lobby) {
+      this.currentLobby = res.data.lobby;
+      setCurrentLobby(this.currentLobby);
+      this.renderLobby(res.data);
     }
   }
 
@@ -269,74 +275,30 @@ export class LobbyController {
     if (!lobbyId) return;
     const res = await window.httpClient.getRoundState(lobbyId);
     if (!silent || !res.success) {
-      this.setStatus("round-status", res.success ? "Round charge" : (res.error || "Erreur"), res.success);
+      this.setStatus(res.success ? "Lobby charge" : (res.error || "Erreur"), res.success);
     }
-    if (res.success) this.renderRound(res.data);
-  }
-
-  renderRound(data) {
-    const round = data?.round;
-    const info = document.getElementById("round-info");
-    const answers = document.getElementById("round-answers");
-    if (!info || !answers) return;
-
-    if (!round) {
-      info.textContent = "Aucune manche en cours.";
-      answers.innerHTML = "";
-      return;
-    }
-
-    info.textContent = `#${round.round_number} (${round.status}) - ${round.track?.title ?? ""} / ${round.track?.artist ?? ""}`;
-    answers.innerHTML = (data?.answers ?? []).map((a) => `<li>${a.username}: ${a.guess_title ?? ""} | ${a.guess_artist ?? ""} => +${a.score_awarded}</li>`).join("");
-  }
-
-  async submitAnswer() {
-    const lobbyId = this.getLobbyId();
-    const title = document.getElementById("guess-title")?.value ?? "";
-    const artist = document.getElementById("guess-artist")?.value ?? "";
-    if (!lobbyId) return;
-    const res = await window.httpClient.submitAnswer(lobbyId, title, artist);
-    this.setStatus("answer-status", res.success ? "Reponse enregistree" : (res.error || "Erreur"), res.success);
-    if (res.success) {
-      this.refreshRoundState();
-      this.refreshScoreboard();
+    if (res.success && res.data?.round) {
+      const status = String(res.data.round.status || "").toLowerCase();
+      if (status === "running" || status === "reveal") {
+        localStorage.removeItem("mq_last_scoreboard");
+        window.appCtrl.changeView("game");
+      }
     }
   }
 
-  async refreshPlayback(silent = false) {
-    const lobbyId = this.getLobbyId();
-    if (!lobbyId) return;
-    const res = await window.httpClient.getPlaybackState(lobbyId);
-    const text = res.success
-      ? `state=${res.data?.playback_state ?? "?"}, track=${res.data?.current_track_id ?? "none"}, rev=${res.data?.sync_revision ?? 0}`
-      : (res.error || "Erreur");
-
-    const el = document.getElementById("playback-state");
-    if (el) el.textContent = text;
-
-    if (!silent || !res.success) {
-      this.setStatus("playback-status", res.success ? "Playback charge" : (res.error || "Erreur"), res.success);
-    }
+  isOwner() {
+    return Number(this.currentLobby?.owner_user_id || 0) === Number(this.user?.id || 0);
   }
 
-  async refreshScoreboard(silent = false) {
-    const lobbyId = this.getLobbyId();
-    if (!lobbyId) return;
-    const res = await window.httpClient.getScoreboard(lobbyId);
-    if (!silent || !res.success) {
-      this.setStatus("scoreboard-status", res.success ? "Scoreboard charge" : (res.error || "Erreur"), res.success);
-    }
-    if (res.success) this.renderScoreboard(res.data?.items ?? []);
+  escapeHtml(value) {
+    return String(value)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;");
   }
 
-  renderScoreboard(items) {
-    const el = document.getElementById("scoreboard-list");
-    if (!el) return;
-    el.innerHTML = items.map((x) => `<li>${x.username} (${x.role}) - ${x.score}</li>`).join("");
-  }
-
-  setStatus(targetId, text, ok) {
-    const el = document.getElementById(targetId);
+  setStatus(text, ok) {
+    const el = document.getElementById("lobby-status");
     if (!el) return;
     el.textContent = text;
     el.className = ok ? "status success" : "status error";
@@ -344,7 +306,6 @@ export class LobbyController {
 
   destroy() {
     this.stopStream();
-    this.stopLiveRefresh();
     document.removeEventListener("visibilitychange", this.visibilityHandler);
   }
 }

@@ -2,8 +2,9 @@ import { HttpService } from "../utils/HttpService.js";
 import { HeaderModel } from "../model/HeaderModel.js";
 import { PublicController } from "./PublicController.js";
 import { MainController } from "./MainController.js";
-import { LobbyListController } from "./LobbyListController.js";
 import { LobbyController } from "./LobbyController.js";
+import { GameController } from "./GameController.js";
+import { ResultController } from "./ResultController.js";
 import { ManagementController } from "./ManagementController.js";
 import { ManagementCategoriesController } from "./ManagementCategoriesController.js";
 import { ManagementFamiliesController } from "./ManagementFamiliesController.js";
@@ -15,8 +16,10 @@ let headerManager = null;
 const ROUTES = {
   public: { auth: false, admin: false, controller: PublicController },
   main: { auth: true, admin: false, controller: MainController },
-  "lobby-list": { auth: true, admin: false, controller: LobbyListController },
+  "lobby-list": { auth: true, admin: false, controller: MainController },
   lobby: { auth: true, admin: false, controller: LobbyController },
+  game: { auth: true, admin: false, controller: GameController },
+  result: { auth: true, admin: false, controller: ResultController },
   management: { auth: true, admin: true, controller: ManagementController },
   "management-categories": { auth: true, admin: true, controller: ManagementCategoriesController },
   "management-families": { auth: true, admin: true, controller: ManagementFamiliesController },

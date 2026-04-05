@@ -124,6 +124,19 @@ export class HttpService {
     });
   }
 
+  async kickPlayer(lobbyId, targetUserId) {
+    return this.request(MELODY_BASE_URL, "POST", "kickPlayer", {
+      lobby_id: lobbyId,
+      target_user_id: targetUserId,
+    });
+  }
+
+  async deleteLobby(lobbyId) {
+    return this.request(MELODY_BASE_URL, "POST", "deleteLobby", {
+      lobby_id: lobbyId,
+    });
+  }
+
   async getLobbyByCode(lobbyCode) {
     return this.request(MELODY_BASE_URL, "GET", "getLobbyByCode", {
       lobby_code: lobbyCode,

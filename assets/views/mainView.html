@@ -1,14 +1,35 @@
 <section class="mq-page">
   <header class="mq-page-header">
-    <h1>Main Menu</h1>
-    <p>Choisis ton action pour commencer une partie.</p>
+    <h1>Menu principal</h1>
+    <p>Rejoins un lobby existant ou cree ta propre partie.</p>
   </header>
 
+  <div class="mq-two-cols">
+    <section class="mq-card">
+      <h2>Lobbies existants</h2>
+      <p id="main-lobby-empty" class="mq-muted">Aucun lobby public disponible pour le moment.</p>
+      <div id="main-lobby-list" class="mq-list"></div>
+    </section>
+
+    <section class="mq-card">
+      <h2>Actions</h2>
+      <div class="mq-grid">
+        <div>
+          <label for="main-lobby-code">Rejoindre via un code de lobby</label>
+          <input id="main-lobby-code" type="text" maxlength="16" placeholder="Ex: ABC123" />
+        </div>
+      </div>
+      <div class="mq-actions">
+        <button id="btn-main-join-code" type="button">Rejoindre</button>
+        <button id="btn-main-create" type="button">Creer un nouveau lobby</button>
+      </div>
+      <div id="main-admin-actions">
+        <button id="btn-main-management" type="button" class="mq-secondary">Management</button>
+      </div>
+    </section>
+  </div>
+
   <section class="mq-card">
-    <div class="mq-actions">
-      <button id="btn-main-join" type="button">Rejoindre un lobby</button>
-      <button id="btn-main-create" type="button">Creer un lobby</button>
-    </div>
     <p id="main-status" class="status"></p>
   </section>
 </section>

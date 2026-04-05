@@ -1,0 +1,50 @@
+<section class="mq-page">
+  <header class="mq-page-header">
+    <h1 id="game-title">Partie en cours</h1>
+    <p id="game-meta">Chargement...</p>
+  </header>
+
+  <div class="mq-two-cols">
+    <section class="mq-card">
+      <h2>Participants</h2>
+      <ul id="game-players" class="mq-clean-list"></ul>
+    </section>
+
+    <section class="mq-card">
+      <h2>Timer</h2>
+      <p id="game-timer" class="mq-chip">--</p>
+      <p id="game-status" class="status"></p>
+      <div class="mq-actions">
+        <button id="btn-game-leave" type="button" class="mq-danger">Quitter le lobby</button>
+      </div>
+    </section>
+  </div>
+
+  <section class="mq-card">
+    <h2>Video</h2>
+    <div id="game-video" class="mq-video-shell">
+      <div class="mq-video-placeholder">
+        <p>La video reste cachee jusqu'a la revelation.</p>
+      </div>
+    </div>
+    <p id="game-solution" class="status"></p>
+  </section>
+
+  <div class="mq-two-cols">
+    <section class="mq-card">
+      <h2>Ta reponse</h2>
+      <label for="game-answer">Reponse</label>
+      <input id="game-answer" type="text" placeholder="Titre ou artiste" />
+      <div class="mq-actions">
+        <button id="btn-game-submit" type="button">Envoyer la reponse</button>
+        <button id="btn-game-reveal" type="button" class="mq-secondary" style="display:none;">Afficher la reponse maintenant</button>
+        <button id="btn-game-next" type="button" style="display:none;">Manche suivante</button>
+      </div>
+    </section>
+
+    <section class="mq-card">
+      <h2>Reponses deja envoyees</h2>
+      <ul id="game-answers" class="mq-clean-list"></ul>
+    </section>
+  </div>
+</section>

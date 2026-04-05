@@ -1,76 +1,54 @@
 <section class="mq-page">
   <header class="mq-page-header">
-    <h1>Lobby</h1>
-    <p>Gestion de partie, joueurs, manche et score en direct.</p>
+    <h1 id="lobby-title">Lobby</h1>
+    <p>Preparation de partie, participants et configuration du salon.</p>
   </header>
 
   <section class="mq-card">
     <div class="mq-actions">
-      <button id="btn-lobby-main" type="button" class="mq-secondary">Main</button>
-      <button id="btn-lobby-back" type="button" class="mq-secondary">Lobby List</button>
+      <button id="btn-lobby-main" type="button" class="mq-secondary">Menu principal</button>
       <button id="btn-lobby-leave" type="button" class="mq-danger">Quitter</button>
     </div>
     <p id="lobby-status" class="status"></p>
-    <p id="lobby-info" class="mq-muted">Aucun lobby charge.</p>
-    <ul id="lobby-players"></ul>
+    <p id="lobby-meta" class="mq-muted">Chargement du lobby...</p>
+    <p id="lobby-rounds" class="mq-muted"></p>
+    <p id="lobby-timer" class="mq-muted"></p>
   </section>
 
   <div class="mq-two-cols">
     <section class="mq-card">
-      <h2>Pool de musiques</h2>
-      <div class="mq-row owner-only">
-        <input id="pool-track-id" type="number" min="1" placeholder="Track ID" />
-        <button id="btn-pool-add" type="button">Ajouter</button>
-        <button id="btn-pool-remove" type="button" class="mq-danger">Retirer</button>
-      </div>
-      <div class="mq-row">
-        <button id="btn-pool-refresh" type="button">Rafraichir pool</button>
-      </div>
-      <p id="pool-status" class="status"></p>
-      <ul id="pool-list"></ul>
+      <h2>Participants</h2>
+      <ul id="lobby-players" class="mq-clean-list"></ul>
     </section>
 
     <section class="mq-card">
-      <h2>Playback & Scoreboard</h2>
-      <div class="mq-row">
-        <button id="btn-refresh-playback" type="button">Rafraichir playback</button>
-      </div>
-      <p id="playback-status" class="status"></p>
-      <p id="playback-state" class="mq-muted"></p>
-
-      <div class="mq-row">
-        <button id="btn-refresh-scoreboard" type="button">Rafraichir scoreboard</button>
-      </div>
-      <p id="scoreboard-status" class="status"></p>
-      <ul id="scoreboard-list"></ul>
+      <h2>Categories selectionnees</h2>
+      <div id="lobby-categories-selected" class="mq-chip-row"></div>
     </section>
   </div>
 
-  <div class="mq-two-cols">
-    <section class="mq-card">
-      <h2>Manche</h2>
-      <div class="mq-row owner-only">
-        <input id="round-track-id" type="number" min="1" placeholder="Track force (optionnel)" />
-        <button id="btn-round-start" type="button">Start</button>
-        <button id="btn-round-reveal" type="button">Reveal</button>
-        <button id="btn-round-finish" type="button">Finish</button>
+  <section class="mq-card owner-only" style="display:none;">
+    <h2>Configuration du lobby</h2>
+    <div class="mq-grid">
+      <div>
+        <label for="lobby-config-rounds">Nombre de manches</label>
+        <input id="lobby-config-rounds" type="number" min="1" max="50" />
       </div>
-      <div class="mq-row">
-        <button id="btn-round-refresh" type="button">Rafraichir round</button>
+      <div>
+        <label for="lobby-config-timer">Temps avant reponse</label>
+        <input id="lobby-config-timer" type="number" min="10" max="300" />
       </div>
-      <p id="round-status" class="status"></p>
-      <p id="round-info" class="mq-muted"></p>
-      <ul id="round-answers"></ul>
-    </section>
+    </div>
 
-    <section class="mq-card">
-      <h2>Reponse joueur</h2>
-      <div class="mq-grid">
-        <input id="guess-title" type="text" placeholder="Titre" />
-        <input id="guess-artist" type="text" placeholder="Artiste" />
-      </div>
-      <button id="btn-submit-answer" type="button">Envoyer ma reponse</button>
-      <p id="answer-status" class="status"></p>
-    </section>
-  </div>
+    <div>
+      <p class="mq-section-label">Choix des categories</p>
+      <div id="lobby-config-categories" class="mq-check-grid"></div>
+    </div>
+
+    <div class="mq-actions">
+      <button id="btn-lobby-save-config" type="button">Enregistrer</button>
+      <button id="btn-lobby-start" type="button">Commencer</button>
+      <button id="btn-lobby-delete" type="button" class="mq-danger">Supprimer le lobby</button>
+    </div>
+  </section>
 </section>
