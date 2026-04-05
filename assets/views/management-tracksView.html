@@ -1,30 +1,45 @@
-<section class="mq-page">
+ï»¿<section class="mq-page">
   <header class="mq-page-header">
-    <h1>Management Tracks</h1>
-    <p>Gère les musiques (source YouTube) utilisées en partie.</p>
+    <h1>Gestion des musiques</h1>
+    <p>Renseigne une famille, un titre, un artiste et l'URL YouTube complete.</p>
   </header>
 
   <section class="mq-card">
     <div class="mq-row">
-      <button id="btn-track-back" type="button" class="mq-secondary">Retour Management</button>
+      <button id="btn-track-back" type="button" class="mq-secondary">Retour management</button>
       <button id="btn-track-refresh" type="button">Rafraichir</button>
+      <button id="btn-track-add" type="button">Ajouter une musique</button>
     </div>
-
-    <div class="mq-grid">
-      <input id="track-id" type="number" min="1" placeholder="ID" />
-      <input id="track-family-id" type="number" min="1" placeholder="Family ID" />
-      <input id="track-title" type="text" placeholder="Titre" />
-      <input id="track-artist" type="text" placeholder="Artiste" />
-      <input id="track-youtube-url" type="text" placeholder="URL YouTube" />
-      <input id="track-youtube-id" type="text" placeholder="Video ID" />
-    </div>
-    <div class="mq-actions">
-      <button id="btn-track-create" type="button">Creer</button>
-      <button id="btn-track-update" type="button">Mettre a jour</button>
-      <button id="btn-track-delete" type="button" class="mq-danger">Supprimer</button>
-    </div>
-
     <p id="track-status" class="status"></p>
-    <ul id="track-list"></ul>
   </section>
+
+  <div class="mq-two-cols">
+    <section class="mq-card">
+      <h2>Liste des musiques</h2>
+      <div id="track-list" class="mq-admin-list"></div>
+    </section>
+
+    <section id="track-form" class="mq-card" hidden>
+      <h2 id="track-form-title">Nouvelle musique</h2>
+      <label for="track-family">Famille</label>
+      <select id="track-family"></select>
+
+      <label for="track-title">Titre</label>
+      <input id="track-title" type="text" placeholder="Titre de la musique" />
+
+      <label for="track-artist">Artiste</label>
+      <input id="track-artist" type="text" placeholder="Artiste ou licence" />
+
+      <label for="track-youtube-url">URL YouTube complete</label>
+      <input id="track-youtube-url" type="url" placeholder="https://www.youtube.com/watch?v=..." />
+
+      <p class="mq-muted">L'identifiant video est extrait automatiquement depuis l'URL.</p>
+      <div class="mq-actions">
+        <button id="btn-track-create" type="button">Ajouter</button>
+        <button id="btn-track-update" type="button">Mettre a jour</button>
+        <button id="btn-track-reset" type="button" class="mq-secondary">Vider</button>
+        <button id="btn-track-delete" type="button" class="mq-danger">Supprimer</button>
+      </div>
+    </section>
+  </div>
 </section>

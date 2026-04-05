@@ -104,6 +104,26 @@ body {
   gap: 0.75rem;
 }
 
+.mq-admin-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.mq-admin-item {
+  display: grid;
+  gap: 0.2rem;
+  width: 100%;
+  text-align: left;
+  background: #fff;
+  color: var(--text-main);
+  border: 1px solid var(--line);
+}
+
+.mq-admin-item.is-selected {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(31, 79, 216, 0.12);
+}
+
 .mq-list-card {
   display: flex;
   justify-content: space-between;

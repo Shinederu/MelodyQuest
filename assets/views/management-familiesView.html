@@ -1,29 +1,42 @@
-<section class="mq-page">
+ï»¿<section class="mq-page">
   <header class="mq-page-header">
-    <h1>Management Families</h1>
-    <p>Gère les familles de musiques par catégorie.</p>
+    <h1>Gestion des familles</h1>
+    <p>Chaque famille appartient a une categorie et regroupe plusieurs musiques proches.</p>
   </header>
 
   <section class="mq-card">
     <div class="mq-row">
-      <button id="btn-fam-back" type="button" class="mq-secondary">Retour Management</button>
+      <button id="btn-fam-back" type="button" class="mq-secondary">Retour management</button>
       <button id="btn-fam-refresh" type="button">Rafraichir</button>
+      <button id="btn-fam-add" type="button">Ajouter une famille</button>
     </div>
-
-    <div class="mq-grid">
-      <input id="fam-id" type="number" min="1" placeholder="ID" />
-      <input id="fam-category-id" type="number" min="1" placeholder="Category ID" />
-      <input id="fam-name" type="text" placeholder="Nom" />
-      <input id="fam-slug" type="text" placeholder="Slug" />
-      <input id="fam-description" type="text" placeholder="Description" />
-    </div>
-    <div class="mq-actions">
-      <button id="btn-fam-create" type="button">Creer</button>
-      <button id="btn-fam-update" type="button">Mettre a jour</button>
-      <button id="btn-fam-delete" type="button" class="mq-danger">Supprimer</button>
-    </div>
-
     <p id="fam-status" class="status"></p>
-    <ul id="fam-list"></ul>
   </section>
+
+  <div class="mq-two-cols">
+    <section class="mq-card">
+      <h2>Liste des familles</h2>
+      <div id="fam-list" class="mq-admin-list"></div>
+    </section>
+
+    <section id="fam-form" class="mq-card" hidden>
+      <h2 id="fam-form-title">Nouvelle famille</h2>
+      <label for="fam-category">Categorie</label>
+      <select id="fam-category"></select>
+
+      <label for="fam-name">Nom</label>
+      <input id="fam-name" type="text" placeholder="Ex: Pokemon" />
+
+      <label for="fam-description">Description</label>
+      <input id="fam-description" type="text" placeholder="Description courte optionnelle" />
+
+      <p class="mq-muted">Le slug technique est genere automatiquement a partir du nom.</p>
+      <div class="mq-actions">
+        <button id="btn-fam-create" type="button">Ajouter</button>
+        <button id="btn-fam-update" type="button">Mettre a jour</button>
+        <button id="btn-fam-reset" type="button" class="mq-secondary">Vider</button>
+        <button id="btn-fam-delete" type="button" class="mq-danger">Supprimer</button>
+      </div>
+    </section>
+  </div>
 </section>

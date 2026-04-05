@@ -1,27 +1,34 @@
-<section class="mq-page">
+ï»¿<section class="mq-page">
   <header class="mq-page-header">
-    <h1>Management Categories</h1>
-    <p>Créer, modifier et supprimer des catégories de musiques.</p>
+    <h1>Gestion des categories</h1>
+    <p>Selectionne une categorie a gauche ou cree-en une nouvelle.</p>
   </header>
 
   <section class="mq-card">
     <div class="mq-row">
-      <button id="btn-cat-back" type="button" class="mq-secondary">Retour Management</button>
+      <button id="btn-cat-back" type="button" class="mq-secondary">Retour management</button>
       <button id="btn-cat-refresh" type="button">Rafraichir</button>
     </div>
-
-    <div class="mq-grid">
-      <input id="cat-id" type="number" min="1" placeholder="ID" />
-      <input id="cat-name" type="text" placeholder="Nom" />
-      <input id="cat-slug" type="text" placeholder="Slug" />
-    </div>
-    <div class="mq-actions">
-      <button id="btn-cat-create" type="button">Creer</button>
-      <button id="btn-cat-update" type="button">Mettre a jour</button>
-      <button id="btn-cat-delete" type="button" class="mq-danger">Supprimer</button>
-    </div>
-
     <p id="cat-status" class="status"></p>
-    <ul id="cat-list"></ul>
   </section>
+
+  <div class="mq-two-cols">
+    <section class="mq-card">
+      <h2>Liste des categories</h2>
+      <div id="cat-list" class="mq-admin-list"></div>
+    </section>
+
+    <section class="mq-card">
+      <h2 id="cat-form-title">Nouvelle categorie</h2>
+      <label for="cat-name">Nom</label>
+      <input id="cat-name" type="text" placeholder="Ex: Dessins animes" />
+      <p class="mq-muted">Le slug technique est genere automatiquement a partir du nom.</p>
+      <div class="mq-actions">
+        <button id="btn-cat-create" type="button">Ajouter</button>
+        <button id="btn-cat-update" type="button">Mettre a jour</button>
+        <button id="btn-cat-reset" type="button" class="mq-secondary">Vider</button>
+        <button id="btn-cat-delete" type="button" class="mq-danger">Supprimer</button>
+      </div>
+    </section>
+  </div>
 </section>
