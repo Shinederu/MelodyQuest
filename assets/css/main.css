@@ -897,6 +897,62 @@ li {
   gap: 14px;
 }
 
+.mq-alias-editor {
+  display: grid;
+  gap: 10px;
+}
+
+.mq-alias-editor__add {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.mq-alias-list {
+  display: grid;
+  gap: 8px;
+}
+
+.mq-alias-item,
+.mq-alias-empty {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(117, 146, 171, 0.18);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 251, 252, 0.94)),
+    rgba(255, 255, 255, 0.92);
+}
+
+.mq-alias-item span,
+.mq-alias-empty span {
+  color: var(--mq-text);
+  font-weight: 600;
+}
+
+.mq-alias-empty {
+  justify-content: flex-start;
+  border-style: dashed;
+}
+
+.mq-alias-empty span {
+  color: var(--mq-text-soft);
+  font-weight: 500;
+}
+
+.mq-alias-item__remove {
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 12px;
+  box-shadow: none;
+  flex: 0 0 auto;
+}
+
 .mq-admin-form-split {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -996,7 +1052,8 @@ li {
 
   .mq-topbar__actions > *,
   .mq-admin-form-actions > *,
-  .mq-actions > * {
+  .mq-actions > *,
+  .mq-alias-editor__add > * {
     width: 100%;
   }
 

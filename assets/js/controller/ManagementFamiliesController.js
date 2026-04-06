@@ -11,6 +11,7 @@ export class ManagementFamiliesController {
   constructor() {
     this.items = [];
     this.categories = [];
+    this.aliases = [];
     this.selectedId = null;
     this.formVisible = true;
 
@@ -21,6 +22,8 @@ export class ManagementFamiliesController {
     document.getElementById("btn-fam-delete")?.addEventListener("click", () => this.remove());
     document.getElementById("btn-fam-reset")?.addEventListener("click", () => this.resetForm());
     document.getElementById("btn-fam-add")?.addEventListener("click", () => this.openCreateForm());
+    document.getElementById("btn-fam-add-alias")?.addEventListener("click", () => this.addAliasFromInput());
+    document.getElementById("fam-alias-input")?.addEventListener("keydown", (event) => this.handleAliasInputKeydown(event));
 
     this.refresh();
   }
@@ -102,12 +105,13 @@ export class ManagementFamiliesController {
     const category = document.getElementById("fam-category");
     const name = document.getElementById("fam-name");
     const description = document.getElementById("fam-description");
-    const aliases = document.getElementById("fam-aliases");
+    const aliasInput = document.getElementById("fam-alias-input");
     if (form) form.hidden = false;
     if (category) category.value = String(Number(item.category_id || 0));
     if (name) name.value = item.name || "";
     if (description) description.value = item.description || "";
-    if (aliases) aliases.value = Array.isArray(item.aliases) ? item.aliases.join("\n") : "";
+    if (aliasInput) aliasInput.value = "";
+    this.setAliases(item.aliases);
     this.renderList();
     this.updateFormState();
   }
@@ -126,12 +130,13 @@ export class ManagementFamiliesController {
     const category = document.getElementById("fam-category");
     const name = document.getElementById("fam-name");
     const description = document.getElementById("fam-description");
-    const aliases = document.getElementById("fam-aliases");
+    const aliasInput = document.getElementById("fam-alias-input");
     if (form) form.hidden = false;
     if (category) category.value = "";
     if (name) name.value = "";
     if (description) description.value = "";
-    if (aliases) aliases.value = "";
+    if (aliasInput) aliasInput.value = "";
+    this.setAliases([]);
     this.renderList();
     this.updateFormState();
   }
@@ -159,7 +164,7 @@ export class ManagementFamiliesController {
     const category_id = Number(document.getElementById("fam-category")?.value ?? 0);
     const name = document.getElementById("fam-name")?.value ?? "";
     const description = document.getElementById("fam-description")?.value ?? "";
-    const aliases = this.parseAliases(document.getElementById("fam-aliases")?.value ?? "");
+    const aliases = [...this.aliases];
     const slug = slugify(name);
     const res = await window.httpClient.createFamily({ category_id, name, slug, description, aliases });
     this.setStatus(res.success ? "Oeuvre creee" : (res.error || "Erreur"), res.success);
@@ -174,7 +179,7 @@ export class ManagementFamiliesController {
     const category_id = Number(document.getElementById("fam-category")?.value ?? 0);
     const name = document.getElementById("fam-name")?.value ?? "";
     const description = document.getElementById("fam-description")?.value ?? "";
-    const aliases = this.parseAliases(document.getElementById("fam-aliases")?.value ?? "");
+    const aliases = [...this.aliases];
     const slug = slugify(name);
     const res = await window.httpClient.updateFamily({ id: this.selectedId, category_id, name, slug, description, aliases });
     this.setStatus(res.success ? "Oeuvre mise a jour" : (res.error || "Erreur"), res.success);
@@ -206,6 +211,62 @@ export class ManagementFamiliesController {
     });
   }
 
+  handleAliasInputKeydown(event) {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    this.addAliasFromInput();
+  }
+
+  addAliasFromInput() {
+    const input = document.getElementById("fam-alias-input");
+    if (!input) return;
+    const value = String(input.value || "").trim();
+    if (!value) return;
+
+    const nextAliases = [...this.aliases];
+    this.parseAliases(value).forEach((alias) => {
+      if (this.hasAlias(nextAliases, alias)) return;
+      nextAliases.push(alias);
+    });
+
+    input.value = "";
+    this.setAliases(nextAliases);
+  }
+
+  setAliases(values) {
+    this.aliases = this.parseAliases(Array.isArray(values) ? values.join("\n") : values);
+    this.renderAliasList();
+  }
+
+  renderAliasList() {
+    const list = document.getElementById("fam-alias-list");
+    if (!list) return;
+
+    if (!this.aliases.length) {
+      list.innerHTML = `
+        <div class="mq-alias-empty">
+          <span>Aucun alias ajoute pour le moment.</span>
+        </div>
+      `;
+      return;
+    }
+
+    list.innerHTML = this.aliases.map((alias, index) => `
+      <div class="mq-alias-item">
+        <span>${this.escapeHtml(alias)}</span>
+        <button type="button" class="mq-danger mq-alias-item__remove" data-alias-index="${index}" aria-label="Supprimer l'alias ${this.escapeHtml(alias)}">X</button>
+      </div>
+    `).join("");
+
+    list.querySelectorAll("[data-alias-index]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const aliasIndex = Number(button.dataset.aliasIndex);
+        this.aliases = this.aliases.filter((_, index) => index !== aliasIndex);
+        this.renderAliasList();
+      });
+    });
+  }
+
   parseAliases(rawValue) {
     const seen = new Set();
     const values = String(rawValue || "")
@@ -224,6 +285,19 @@ export class ManagementFamiliesController {
     });
   }
 
+  hasAlias(aliases, value) {
+    const key = this.normalizeAlias(value);
+    return aliases.some((alias) => this.normalizeAlias(alias) === key);
+  }
+
+  normalizeAlias(value) {
+    return String(value || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .trim();
+  }
+
   renderAliasPreview(aliases) {
     if (!Array.isArray(aliases) || !aliases.length) return "";
     const preview = aliases.slice(0, 3).map((alias) => this.escapeHtml(alias)).join(" · ");
@@ -235,6 +309,8 @@ export class ManagementFamiliesController {
     return String(value)
       .replaceAll("&", "&amp;")
       .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;");
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#39;");
   }
 }

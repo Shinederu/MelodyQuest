@@ -62,11 +62,17 @@
         </div>
 
         <div class="mq-field">
-          <label for="fam-aliases">Alias acceptes</label>
-          <textarea id="fam-aliases" rows="5" placeholder="Un alias par ligne&#10;Ex: GTA V&#10;GTA 5"></textarea>
+          <label for="fam-alias-input">Alias acceptes</label>
+          <div class="mq-alias-editor">
+            <div class="mq-alias-editor__add">
+              <input id="fam-alias-input" type="text" placeholder="Ex: GTA V" />
+              <button id="btn-fam-add-alias" type="button" class="mq-secondary mq-inline-btn">Ajouter alias</button>
+            </div>
+            <div id="fam-alias-list" class="mq-alias-list" aria-live="polite"></div>
+          </div>
         </div>
 
-        <p class="mq-muted">Le slug technique est genere automatiquement a partir du nom. Les alias servent a accepter plusieurs formulations de la meme oeuvre pendant la partie.</p>
+        <p class="mq-muted">Le slug technique est genere automatiquement a partir du nom. Ajoute ensuite les formulations alternatives de la meme oeuvre une par une.</p>
       </div>
       <div class="mq-admin-form-actions">
         <button id="btn-fam-create" type="button">Ajouter</button>
