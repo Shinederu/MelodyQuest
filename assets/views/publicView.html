@@ -1,40 +1,89 @@
 <section class="mq-page">
-  <header class="mq-page-header">
-    <h1>MelodyQuest</h1>
-    <p>Un jeu musical multijoueur pour reconnaitre les morceaux, affronter ses amis et gerer ses propres salons de partie.</p>
+  <header class="mq-page-header mq-page-header--hero">
+    <div class="mq-kicker">Blindtest multijoueur</div>
+    <div class="mq-hero-grid">
+      <div>
+        <h1>MelodyQuest</h1>
+        <p>Un salon musical lumineux pour lancer des parties rapidement, retrouver ses univers preferes et faire jouer tout le monde sans interface agressive ni surcharge visuelle.</p>
+        <div class="mq-chip-row">
+          <span class="mq-chip">Lobbies publics ou prives</span>
+          <span class="mq-chip">Lecture YouTube synchronisee</span>
+          <span class="mq-chip">Catalogue musical admin</span>
+        </div>
+      </div>
+
+      <aside class="mq-hero-panel">
+        <div class="mq-kicker">Pourquoi ca marche</div>
+        <p class="mq-hero-note">MelodyQuest vise une interface simple, douce et lisible pour convenir aussi bien a une partie rapide entre amis qu'a une session plus longue.</p>
+        <div class="mq-stat-grid">
+          <article class="mq-stat">
+            <span>Acces</span>
+            <strong>Connexion en quelques secondes</strong>
+          </article>
+          <article class="mq-stat">
+            <span>Ambiance</span>
+            <strong>Theme clair, confortable et chaleureux</strong>
+          </article>
+          <article class="mq-stat">
+            <span>Jeu</span>
+            <strong>Des manches courtes faciles a partager</strong>
+          </article>
+        </div>
+      </aside>
+    </div>
   </header>
 
-  <div class="mq-two-cols">
-    <section class="mq-card">
-      <h2>Connexion</h2>
-      <form id="login-form" method="post" action="#/public" autocomplete="on">
-        <label for="login-username">Nom d'utilisateur</label>
-        <input type="text" id="login-username" name="username" autocomplete="username" maxlength="254" size="30" />
+  <div class="mq-two-cols mq-two-cols--balanced">
+    <section class="mq-card mq-card--soft">
+      <div class="mq-card-heading">
+        <div class="mq-kicker">Acces rapide</div>
+        <h2>Connexion</h2>
+        <p class="mq-card-copy">Entre dans ton compte pour rejoindre un lobby en direct, en creer un nouveau ou administrer le catalogue musical.</p>
+      </div>
+      <form id="login-form" method="post" action="#/public" autocomplete="on" class="mq-form-stack">
+        <div class="mq-field">
+          <label for="login-username">Nom d'utilisateur</label>
+          <input type="text" id="login-username" name="username" autocomplete="username" maxlength="254" size="30" placeholder="Ton pseudo" />
+        </div>
 
-        <label for="login-password">Mot de passe</label>
-        <input type="password" id="login-password" name="password" autocomplete="current-password" maxlength="254" size="30" />
+        <div class="mq-field">
+          <label for="login-password">Mot de passe</label>
+          <input type="password" id="login-password" name="password" autocomplete="current-password" maxlength="254" size="30" placeholder="Ton mot de passe" />
+        </div>
 
         <button id="btn-login" type="submit">Se connecter</button>
       </form>
     </section>
 
-    <section class="mq-card">
-      <div class="mq-row" style="justify-content:space-between;">
-        <h2>Inscription</h2>
+    <section class="mq-card mq-card--accent">
+      <div class="mq-row" style="justify-content: space-between;">
+        <div class="mq-card-heading" style="margin-bottom: 0;">
+          <div class="mq-kicker">Nouveau joueur</div>
+          <h2>Inscription</h2>
+        </div>
         <button id="btn-toggle-register" type="button" class="mq-secondary">Afficher</button>
       </div>
-      <form id="register-form" method="post" action="#/public" autocomplete="on" hidden>
-        <label for="register-username">Nom d'utilisateur</label>
-        <input type="text" id="register-username" name="username" autocomplete="username" required minlength="1" maxlength="254" size="30" />
+      <p class="mq-card-copy">Cree un compte pour sauvegarder ton acces et rejoindre les parties depuis n'importe quel lobby MelodyQuest.</p>
+      <form id="register-form" method="post" action="#/public" autocomplete="on" class="mq-form-stack" hidden>
+        <div class="mq-field">
+          <label for="register-username">Nom d'utilisateur</label>
+          <input type="text" id="register-username" name="username" autocomplete="username" required minlength="1" maxlength="254" size="30" placeholder="Choisis un pseudo" />
+        </div>
 
-        <label for="register-email">Adresse e-mail</label>
-        <input type="email" id="register-email" name="email" autocomplete="email" required minlength="1" maxlength="254" size="30" />
+        <div class="mq-field">
+          <label for="register-email">Adresse e-mail</label>
+          <input type="email" id="register-email" name="email" autocomplete="email" required minlength="1" maxlength="254" size="30" placeholder="nom@domaine.ch" />
+        </div>
 
-        <label for="register-password">Mot de passe</label>
-        <input type="password" id="register-password" name="new-password" autocomplete="new-password" maxlength="254" size="30" />
+        <div class="mq-field">
+          <label for="register-password">Mot de passe</label>
+          <input type="password" id="register-password" name="new-password" autocomplete="new-password" maxlength="254" size="30" placeholder="Minimum conseille: un mot de passe unique" />
+        </div>
 
-        <label for="register-confirm-password">Confirmer le mot de passe</label>
-        <input type="password" id="register-confirm-password" name="confirm-password" autocomplete="new-password" maxlength="254" size="30" />
+        <div class="mq-field">
+          <label for="register-confirm-password">Confirmer le mot de passe</label>
+          <input type="password" id="register-confirm-password" name="confirm-password" autocomplete="new-password" maxlength="254" size="30" placeholder="Retape le mot de passe" />
+        </div>
 
         <button id="btn-register" type="submit">S'inscrire</button>
       </form>

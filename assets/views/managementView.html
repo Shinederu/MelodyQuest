@@ -1,18 +1,48 @@
 <section class="mq-page">
-  <header class="mq-page-header">
-    <h1>Management</h1>
-    <p>Gestion des categories, des familles et des musiques.</p>
+  <header class="mq-page-header mq-page-header--hero">
+    <div class="mq-kicker">Administration</div>
+    <div class="mq-hero-grid">
+      <div>
+        <h1>Management</h1>
+        <p>Gestion des categories, des familles et des musiques depuis un hub unique plus lisible et plus coherent avec le reste de l'application.</p>
+      </div>
+
+      <aside class="mq-hero-panel">
+        <div class="mq-stat-grid">
+          <article class="mq-stat">
+            <span>Catalogue</span>
+            <strong>Organise l'univers du blindtest</strong>
+          </article>
+          <article class="mq-stat">
+            <span>Edition</span>
+            <strong>Modifie rapidement les contenus actifs</strong>
+          </article>
+        </div>
+      </aside>
+    </div>
   </header>
 
-  <section class="mq-card">
+  <section class="mq-card mq-card--soft">
     <div class="mq-row">
       <button id="btn-mgmt-main" type="button" class="mq-secondary">Retour menu principal</button>
     </div>
 
     <div class="mq-three-cols">
-      <button id="btn-mgmt-categories" type="button">Categories</button>
-      <button id="btn-mgmt-families" type="button">Familles</button>
-      <button id="btn-mgmt-tracks" type="button">Musiques</button>
+      <button id="btn-mgmt-categories" type="button" class="mq-tile-button">
+        <span class="mq-kicker">Niveau 1</span>
+        <strong>Categories</strong>
+        <span>Definir les grands univers musicaux proposes aux joueurs.</span>
+      </button>
+      <button id="btn-mgmt-families" type="button" class="mq-tile-button">
+        <span class="mq-kicker">Niveau 2</span>
+        <strong>Familles</strong>
+        <span>Rassembler les themes et variantes autour d'une meme licence.</span>
+      </button>
+      <button id="btn-mgmt-tracks" type="button" class="mq-tile-button">
+        <span class="mq-kicker">Niveau 3</span>
+        <strong>Musiques</strong>
+        <span>Renseigner les titres, artistes et URL YouTube jouables.</span>
+      </button>
     </div>
   </section>
 </section>

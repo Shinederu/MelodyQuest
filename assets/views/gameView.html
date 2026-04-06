@@ -1,27 +1,46 @@
 <section class="mq-page">
-  <header class="mq-page-header">
-    <h1 id="game-title">Partie en cours</h1>
-    <p id="game-meta">Chargement...</p>
+  <header class="mq-page-header mq-page-header--hero">
+    <div class="mq-kicker">Session en cours</div>
+    <div class="mq-hero-grid">
+      <div>
+        <h1 id="game-title">Partie en cours</h1>
+        <p id="game-meta">Chargement...</p>
+      </div>
+
+      <aside class="mq-hero-panel">
+        <div class="mq-kicker">Chrono</div>
+        <p id="game-timer" class="mq-chip mq-chip--timer">--</p>
+        <p id="game-status" class="status"></p>
+        <div class="mq-actions">
+          <button id="btn-game-leave" type="button" class="mq-danger">Quitter le lobby</button>
+        </div>
+      </aside>
+    </div>
   </header>
 
   <div class="mq-two-cols">
     <section class="mq-card">
-      <h2>Participants</h2>
+      <div class="mq-card-heading">
+        <div class="mq-kicker">Joueurs</div>
+        <h2>Participants</h2>
+      </div>
       <ul id="game-players" class="mq-clean-list"></ul>
     </section>
 
-    <section class="mq-card">
-      <h2>Timer</h2>
-      <p id="game-timer" class="mq-chip">--</p>
-      <p id="game-status" class="status"></p>
-      <div class="mq-actions">
-        <button id="btn-game-leave" type="button" class="mq-danger">Quitter le lobby</button>
+    <section class="mq-card mq-card--accent">
+      <div class="mq-card-heading">
+        <div class="mq-kicker">Conseil</div>
+        <h2>Garde le rythme</h2>
+        <p class="mq-card-copy">Envoie ta reponse des que tu reconnais le morceau. Le reveal affiche la video et la solution a la fin du chrono.</p>
       </div>
     </section>
   </div>
 
-  <section class="mq-card">
-    <h2>Video</h2>
+  <section class="mq-card mq-card--soft">
+    <div class="mq-card-heading">
+      <div class="mq-kicker">Lecture</div>
+      <h2>Video</h2>
+    </div>
     <div id="game-video" class="mq-video-shell">
       <div class="mq-video-placeholder">
         <p>La video reste cachee jusqu'a la revelation.</p>
@@ -32,7 +51,10 @@
 
   <div class="mq-two-cols">
     <section class="mq-card">
-      <h2>Ta reponse</h2>
+      <div class="mq-card-heading">
+        <div class="mq-kicker">A toi de jouer</div>
+        <h2>Ta reponse</h2>
+      </div>
       <label for="game-answer">Reponse</label>
       <input id="game-answer" type="text" placeholder="Titre ou artiste" />
       <div class="mq-actions">
@@ -42,8 +64,11 @@
       </div>
     </section>
 
-    <section class="mq-card">
-      <h2>Reponses deja envoyees</h2>
+    <section class="mq-card mq-card--accent">
+      <div class="mq-card-heading">
+        <div class="mq-kicker">Activite</div>
+        <h2>Reponses deja envoyees</h2>
+      </div>
       <ul id="game-answers" class="mq-clean-list"></ul>
     </section>
   </div>

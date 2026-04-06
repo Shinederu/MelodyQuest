@@ -1,10 +1,11 @@
-﻿<section class="mq-page">
+<section class="mq-page">
   <header class="mq-page-header">
+    <div class="mq-kicker">Catalogue</div>
     <h1>Gestion des categories</h1>
     <p>Selectionne une categorie a gauche ou cree-en une nouvelle.</p>
   </header>
 
-  <section class="mq-card">
+  <section class="mq-card mq-card--soft">
     <div class="mq-row">
       <button id="btn-cat-back" type="button" class="mq-secondary">Retour management</button>
       <button id="btn-cat-refresh" type="button">Rafraichir</button>
@@ -14,14 +15,22 @@
 
   <div class="mq-two-cols">
     <section class="mq-card">
-      <h2>Liste des categories</h2>
+      <div class="mq-card-heading">
+        <div class="mq-kicker">Exploration</div>
+        <h2>Liste des categories</h2>
+      </div>
       <div id="cat-list" class="mq-admin-list"></div>
     </section>
 
-    <section class="mq-card">
-      <h2 id="cat-form-title">Nouvelle categorie</h2>
-      <label for="cat-name">Nom</label>
-      <input id="cat-name" type="text" placeholder="Ex: Dessins animes" />
+    <section class="mq-card mq-card--accent">
+      <div class="mq-card-heading">
+        <div class="mq-kicker">Edition</div>
+        <h2 id="cat-form-title">Nouvelle categorie</h2>
+      </div>
+      <div class="mq-field">
+        <label for="cat-name">Nom</label>
+        <input id="cat-name" type="text" placeholder="Ex: Dessins animes" />
+      </div>
       <p class="mq-muted">Le slug technique est genere automatiquement a partir du nom.</p>
       <div class="mq-actions">
         <button id="btn-cat-create" type="button">Ajouter</button>

@@ -1,10 +1,11 @@
-﻿<section class="mq-page">
+<section class="mq-page">
   <header class="mq-page-header">
+    <div class="mq-kicker">Catalogue</div>
     <h1>Gestion des musiques</h1>
     <p>Renseigne une famille, un titre, un artiste et l'URL YouTube complete.</p>
   </header>
 
-  <section class="mq-card">
+  <section class="mq-card mq-card--soft">
     <div class="mq-row">
       <button id="btn-track-back" type="button" class="mq-secondary">Retour management</button>
       <button id="btn-track-refresh" type="button">Rafraichir</button>
@@ -15,23 +16,37 @@
 
   <div class="mq-two-cols">
     <section class="mq-card">
-      <h2>Liste des musiques</h2>
+      <div class="mq-card-heading">
+        <div class="mq-kicker">Exploration</div>
+        <h2>Liste des musiques</h2>
+      </div>
       <div id="track-list" class="mq-admin-list"></div>
     </section>
 
-    <section id="track-form" class="mq-card" hidden>
-      <h2 id="track-form-title">Nouvelle musique</h2>
-      <label for="track-family">Famille</label>
-      <select id="track-family"></select>
+    <section id="track-form" class="mq-card mq-card--accent" hidden>
+      <div class="mq-card-heading">
+        <div class="mq-kicker">Edition</div>
+        <h2 id="track-form-title">Nouvelle musique</h2>
+      </div>
+      <div class="mq-field">
+        <label for="track-family">Famille</label>
+        <select id="track-family"></select>
+      </div>
 
-      <label for="track-title">Titre</label>
-      <input id="track-title" type="text" placeholder="Titre de la musique" />
+      <div class="mq-field">
+        <label for="track-title">Titre</label>
+        <input id="track-title" type="text" placeholder="Titre de la musique" />
+      </div>
 
-      <label for="track-artist">Artiste</label>
-      <input id="track-artist" type="text" placeholder="Artiste ou licence" />
+      <div class="mq-field">
+        <label for="track-artist">Artiste</label>
+        <input id="track-artist" type="text" placeholder="Artiste ou licence" />
+      </div>
 
-      <label for="track-youtube-url">URL YouTube complete</label>
-      <input id="track-youtube-url" type="url" placeholder="https://www.youtube.com/watch?v=..." />
+      <div class="mq-field">
+        <label for="track-youtube-url">URL YouTube complete</label>
+        <input id="track-youtube-url" type="url" placeholder="https://www.youtube.com/watch?v=..." />
+      </div>
 
       <p class="mq-muted">L'identifiant video est extrait automatiquement depuis l'URL.</p>
       <div class="mq-actions">

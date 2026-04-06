@@ -3,6 +3,7 @@ import { HeaderModel } from "../model/HeaderModel.js";
 import { PublicController } from "./PublicController.js";
 import { MainController } from "./MainController.js";
 import { LobbyController } from "./LobbyController.js";
+import { LobbyListController } from "./LobbyListController.js";
 import { GameController } from "./GameController.js";
 import { ResultController } from "./ResultController.js";
 import { ManagementController } from "./ManagementController.js";
@@ -16,7 +17,7 @@ let headerManager = null;
 const ROUTES = {
   public: { auth: false, admin: false, controller: PublicController },
   main: { auth: true, admin: false, controller: MainController },
-  "lobby-list": { auth: true, admin: false, controller: MainController },
+  "lobby-list": { auth: true, admin: false, controller: LobbyListController },
   lobby: { auth: true, admin: false, controller: LobbyController },
   game: { auth: true, admin: false, controller: GameController },
   result: { auth: true, admin: false, controller: ResultController },

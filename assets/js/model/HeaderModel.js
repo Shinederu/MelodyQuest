@@ -1,5 +1,10 @@
 export class HeaderModel {
   refresh(headerElement, view, role, username, isAdmin = false) {
+    if (view === "public") {
+      headerElement.innerHTML = "";
+      return;
+    }
+
     const canLogout = view !== "public";
 
     const buttonHtml = canLogout
@@ -7,12 +12,19 @@ export class HeaderModel {
       : "";
 
     const roleLabel = isAdmin ? "admin" : (role || "user");
-    const greeting = `<div>Bonjour ${username || "joueur"} (${roleLabel})</div>`;
+    const safeUsername = this.escapeHtml(username || "joueur");
+    const safeRole = this.escapeHtml(roleLabel);
 
     const headerHtml = `
-      <div class="mq-card" style="display:flex;align-items:center;justify-content:space-between;gap:0.75rem;">
-        ${greeting}
-        ${buttonHtml}
+      <div class="mq-topbar">
+        <div class="mq-topbar__brand">
+          <div class="mq-topbar__eyebrow">MelodyQuest</div>
+          <div class="mq-topbar__user">Bonjour ${safeUsername}</div>
+        </div>
+        <div class="mq-topbar__actions">
+          <span class="mq-topbar__role">${safeRole}</span>
+          ${buttonHtml}
+        </div>
       </div>
     `;
 
@@ -30,5 +42,13 @@ export class HeaderModel {
         }
       });
     }
+  }
+
+  escapeHtml(value) {
+    return String(value)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;");
   }
 }

@@ -1,10 +1,11 @@
-﻿<section class="mq-page">
+<section class="mq-page">
   <header class="mq-page-header">
+    <div class="mq-kicker">Catalogue</div>
     <h1>Gestion des familles</h1>
     <p>Chaque famille appartient a une categorie et regroupe plusieurs musiques proches.</p>
   </header>
 
-  <section class="mq-card">
+  <section class="mq-card mq-card--soft">
     <div class="mq-row">
       <button id="btn-fam-back" type="button" class="mq-secondary">Retour management</button>
       <button id="btn-fam-refresh" type="button">Rafraichir</button>
@@ -15,20 +16,32 @@
 
   <div class="mq-two-cols">
     <section class="mq-card">
-      <h2>Liste des familles</h2>
+      <div class="mq-card-heading">
+        <div class="mq-kicker">Exploration</div>
+        <h2>Liste des familles</h2>
+      </div>
       <div id="fam-list" class="mq-admin-list"></div>
     </section>
 
-    <section id="fam-form" class="mq-card" hidden>
-      <h2 id="fam-form-title">Nouvelle famille</h2>
-      <label for="fam-category">Categorie</label>
-      <select id="fam-category"></select>
+    <section id="fam-form" class="mq-card mq-card--accent" hidden>
+      <div class="mq-card-heading">
+        <div class="mq-kicker">Edition</div>
+        <h2 id="fam-form-title">Nouvelle famille</h2>
+      </div>
+      <div class="mq-field">
+        <label for="fam-category">Categorie</label>
+        <select id="fam-category"></select>
+      </div>
 
-      <label for="fam-name">Nom</label>
-      <input id="fam-name" type="text" placeholder="Ex: Pokemon" />
+      <div class="mq-field">
+        <label for="fam-name">Nom</label>
+        <input id="fam-name" type="text" placeholder="Ex: Pokemon" />
+      </div>
 
-      <label for="fam-description">Description</label>
-      <input id="fam-description" type="text" placeholder="Description courte optionnelle" />
+      <div class="mq-field">
+        <label for="fam-description">Description</label>
+        <input id="fam-description" type="text" placeholder="Description courte optionnelle" />
+      </div>
 
       <p class="mq-muted">Le slug technique est genere automatiquement a partir du nom.</p>
       <div class="mq-actions">
