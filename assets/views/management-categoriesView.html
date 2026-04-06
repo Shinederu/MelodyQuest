@@ -6,33 +6,50 @@
   </header>
 
   <section class="mq-card mq-card--soft">
-    <div class="mq-row">
-      <button id="btn-cat-back" type="button" class="mq-secondary">Retour management</button>
-      <button id="btn-cat-refresh" type="button">Rafraichir</button>
+    <div class="mq-admin-toolbar">
+      <div class="mq-actions">
+        <button id="btn-cat-back" type="button" class="mq-secondary">Retour management</button>
+        <button id="btn-cat-refresh" type="button">Rafraichir</button>
+      </div>
+      <div class="mq-admin-toolbar__meta">
+        <div class="mq-admin-toolbar__cluster">
+          <span id="cat-count" class="mq-chip">0 categories</span>
+          <span class="mq-chip">Base du catalogue</span>
+        </div>
+        <p id="cat-status" class="status">Selectionne une categorie ou cree-en une nouvelle.</p>
+      </div>
     </div>
-    <p id="cat-status" class="status"></p>
   </section>
 
-  <div class="mq-two-cols">
-    <section class="mq-card">
-      <div class="mq-card-heading">
-        <div class="mq-kicker">Exploration</div>
-        <h2>Liste des categories</h2>
+  <div class="mq-admin-workspace">
+    <section class="mq-card mq-admin-pane">
+      <div class="mq-admin-pane__header">
+        <div class="mq-card-heading">
+          <div class="mq-kicker">Exploration</div>
+          <h2>Categories disponibles</h2>
+          <p class="mq-card-copy">Selection rapide a gauche, edition detaillee a droite.</p>
+        </div>
+        <span id="cat-count-inline" class="mq-chip">0 categories</span>
       </div>
-      <div id="cat-list" class="mq-admin-list"></div>
+      <div class="mq-admin-list-shell">
+        <div id="cat-list" class="mq-admin-list"></div>
+      </div>
     </section>
 
-    <section class="mq-card mq-card--accent">
+    <section class="mq-card mq-card--accent mq-admin-pane mq-admin-pane--sticky">
       <div class="mq-card-heading">
         <div class="mq-kicker">Edition</div>
         <h2 id="cat-form-title">Nouvelle categorie</h2>
+        <p id="cat-form-helper" class="mq-admin-helper">Mode creation actif. Le slug sera calcule automatiquement a partir du nom.</p>
       </div>
-      <div class="mq-field">
-        <label for="cat-name">Nom</label>
-        <input id="cat-name" type="text" placeholder="Ex: Dessins animes" />
+      <div class="mq-admin-form-grid">
+        <div class="mq-field">
+          <label for="cat-name">Nom</label>
+          <input id="cat-name" type="text" placeholder="Ex: Dessins animes" />
+        </div>
+        <p class="mq-muted">Le slug technique est genere automatiquement a partir du nom.</p>
       </div>
-      <p class="mq-muted">Le slug technique est genere automatiquement a partir du nom.</p>
-      <div class="mq-actions">
+      <div class="mq-admin-form-actions">
         <button id="btn-cat-create" type="button">Ajouter</button>
         <button id="btn-cat-update" type="button">Mettre a jour</button>
         <button id="btn-cat-reset" type="button" class="mq-secondary">Vider</button>

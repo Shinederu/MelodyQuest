@@ -22,26 +22,52 @@
     </div>
   </header>
 
-  <section class="mq-card mq-card--soft">
-    <div class="mq-row">
-      <button id="btn-mgmt-main" type="button" class="mq-secondary">Retour menu principal</button>
+  <section class="mq-card mq-card--soft mq-admin-dashboard">
+    <div class="mq-admin-toolbar">
+      <div class="mq-row">
+        <button id="btn-mgmt-main" type="button" class="mq-secondary">Retour menu principal</button>
+      </div>
+      <div class="mq-admin-toolbar__cluster">
+        <span class="mq-chip">3 niveaux</span>
+        <span class="mq-chip">Workflow catalogue</span>
+      </div>
     </div>
 
-    <div class="mq-three-cols">
-      <button id="btn-mgmt-categories" type="button" class="mq-tile-button">
-        <span class="mq-kicker">Niveau 1</span>
-        <strong>Categories</strong>
-        <span>Definir les grands univers musicaux proposes aux joueurs.</span>
+    <div class="mq-admin-step-grid">
+      <button id="btn-mgmt-categories" type="button" class="mq-admin-nav-card">
+        <div>
+          <span class="mq-kicker">Etape 1</span>
+          <strong>Categories</strong>
+          <p>Definis les grandes thematiques proposees dans les lobbies avant de descendre au niveau detail.</p>
+        </div>
+        <div class="mq-admin-nav-card__footer">
+          <span class="mq-admin-nav-card__index">01</span>
+          <span>Ouvrir le niveau parent</span>
+        </div>
       </button>
-      <button id="btn-mgmt-families" type="button" class="mq-tile-button">
-        <span class="mq-kicker">Niveau 2</span>
-        <strong>Familles</strong>
-        <span>Rassembler les themes et variantes autour d'une meme licence.</span>
+
+      <button id="btn-mgmt-families" type="button" class="mq-admin-nav-card">
+        <div>
+          <span class="mq-kicker">Etape 2</span>
+          <strong>Familles</strong>
+          <p>Regroupe les morceaux autour d'une meme licence pour garder un catalogue clair et facile a maintenir.</p>
+        </div>
+        <div class="mq-admin-nav-card__footer">
+          <span class="mq-admin-nav-card__index">02</span>
+          <span>Structurer les sous-ensembles</span>
+        </div>
       </button>
-      <button id="btn-mgmt-tracks" type="button" class="mq-tile-button">
-        <span class="mq-kicker">Niveau 3</span>
-        <strong>Musiques</strong>
-        <span>Renseigner les titres, artistes et URL YouTube jouables.</span>
+
+      <button id="btn-mgmt-tracks" type="button" class="mq-admin-nav-card">
+        <div>
+          <span class="mq-kicker">Etape 3</span>
+          <strong>Musiques</strong>
+          <p>Ajoute les titres jouables, associe-les a la bonne famille et verifie la source YouTube.</p>
+        </div>
+        <div class="mq-admin-nav-card__footer">
+          <span class="mq-admin-nav-card__index">03</span>
+          <span>Finaliser le contenu</span>
+        </div>
       </button>
     </div>
   </section>

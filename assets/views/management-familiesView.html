@@ -6,45 +6,64 @@
   </header>
 
   <section class="mq-card mq-card--soft">
-    <div class="mq-row">
-      <button id="btn-fam-back" type="button" class="mq-secondary">Retour management</button>
-      <button id="btn-fam-refresh" type="button">Rafraichir</button>
-      <button id="btn-fam-add" type="button">Ajouter une famille</button>
+    <div class="mq-admin-toolbar">
+      <div class="mq-actions">
+        <button id="btn-fam-back" type="button" class="mq-secondary">Retour management</button>
+        <button id="btn-fam-refresh" type="button">Rafraichir</button>
+        <button id="btn-fam-add" type="button">Ajouter une famille</button>
+      </div>
+      <div class="mq-admin-toolbar__meta">
+        <div class="mq-admin-toolbar__cluster">
+          <span id="fam-count" class="mq-chip">0 familles</span>
+          <span class="mq-chip">Niveau intermediaire</span>
+        </div>
+        <p id="fam-status" class="status">Choisis une famille existante ou prepare une nouvelle entree.</p>
+      </div>
     </div>
-    <p id="fam-status" class="status"></p>
   </section>
 
-  <div class="mq-two-cols">
-    <section class="mq-card">
-      <div class="mq-card-heading">
-        <div class="mq-kicker">Exploration</div>
-        <h2>Liste des familles</h2>
+  <div class="mq-admin-workspace">
+    <section class="mq-card mq-admin-pane">
+      <div class="mq-admin-pane__header">
+        <div class="mq-card-heading">
+          <div class="mq-kicker">Exploration</div>
+          <h2>Liste des familles</h2>
+          <p class="mq-card-copy">Selectionne une famille pour l'editer ou clique sur Ajouter pour repartir d'un formulaire vide.</p>
+        </div>
+        <span id="fam-count-inline" class="mq-chip">0 familles</span>
       </div>
-      <div id="fam-list" class="mq-admin-list"></div>
+      <div class="mq-admin-list-shell">
+        <div id="fam-list" class="mq-admin-list"></div>
+      </div>
     </section>
 
-    <section id="fam-form" class="mq-card mq-card--accent" hidden>
+    <section class="mq-card mq-card--accent mq-admin-pane mq-admin-pane--sticky">
       <div class="mq-card-heading">
         <div class="mq-kicker">Edition</div>
         <h2 id="fam-form-title">Nouvelle famille</h2>
+        <p id="fam-form-helper" class="mq-admin-helper">Mode creation actif. Associe d'abord la famille a une categorie, puis renseigne son nom.</p>
       </div>
-      <div class="mq-field">
-        <label for="fam-category">Categorie</label>
-        <select id="fam-category"></select>
-      </div>
+      <div id="fam-form" class="mq-admin-form-grid">
+        <div class="mq-admin-form-split">
+          <div class="mq-field">
+            <label for="fam-category">Categorie</label>
+            <select id="fam-category"></select>
+          </div>
 
-      <div class="mq-field">
-        <label for="fam-name">Nom</label>
-        <input id="fam-name" type="text" placeholder="Ex: Pokemon" />
-      </div>
+          <div class="mq-field">
+            <label for="fam-name">Nom</label>
+            <input id="fam-name" type="text" placeholder="Ex: Pokemon" />
+          </div>
+        </div>
 
-      <div class="mq-field">
-        <label for="fam-description">Description</label>
-        <input id="fam-description" type="text" placeholder="Description courte optionnelle" />
-      </div>
+        <div class="mq-field">
+          <label for="fam-description">Description</label>
+          <input id="fam-description" type="text" placeholder="Description courte optionnelle" />
+        </div>
 
-      <p class="mq-muted">Le slug technique est genere automatiquement a partir du nom.</p>
-      <div class="mq-actions">
+        <p class="mq-muted">Le slug technique est genere automatiquement a partir du nom.</p>
+      </div>
+      <div class="mq-admin-form-actions">
         <button id="btn-fam-create" type="button">Ajouter</button>
         <button id="btn-fam-update" type="button">Mettre a jour</button>
         <button id="btn-fam-reset" type="button" class="mq-secondary">Vider</button>

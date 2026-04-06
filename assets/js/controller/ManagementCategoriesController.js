@@ -28,6 +28,7 @@ export class ManagementCategoriesController {
     if (!res.success) return;
 
     this.items = res.data?.items ?? [];
+    this.renderCounters();
     this.renderList();
 
     if (this.selectedId) {
@@ -45,10 +46,22 @@ export class ManagementCategoriesController {
     const list = document.getElementById("cat-list");
     if (!list) return;
 
+    if (!this.items.length) {
+      list.innerHTML = `
+        <div class="mq-admin-empty">
+          <strong>Aucune categorie</strong>
+          <p class="mq-muted">Commence par creer une premiere categorie pour poser la base du catalogue.</p>
+        </div>
+      `;
+      return;
+    }
+
     list.innerHTML = this.items.map((item) => `
       <button type="button" class="mq-admin-item ${Number(item.id) === Number(this.selectedId) ? "is-selected" : ""}" data-id="${Number(item.id)}">
         <strong>${this.escapeHtml(item.name)}</strong>
-        <span class="mq-muted">${this.escapeHtml(item.slug)}</span>
+        <div class="mq-admin-item__meta">
+          <span class="mq-admin-badge">${this.escapeHtml(item.slug)}</span>
+        </div>
       </button>
     `).join("");
 
@@ -78,11 +91,22 @@ export class ManagementCategoriesController {
 
   updateSelectionState() {
     const title = document.getElementById("cat-form-title");
+    const helper = document.getElementById("cat-form-helper");
+    const createBtn = document.getElementById("btn-cat-create");
     const updateBtn = document.getElementById("btn-cat-update");
     const deleteBtn = document.getElementById("btn-cat-delete");
+    const resetBtn = document.getElementById("btn-cat-reset");
+
     if (title) title.textContent = this.selectedId ? "Modifier la categorie" : "Nouvelle categorie";
+    if (helper) {
+      helper.textContent = this.selectedId
+        ? "Mode modification actif. Utilise le reset pour repartir sur une nouvelle categorie."
+        : "Mode creation actif. Le slug sera calcule automatiquement a partir du nom.";
+    }
+    if (createBtn) createBtn.disabled = !!this.selectedId;
     if (updateBtn) updateBtn.disabled = !this.selectedId;
     if (deleteBtn) deleteBtn.disabled = !this.selectedId;
+    if (resetBtn) resetBtn.textContent = this.selectedId ? "Nouvelle categorie" : "Vider";
   }
 
   async create() {
@@ -120,6 +144,14 @@ export class ManagementCategoriesController {
     if (!el) return;
     el.textContent = text;
     el.className = ok ? "status success" : "status error";
+  }
+
+  renderCounters() {
+    const text = `${this.items.length} ${this.items.length > 1 ? "categories" : "categorie"}`;
+    ["cat-count", "cat-count-inline"].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = text;
+    });
   }
 
   escapeHtml(value) {

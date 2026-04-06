@@ -6,50 +6,71 @@
   </header>
 
   <section class="mq-card mq-card--soft">
-    <div class="mq-row">
-      <button id="btn-track-back" type="button" class="mq-secondary">Retour management</button>
-      <button id="btn-track-refresh" type="button">Rafraichir</button>
-      <button id="btn-track-add" type="button">Ajouter une musique</button>
+    <div class="mq-admin-toolbar">
+      <div class="mq-actions">
+        <button id="btn-track-back" type="button" class="mq-secondary">Retour management</button>
+        <button id="btn-track-refresh" type="button">Rafraichir</button>
+        <button id="btn-track-add" type="button">Ajouter une musique</button>
+      </div>
+      <div class="mq-admin-toolbar__meta">
+        <div class="mq-admin-toolbar__cluster">
+          <span id="track-count" class="mq-chip">0 musiques</span>
+          <span class="mq-chip">Niveau jouable</span>
+        </div>
+        <p id="track-status" class="status">Selectionne une musique pour l'editer ou ajoute une nouvelle entree.</p>
+      </div>
     </div>
-    <p id="track-status" class="status"></p>
   </section>
 
-  <div class="mq-two-cols">
-    <section class="mq-card">
-      <div class="mq-card-heading">
-        <div class="mq-kicker">Exploration</div>
-        <h2>Liste des musiques</h2>
+  <div class="mq-admin-workspace">
+    <section class="mq-card mq-admin-pane">
+      <div class="mq-admin-pane__header">
+        <div class="mq-card-heading">
+          <div class="mq-kicker">Exploration</div>
+          <h2>Liste des musiques</h2>
+          <p class="mq-card-copy">Utilise la liste comme navigateur, puis complete les details dans l'editeur pour garder une saisie confortable.</p>
+        </div>
+        <span id="track-count-inline" class="mq-chip">0 musiques</span>
       </div>
-      <div id="track-list" class="mq-admin-list"></div>
+      <div class="mq-admin-list-shell">
+        <div id="track-list" class="mq-admin-list"></div>
+      </div>
     </section>
 
-    <section id="track-form" class="mq-card mq-card--accent" hidden>
+    <section class="mq-card mq-card--accent mq-admin-pane mq-admin-pane--sticky">
       <div class="mq-card-heading">
         <div class="mq-kicker">Edition</div>
         <h2 id="track-form-title">Nouvelle musique</h2>
+        <p id="track-form-helper" class="mq-admin-helper">Mode creation actif. Verifie surtout la famille cible et l'URL YouTube avant validation.</p>
       </div>
-      <div class="mq-field">
-        <label for="track-family">Famille</label>
-        <select id="track-family"></select>
-      </div>
+      <div id="track-form" class="mq-admin-form-grid">
+        <div class="mq-admin-form-split">
+          <div class="mq-field">
+            <label for="track-family">Famille</label>
+            <select id="track-family"></select>
+          </div>
 
-      <div class="mq-field">
-        <label for="track-title">Titre</label>
-        <input id="track-title" type="text" placeholder="Titre de la musique" />
-      </div>
+          <div class="mq-field">
+            <label for="track-title">Titre</label>
+            <input id="track-title" type="text" placeholder="Titre de la musique" />
+          </div>
+        </div>
 
-      <div class="mq-field">
-        <label for="track-artist">Artiste</label>
-        <input id="track-artist" type="text" placeholder="Artiste ou licence" />
-      </div>
+        <div class="mq-admin-form-split">
+          <div class="mq-field">
+            <label for="track-artist">Artiste</label>
+            <input id="track-artist" type="text" placeholder="Artiste ou licence" />
+          </div>
 
-      <div class="mq-field">
-        <label for="track-youtube-url">URL YouTube complete</label>
-        <input id="track-youtube-url" type="url" placeholder="https://www.youtube.com/watch?v=..." />
-      </div>
+          <div class="mq-field">
+            <label for="track-youtube-url">URL YouTube complete</label>
+            <input id="track-youtube-url" type="url" placeholder="https://www.youtube.com/watch?v=..." />
+          </div>
+        </div>
 
-      <p class="mq-muted">L'identifiant video est extrait automatiquement depuis l'URL.</p>
-      <div class="mq-actions">
+        <p class="mq-muted">L'identifiant video est extrait automatiquement depuis l'URL.</p>
+      </div>
+      <div class="mq-admin-form-actions">
         <button id="btn-track-create" type="button">Ajouter</button>
         <button id="btn-track-update" type="button">Mettre a jour</button>
         <button id="btn-track-reset" type="button" class="mq-secondary">Vider</button>

@@ -27,7 +27,7 @@ export class ManagementTracksController {
     this.items = [];
     this.families = [];
     this.selectedId = null;
-    this.formVisible = false;
+    this.formVisible = true;
 
     document.getElementById("btn-track-back")?.addEventListener("click", () => window.appCtrl.changeView("management"));
     document.getElementById("btn-track-refresh")?.addEventListener("click", () => this.refresh());
@@ -51,6 +51,7 @@ export class ManagementTracksController {
 
     this.items = trackRes.data?.items ?? [];
     this.families = famRes.success ? (famRes.data?.items ?? []) : [];
+    this.renderCounters();
     this.renderFamilyOptions();
     this.renderList();
 
@@ -60,11 +61,6 @@ export class ManagementTracksController {
         this.fillForm(selected);
         return;
       }
-    }
-
-    if (!this.formVisible) {
-      this.hideForm();
-      return;
     }
 
     this.resetForm();
@@ -84,10 +80,23 @@ export class ManagementTracksController {
     const list = document.getElementById("track-list");
     if (!list) return;
 
+    if (!this.items.length) {
+      list.innerHTML = `
+        <div class="mq-admin-empty">
+          <strong>Aucune musique</strong>
+          <p class="mq-muted">Ajoute un premier morceau pour commencer a alimenter les parties MelodyQuest.</p>
+        </div>
+      `;
+      return;
+    }
+
     list.innerHTML = this.items.map((item) => `
       <button type="button" class="mq-admin-item ${Number(item.id) === Number(this.selectedId) ? "is-selected" : ""}" data-id="${Number(item.id)}">
         <strong>${this.escapeHtml(item.title)}</strong>
-        <span class="mq-muted">${this.escapeHtml(item.family_name || "")}${item.artist ? ` · ${this.escapeHtml(item.artist)}` : ""}</span>
+        <div class="mq-admin-item__meta">
+          <span class="mq-admin-badge">${this.escapeHtml(item.family_name || "Sans famille")}</span>
+          ${item.artist ? `<span class="mq-muted">${this.escapeHtml(item.artist)}</span>` : ""}
+        </div>
       </button>
     `).join("");
 
@@ -124,18 +133,14 @@ export class ManagementTracksController {
     this.resetForm();
   }
 
-  hideForm() {
-    const form = document.getElementById("track-form");
-    if (form) form.hidden = true;
-    this.updateFormState();
-  }
-
   resetForm() {
     this.selectedId = null;
+    const form = document.getElementById("track-form");
     const family = document.getElementById("track-family");
     const title = document.getElementById("track-title");
     const artist = document.getElementById("track-artist");
     const url = document.getElementById("track-youtube-url");
+    if (form) form.hidden = false;
     if (family) family.value = "";
     if (title) title.value = "";
     if (artist) artist.value = "";
@@ -146,13 +151,21 @@ export class ManagementTracksController {
 
   updateFormState() {
     const title = document.getElementById("track-form-title");
+    const helper = document.getElementById("track-form-helper");
+    const createBtn = document.getElementById("btn-track-create");
     const updateBtn = document.getElementById("btn-track-update");
     const deleteBtn = document.getElementById("btn-track-delete");
     const resetBtn = document.getElementById("btn-track-reset");
     if (title) title.textContent = this.selectedId ? "Modifier la musique" : "Nouvelle musique";
+    if (helper) {
+      helper.textContent = this.selectedId
+        ? "Mode modification actif. Repars sur une nouvelle fiche pour creer une autre musique sans perdre de temps."
+        : "Mode creation actif. Verifie la famille, le titre et l'URL YouTube avant validation.";
+    }
+    if (createBtn) createBtn.disabled = !!this.selectedId;
     if (updateBtn) updateBtn.disabled = !this.selectedId;
     if (deleteBtn) deleteBtn.disabled = !this.selectedId;
-    if (resetBtn) resetBtn.textContent = this.selectedId ? "Annuler la selection" : "Vider";
+    if (resetBtn) resetBtn.textContent = this.selectedId ? "Nouvelle musique" : "Vider";
   }
 
   async create() {
@@ -198,6 +211,14 @@ export class ManagementTracksController {
     if (!el) return;
     el.textContent = text;
     el.className = ok ? "status success" : "status error";
+  }
+
+  renderCounters() {
+    const text = `${this.items.length} ${this.items.length > 1 ? "musiques" : "musique"}`;
+    ["track-count", "track-count-inline"].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = text;
+    });
   }
 
   escapeHtml(value) {

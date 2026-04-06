@@ -12,7 +12,7 @@ export class ManagementFamiliesController {
     this.items = [];
     this.categories = [];
     this.selectedId = null;
-    this.formVisible = false;
+    this.formVisible = true;
 
     document.getElementById("btn-fam-back")?.addEventListener("click", () => window.appCtrl.changeView("management"));
     document.getElementById("btn-fam-refresh")?.addEventListener("click", () => this.refresh());
@@ -36,6 +36,7 @@ export class ManagementFamiliesController {
 
     this.items = famRes.data?.items ?? [];
     this.categories = catRes.success ? (catRes.data?.items ?? []) : [];
+    this.renderCounters();
     this.renderCategoryOptions();
     this.renderList();
 
@@ -45,11 +46,6 @@ export class ManagementFamiliesController {
         this.fillForm(selected);
         return;
       }
-    }
-
-    if (!this.formVisible) {
-      this.hideForm();
-      return;
     }
 
     this.resetForm();
@@ -69,10 +65,23 @@ export class ManagementFamiliesController {
     const list = document.getElementById("fam-list");
     if (!list) return;
 
+    if (!this.items.length) {
+      list.innerHTML = `
+        <div class="mq-admin-empty">
+          <strong>Aucune famille</strong>
+          <p class="mq-muted">Ajoute une famille pour commencer a structurer les univers d'une categorie.</p>
+        </div>
+      `;
+      return;
+    }
+
     list.innerHTML = this.items.map((item) => `
       <button type="button" class="mq-admin-item ${Number(item.id) === Number(this.selectedId) ? "is-selected" : ""}" data-id="${Number(item.id)}">
         <strong>${this.escapeHtml(item.name)}</strong>
-        <span class="mq-muted">${this.escapeHtml(item.category_name || "")}</span>
+        <div class="mq-admin-item__meta">
+          <span class="mq-admin-badge">${this.escapeHtml(item.category_name || "Sans categorie")}</span>
+          ${item.description ? `<span class="mq-muted">${this.escapeHtml(item.description)}</span>` : ""}
+        </div>
       </button>
     `).join("");
 
@@ -107,17 +116,13 @@ export class ManagementFamiliesController {
     this.resetForm();
   }
 
-  hideForm() {
-    const form = document.getElementById("fam-form");
-    if (form) form.hidden = true;
-    this.updateFormState();
-  }
-
   resetForm() {
     this.selectedId = null;
+    const form = document.getElementById("fam-form");
     const category = document.getElementById("fam-category");
     const name = document.getElementById("fam-name");
     const description = document.getElementById("fam-description");
+    if (form) form.hidden = false;
     if (category) category.value = "";
     if (name) name.value = "";
     if (description) description.value = "";
@@ -127,13 +132,21 @@ export class ManagementFamiliesController {
 
   updateFormState() {
     const title = document.getElementById("fam-form-title");
+    const helper = document.getElementById("fam-form-helper");
+    const createBtn = document.getElementById("btn-fam-create");
     const updateBtn = document.getElementById("btn-fam-update");
     const deleteBtn = document.getElementById("btn-fam-delete");
     const resetBtn = document.getElementById("btn-fam-reset");
     if (title) title.textContent = this.selectedId ? "Modifier la famille" : "Nouvelle famille";
+    if (helper) {
+      helper.textContent = this.selectedId
+        ? "Mode modification actif. Utilise Ajouter ou le reset pour repartir d'une fiche vide."
+        : "Mode creation actif. Choisis d'abord une categorie, puis saisis les details de la famille.";
+    }
+    if (createBtn) createBtn.disabled = !!this.selectedId;
     if (updateBtn) updateBtn.disabled = !this.selectedId;
     if (deleteBtn) deleteBtn.disabled = !this.selectedId;
-    if (resetBtn) resetBtn.textContent = this.selectedId ? "Annuler la selection" : "Vider";
+    if (resetBtn) resetBtn.textContent = this.selectedId ? "Nouvelle famille" : "Vider";
   }
 
   async create() {
@@ -175,6 +188,14 @@ export class ManagementFamiliesController {
     if (!el) return;
     el.textContent = text;
     el.className = ok ? "status success" : "status error";
+  }
+
+  renderCounters() {
+    const text = `${this.items.length} ${this.items.length > 1 ? "familles" : "famille"}`;
+    ["fam-count", "fam-count-inline"].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = text;
+    });
   }
 
   escapeHtml(value) {
