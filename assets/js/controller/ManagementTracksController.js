@@ -30,6 +30,9 @@ export class ManagementTracksController {
     this.selectedId = null;
     this.draftCategoryId = null;
     this.draftFamilyName = "";
+    this.familySuggestions = [];
+    this.activeFamilySuggestionIndex = -1;
+    this.isFamilySuggestionOpen = false;
 
     document.getElementById("btn-track-back")?.addEventListener("click", () => window.appCtrl.changeView("management"));
     document.getElementById("btn-track-refresh")?.addEventListener("click", () => this.refresh());
@@ -40,6 +43,9 @@ export class ManagementTracksController {
     document.getElementById("btn-track-add")?.addEventListener("click", () => this.openCreateForm());
     document.getElementById("track-category")?.addEventListener("change", () => this.handleCategoryChange());
     document.getElementById("track-family-name")?.addEventListener("input", () => this.handleFamilyInput());
+    document.getElementById("track-family-name")?.addEventListener("focus", () => this.openFamilySuggestions());
+    document.getElementById("track-family-name")?.addEventListener("keydown", (event) => this.handleFamilyKeydown(event));
+    document.getElementById("track-family-name")?.addEventListener("blur", () => this.handleFamilyBlur());
 
     this.refresh();
   }
@@ -94,17 +100,64 @@ export class ManagementTracksController {
   renderFamilySuggestions() {
     const categoryId = this.getSelectedCategoryId();
     const input = document.getElementById("track-family-name");
-    const datalist = document.getElementById("track-family-suggestions");
+    const panel = document.getElementById("track-family-suggestions");
     const hint = document.getElementById("track-family-hint");
     const familyName = String(input?.value || "").trim();
-    const families = categoryId > 0
-      ? this.families.filter((item) => Number(item.category_id) === categoryId)
+    const query = this.normalizeSearch(familyName);
+    const families = this.getFamilyNamesForCategory(categoryId);
+    const exactMatch = query
+      ? families.find((item) => this.normalizeSearch(item) === query)
+      : null;
+
+    this.familySuggestions = categoryId > 0
+      ? this.buildFamilySuggestions(families, query)
       : [];
 
-    if (datalist) {
-      datalist.innerHTML = families
-        .map((item) => `<option value="${this.escapeAttribute(item.name)}"></option>`)
-        .join("");
+    if (!this.familySuggestions.length) {
+      this.activeFamilySuggestionIndex = -1;
+    } else if (this.activeFamilySuggestionIndex >= this.familySuggestions.length) {
+      this.activeFamilySuggestionIndex = this.familySuggestions.length - 1;
+    }
+
+    const showEmptyState = this.isFamilySuggestionOpen && categoryId > 0 && query && !this.familySuggestions.length;
+    const showPanel = this.isFamilySuggestionOpen && categoryId > 0 && (this.familySuggestions.length > 0 || showEmptyState);
+
+    if (panel) {
+      panel.hidden = !showPanel;
+      panel.innerHTML = this.familySuggestions.length
+        ? this.familySuggestions.map((item, index) => `
+            <button
+              type="button"
+              class="mq-autocomplete__option ${index === this.activeFamilySuggestionIndex ? "is-active" : ""}"
+              data-family-name="${this.escapeAttribute(item.name)}"
+              data-family-index="${index}"
+            >
+              <span class="mq-autocomplete__option-main">${this.escapeHtml(item.name)}</span>
+              <span class="mq-autocomplete__option-meta">
+                ${item.startsWithQuery ? "Commence par la saisie" : "Contient la saisie"}
+              </span>
+            </button>
+          `).join("")
+        : `
+            <div class="mq-autocomplete__empty">
+              Aucune oeuvre existante ne correspond. La saisie sera creee automatiquement.
+            </div>
+          `;
+
+      panel.querySelectorAll("[data-family-name]").forEach((button) => {
+        button.addEventListener("mousedown", (event) => event.preventDefault());
+        button.addEventListener("click", () => {
+          this.selectFamilySuggestion(String(button.getAttribute("data-family-name") || ""));
+        });
+      });
+
+      if (showPanel && this.activeFamilySuggestionIndex >= 0) {
+        panel.querySelector(`[data-family-index="${this.activeFamilySuggestionIndex}"]`)?.scrollIntoView({ block: "nearest" });
+      }
+    }
+
+    if (input) {
+      input.setAttribute("aria-expanded", String(showPanel));
     }
 
     if (!hint) return;
@@ -116,15 +169,147 @@ export class ManagementTracksController {
 
     if (!familyName) {
       hint.textContent = families.length
-        ? `${families.length} ${families.length > 1 ? "oeuvres existent" : "oeuvre existe"} deja dans cette categorie.`
+        ? `${families.length} ${families.length > 1 ? "oeuvres existent" : "oeuvre existe"} deja dans cette categorie. Commence a taper pour filtrer.`
         : "Aucune oeuvre enregistree dans cette categorie pour le moment.";
       return;
     }
 
-    const match = families.find((item) => item.name.toLowerCase() === familyName.toLowerCase());
-    hint.textContent = match
-      ? "Cette oeuvre existe deja dans cette categorie. Elle sera reutilisee."
-      : "Cette oeuvre n'existe pas encore dans cette categorie. Elle sera creee automatiquement.";
+    if (exactMatch) {
+      hint.textContent = "Cette oeuvre existe deja dans cette categorie. Elle sera reutilisee.";
+      return;
+    }
+
+    if (this.familySuggestions.length) {
+      hint.textContent = `${this.familySuggestions.length} ${this.familySuggestions.length > 1 ? "propositions correspondent" : "proposition correspond"} a ta saisie. Tu peux en selectionner une ci-dessous.`;
+      return;
+    }
+
+    hint.textContent = families.length
+      ? "Aucune oeuvre existante ne correspond. La saisie sera creee automatiquement."
+      : "Aucune oeuvre enregistree dans cette categorie pour le moment.";
+  }
+
+  buildFamilySuggestions(families, query) {
+    const baseItems = families.map((name) => {
+      const normalizedName = this.normalizeSearch(name);
+      return {
+        name,
+        normalizedName,
+        position: query ? normalizedName.indexOf(query) : 0,
+        startsWithQuery: query ? normalizedName.startsWith(query) : false,
+      };
+    });
+
+    const filtered = query
+      ? baseItems.filter((item) => item.position >= 0)
+      : baseItems;
+
+    return filtered
+      .sort((left, right) =>
+        Number(left.startsWithQuery) === Number(right.startsWithQuery)
+          ? left.position - right.position || left.name.localeCompare(right.name, "fr", { sensitivity: "base" })
+          : Number(right.startsWithQuery) - Number(left.startsWithQuery)
+      )
+      .slice(0, 8);
+  }
+
+  getFamilyNamesForCategory(categoryId) {
+    if (categoryId <= 0) return [];
+
+    const seen = new Set();
+
+    return this.families
+      .filter((item) => Number(item.category_id) === Number(categoryId))
+      .map((item) => String(item.name || "").trim())
+      .filter((name) => {
+        const normalizedName = this.normalizeSearch(name);
+        if (!normalizedName || seen.has(normalizedName)) return false;
+        seen.add(normalizedName);
+        return true;
+      })
+      .sort((left, right) => left.localeCompare(right, "fr", { sensitivity: "base" }));
+  }
+
+  openFamilySuggestions() {
+    this.isFamilySuggestionOpen = true;
+    this.renderFamilySuggestions();
+  }
+
+  closeFamilySuggestions() {
+    this.isFamilySuggestionOpen = false;
+    this.activeFamilySuggestionIndex = -1;
+    this.renderFamilySuggestions();
+  }
+
+  handleFamilyKeydown(event) {
+    if (!event) return;
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      if (!this.isFamilySuggestionOpen) {
+        this.isFamilySuggestionOpen = true;
+        this.renderFamilySuggestions();
+      }
+      if (!this.familySuggestions.length) return;
+
+      this.activeFamilySuggestionIndex = this.activeFamilySuggestionIndex < 0
+        ? 0
+        : (this.activeFamilySuggestionIndex + 1) % this.familySuggestions.length;
+      this.renderFamilySuggestions();
+      return;
+    }
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      if (!this.isFamilySuggestionOpen) {
+        this.isFamilySuggestionOpen = true;
+        this.renderFamilySuggestions();
+      }
+      if (!this.familySuggestions.length) return;
+
+      this.activeFamilySuggestionIndex = this.activeFamilySuggestionIndex < 0
+        ? this.familySuggestions.length - 1
+        : (this.activeFamilySuggestionIndex - 1 + this.familySuggestions.length) % this.familySuggestions.length;
+      this.renderFamilySuggestions();
+      return;
+    }
+
+    if (event.key === "Enter" && this.isFamilySuggestionOpen && this.activeFamilySuggestionIndex >= 0) {
+      event.preventDefault();
+      this.selectFamilySuggestion(this.familySuggestions[this.activeFamilySuggestionIndex]?.name || "");
+      return;
+    }
+
+    if (event.key === "Escape" && this.isFamilySuggestionOpen) {
+      event.preventDefault();
+      this.closeFamilySuggestions();
+    }
+  }
+
+  handleFamilyBlur() {
+    window.setTimeout(() => {
+      const activeElement = document.activeElement;
+      const panel = document.getElementById("track-family-suggestions");
+      if (panel && activeElement && panel.contains(activeElement)) {
+        return;
+      }
+      this.closeFamilySuggestions();
+    }, 120);
+  }
+
+  selectFamilySuggestion(name) {
+    const input = document.getElementById("track-family-name");
+    const selectedName = String(name || "").trim();
+
+    if (input) {
+      input.value = selectedName;
+      input.focus();
+    }
+
+    this.draftFamilyName = selectedName;
+    this.activeFamilySuggestionIndex = -1;
+    this.isFamilySuggestionOpen = false;
+    this.renderFamilySuggestions();
   }
 
   renderList() {
@@ -179,6 +364,8 @@ export class ManagementTracksController {
 
     this.draftCategoryId = Number(item.category_id || 0) || null;
     this.draftFamilyName = item.family_name || "";
+    this.isFamilySuggestionOpen = false;
+    this.activeFamilySuggestionIndex = -1;
     this.renderFamilySuggestions();
     this.renderList();
     this.updateFormState();
@@ -219,6 +406,8 @@ export class ManagementTracksController {
     if (artist) artist.value = "";
     if (url) url.value = "";
 
+    this.isFamilySuggestionOpen = false;
+    this.activeFamilySuggestionIndex = -1;
     this.renderFamilySuggestions();
     this.renderList();
     this.updateFormState();
@@ -246,11 +435,15 @@ export class ManagementTracksController {
 
   handleCategoryChange() {
     this.draftCategoryId = this.getSelectedCategoryId() || null;
+    this.activeFamilySuggestionIndex = -1;
+    this.isFamilySuggestionOpen = document.activeElement === document.getElementById("track-family-name");
     this.renderFamilySuggestions();
   }
 
   handleFamilyInput() {
     this.draftFamilyName = this.getFamilyName();
+    this.activeFamilySuggestionIndex = -1;
+    this.isFamilySuggestionOpen = true;
     this.renderFamilySuggestions();
   }
 
@@ -340,6 +533,14 @@ export class ManagementTracksController {
       const el = document.getElementById(id);
       if (el) el.textContent = text;
     });
+  }
+
+  normalizeSearch(value) {
+    return String(value || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .trim();
   }
 
   escapeHtml(value) {

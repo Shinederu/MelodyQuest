@@ -50,10 +50,21 @@
             <select id="track-category"></select>
           </div>
 
-          <div class="mq-field">
+          <div class="mq-field mq-autocomplete">
             <label for="track-family-name">Oeuvre / reponse attendue</label>
-            <input id="track-family-name" type="text" list="track-family-suggestions" placeholder="Ex: Pokemon" />
-            <datalist id="track-family-suggestions"></datalist>
+            <div class="mq-autocomplete__shell">
+              <input
+                id="track-family-name"
+                type="text"
+                autocomplete="off"
+                spellcheck="false"
+                placeholder="Ex: Pokemon"
+                aria-autocomplete="list"
+                aria-expanded="false"
+                aria-controls="track-family-suggestions"
+              />
+              <div id="track-family-suggestions" class="mq-autocomplete__panel" hidden></div>
+            </div>
           </div>
         </div>
 

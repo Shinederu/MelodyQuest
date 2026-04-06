@@ -266,6 +266,72 @@ body::before {
   gap: 6px;
 }
 
+.mq-autocomplete {
+  position: relative;
+}
+
+.mq-autocomplete__shell {
+  position: relative;
+}
+
+.mq-autocomplete__panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  z-index: 30;
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid rgba(117, 146, 171, 0.22);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(247, 251, 252, 0.98)),
+    #ffffff;
+  box-shadow: 0 18px 34px rgba(94, 112, 135, 0.16);
+  max-height: 254px;
+  overflow-y: auto;
+}
+
+.mq-autocomplete__option {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  min-height: auto;
+  padding: 12px 14px;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--mq-text);
+  text-align: left;
+  box-shadow: none;
+  transition: border-color 0.14s ease, background 0.14s ease, transform 0.14s ease;
+}
+
+.mq-autocomplete__option:hover,
+.mq-autocomplete__option.is-active {
+  transform: translateY(-1px);
+  border-color: rgba(45, 127, 141, 0.24);
+  background: linear-gradient(180deg, rgba(244, 251, 252, 1), rgba(255, 248, 242, 1));
+}
+
+.mq-autocomplete__option-main {
+  font-size: 0.98rem;
+  font-weight: 700;
+}
+
+.mq-autocomplete__option-meta,
+.mq-autocomplete__empty {
+  color: var(--mq-text-soft);
+  font-size: 0.83rem;
+}
+
+.mq-autocomplete__empty {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.94);
+}
+
 .mq-row,
 .mq-actions {
   display: flex;
