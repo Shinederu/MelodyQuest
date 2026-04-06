@@ -1,8 +1,8 @@
 <section class="mq-page">
   <header class="mq-page-header">
     <div class="mq-kicker">Catalogue</div>
-    <h1>Gestion des familles</h1>
-    <p>Chaque famille appartient a une categorie et regroupe plusieurs musiques proches.</p>
+    <h1>Gestion des oeuvres</h1>
+    <p>Chaque oeuvre appartient a une categorie et regroupe plusieurs musiques qui doivent partager la meme reponse attendue.</p>
   </header>
 
   <section class="mq-card mq-card--soft">
@@ -10,14 +10,14 @@
       <div class="mq-actions">
         <button id="btn-fam-back" type="button" class="mq-secondary">Retour management</button>
         <button id="btn-fam-refresh" type="button">Rafraichir</button>
-        <button id="btn-fam-add" type="button">Ajouter une famille</button>
+        <button id="btn-fam-add" type="button">Ajouter une oeuvre</button>
       </div>
       <div class="mq-admin-toolbar__meta">
         <div class="mq-admin-toolbar__cluster">
-          <span id="fam-count" class="mq-chip">0 familles</span>
-          <span class="mq-chip">Niveau intermediaire</span>
+          <span id="fam-count" class="mq-chip">0 oeuvres</span>
+          <span class="mq-chip">Reponse attendue</span>
         </div>
-        <p id="fam-status" class="status">Choisis une famille existante ou prepare une nouvelle entree.</p>
+        <p id="fam-status" class="status">Choisis une oeuvre existante ou prepare une nouvelle entree.</p>
       </div>
     </div>
   </section>
@@ -27,10 +27,10 @@
       <div class="mq-admin-pane__header">
         <div class="mq-card-heading">
           <div class="mq-kicker">Exploration</div>
-          <h2>Liste des familles</h2>
-          <p class="mq-card-copy">Selectionne une famille pour l'editer ou clique sur Ajouter pour repartir d'un formulaire vide.</p>
+          <h2>Liste des oeuvres</h2>
+          <p class="mq-card-copy">Selectionne une oeuvre pour l'editer ou clique sur Ajouter pour repartir d'un formulaire vide.</p>
         </div>
-        <span id="fam-count-inline" class="mq-chip">0 familles</span>
+        <span id="fam-count-inline" class="mq-chip">0 oeuvres</span>
       </div>
       <div class="mq-admin-list-shell">
         <div id="fam-list" class="mq-admin-list"></div>
@@ -40,8 +40,8 @@
     <section class="mq-card mq-card--accent mq-admin-pane mq-admin-pane--sticky">
       <div class="mq-card-heading">
         <div class="mq-kicker">Edition</div>
-        <h2 id="fam-form-title">Nouvelle famille</h2>
-        <p id="fam-form-helper" class="mq-admin-helper">Mode creation actif. Associe d'abord la famille a une categorie, puis renseigne son nom.</p>
+        <h2 id="fam-form-title">Nouvelle oeuvre</h2>
+        <p id="fam-form-helper" class="mq-admin-helper">Mode creation actif. Associe d'abord l'oeuvre a une categorie, puis renseigne le nom de la reponse attendue.</p>
       </div>
       <div id="fam-form" class="mq-admin-form-grid">
         <div class="mq-admin-form-split">
@@ -51,14 +51,14 @@
           </div>
 
           <div class="mq-field">
-            <label for="fam-name">Nom</label>
+            <label for="fam-name">Nom de l'oeuvre / reponse attendue</label>
             <input id="fam-name" type="text" placeholder="Ex: Pokemon" />
           </div>
         </div>
 
         <div class="mq-field">
           <label for="fam-description">Description</label>
-          <input id="fam-description" type="text" placeholder="Description courte optionnelle" />
+          <input id="fam-description" type="text" placeholder="Infos internes optionnelles" />
         </div>
 
         <p class="mq-muted">Le slug technique est genere automatiquement a partir du nom.</p>

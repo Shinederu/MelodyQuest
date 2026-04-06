@@ -31,7 +31,7 @@ export class ManagementFamiliesController {
       window.httpClient.listCategories(),
     ]);
 
-    this.setStatus(famRes.success ? "Familles chargees" : (famRes.error || "Erreur"), famRes.success);
+    this.setStatus(famRes.success ? "Oeuvres chargees" : (famRes.error || "Erreur"), famRes.success);
     if (!famRes.success) return;
 
     this.items = famRes.data?.items ?? [];
@@ -68,8 +68,8 @@ export class ManagementFamiliesController {
     if (!this.items.length) {
       list.innerHTML = `
         <div class="mq-admin-empty">
-          <strong>Aucune famille</strong>
-          <p class="mq-muted">Ajoute une famille pour commencer a structurer les univers d'une categorie.</p>
+          <strong>Aucune oeuvre</strong>
+          <p class="mq-muted">Ajoute une oeuvre pour regrouper plusieurs variantes sous une meme reponse attendue.</p>
         </div>
       `;
       return;
@@ -137,16 +137,16 @@ export class ManagementFamiliesController {
     const updateBtn = document.getElementById("btn-fam-update");
     const deleteBtn = document.getElementById("btn-fam-delete");
     const resetBtn = document.getElementById("btn-fam-reset");
-    if (title) title.textContent = this.selectedId ? "Modifier la famille" : "Nouvelle famille";
+    if (title) title.textContent = this.selectedId ? "Modifier l'oeuvre" : "Nouvelle oeuvre";
     if (helper) {
       helper.textContent = this.selectedId
         ? "Mode modification actif. Utilise Ajouter ou le reset pour repartir d'une fiche vide."
-        : "Mode creation actif. Choisis d'abord une categorie, puis saisis les details de la famille.";
+        : "Mode creation actif. Choisis d'abord une categorie, puis saisis l'oeuvre attendue.";
     }
     if (createBtn) createBtn.disabled = !!this.selectedId;
     if (updateBtn) updateBtn.disabled = !this.selectedId;
     if (deleteBtn) deleteBtn.disabled = !this.selectedId;
-    if (resetBtn) resetBtn.textContent = this.selectedId ? "Nouvelle famille" : "Vider";
+    if (resetBtn) resetBtn.textContent = this.selectedId ? "Nouvelle oeuvre" : "Vider";
   }
 
   async create() {
@@ -155,7 +155,7 @@ export class ManagementFamiliesController {
     const description = document.getElementById("fam-description")?.value ?? "";
     const slug = slugify(name);
     const res = await window.httpClient.createFamily({ category_id, name, slug, description });
-    this.setStatus(res.success ? "Famille creee" : (res.error || "Erreur"), res.success);
+    this.setStatus(res.success ? "Oeuvre creee" : (res.error || "Erreur"), res.success);
     if (res.success) {
       this.selectedId = null;
       await this.refresh();
@@ -169,14 +169,14 @@ export class ManagementFamiliesController {
     const description = document.getElementById("fam-description")?.value ?? "";
     const slug = slugify(name);
     const res = await window.httpClient.updateFamily({ id: this.selectedId, category_id, name, slug, description });
-    this.setStatus(res.success ? "Famille mise a jour" : (res.error || "Erreur"), res.success);
+    this.setStatus(res.success ? "Oeuvre mise a jour" : (res.error || "Erreur"), res.success);
     if (res.success) await this.refresh();
   }
 
   async remove() {
     if (!this.selectedId) return;
     const res = await window.httpClient.deleteFamily(this.selectedId);
-    this.setStatus(res.success ? "Famille supprimee" : (res.error || "Erreur"), res.success);
+    this.setStatus(res.success ? "Oeuvre supprimee" : (res.error || "Erreur"), res.success);
     if (res.success) {
       this.selectedId = null;
       await this.refresh();
@@ -191,7 +191,7 @@ export class ManagementFamiliesController {
   }
 
   renderCounters() {
-    const text = `${this.items.length} ${this.items.length > 1 ? "familles" : "famille"}`;
+    const text = `${this.items.length} ${this.items.length > 1 ? "oeuvres" : "oeuvre"}`;
     ["fam-count", "fam-count-inline"].forEach((id) => {
       const el = document.getElementById(id);
       if (el) el.textContent = text;

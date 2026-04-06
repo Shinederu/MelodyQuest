@@ -2,7 +2,7 @@
   <header class="mq-page-header">
     <div class="mq-kicker">Catalogue</div>
     <h1>Gestion des musiques</h1>
-    <p>Renseigne une famille, un titre, un artiste et l'URL YouTube complete.</p>
+    <p>Choisis une categorie, indique l'oeuvre attendue, puis renseigne le titre reel de la piste et l'URL YouTube.</p>
   </header>
 
   <section class="mq-card mq-card--soft">
@@ -15,7 +15,7 @@
       <div class="mq-admin-toolbar__meta">
         <div class="mq-admin-toolbar__cluster">
           <span id="track-count" class="mq-chip">0 musiques</span>
-          <span class="mq-chip">Niveau jouable</span>
+          <span class="mq-chip">Creation inline</span>
         </div>
         <p id="track-status" class="status">Selectionne une musique pour l'editer ou ajoute une nouvelle entree.</p>
       </div>
@@ -28,7 +28,7 @@
         <div class="mq-card-heading">
           <div class="mq-kicker">Exploration</div>
           <h2>Liste des musiques</h2>
-          <p class="mq-card-copy">Utilise la liste comme navigateur, puis complete les details dans l'editeur pour garder une saisie confortable.</p>
+          <p class="mq-card-copy">La liste sert de navigateur. L'editeur a droite te permet de changer categorie, oeuvre attendue et piste sans passer par plusieurs ecrans.</p>
         </div>
         <span id="track-count-inline" class="mq-chip">0 musiques</span>
       </div>
@@ -41,33 +41,40 @@
       <div class="mq-card-heading">
         <div class="mq-kicker">Edition</div>
         <h2 id="track-form-title">Nouvelle musique</h2>
-        <p id="track-form-helper" class="mq-admin-helper">Mode creation actif. Verifie surtout la famille cible et l'URL YouTube avant validation.</p>
+        <p id="track-form-helper" class="mq-admin-helper">Mode creation actif. Si l'oeuvre n'existe pas encore dans la categorie choisie, elle sera creee automatiquement.</p>
       </div>
       <div id="track-form" class="mq-admin-form-grid">
         <div class="mq-admin-form-split">
           <div class="mq-field">
-            <label for="track-family">Famille</label>
-            <select id="track-family"></select>
+            <label for="track-category">Categorie</label>
+            <select id="track-category"></select>
           </div>
 
           <div class="mq-field">
-            <label for="track-title">Titre</label>
-            <input id="track-title" type="text" placeholder="Titre de la musique" />
+            <label for="track-family-name">Oeuvre / reponse attendue</label>
+            <input id="track-family-name" type="text" list="track-family-suggestions" placeholder="Ex: Pokemon" />
+            <datalist id="track-family-suggestions"></datalist>
           </div>
         </div>
 
         <div class="mq-admin-form-split">
           <div class="mq-field">
-            <label for="track-artist">Artiste</label>
-            <input id="track-artist" type="text" placeholder="Artiste ou licence" />
+            <label for="track-title">Libelle de la piste</label>
+            <input id="track-title" type="text" placeholder="Ex: Ending S1" />
           </div>
 
           <div class="mq-field">
-            <label for="track-youtube-url">URL YouTube complete</label>
-            <input id="track-youtube-url" type="url" placeholder="https://www.youtube.com/watch?v=..." />
+            <label for="track-artist">Artiste / licence</label>
+            <input id="track-artist" type="text" placeholder="Ex: Pokemon" />
           </div>
         </div>
 
+        <div class="mq-field">
+          <label for="track-youtube-url">URL YouTube complete</label>
+          <input id="track-youtube-url" type="url" placeholder="https://www.youtube.com/watch?v=..." />
+        </div>
+
+        <p id="track-family-hint" class="mq-muted">Selectionne d'abord une categorie pour voir les oeuvres existantes reutilisables.</p>
         <p class="mq-muted">L'identifiant video est extrait automatiquement depuis l'URL.</p>
       </div>
       <div class="mq-admin-form-actions">
