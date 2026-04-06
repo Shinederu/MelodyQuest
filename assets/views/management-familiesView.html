@@ -61,7 +61,12 @@
           <input id="fam-description" type="text" placeholder="Infos internes optionnelles" />
         </div>
 
-        <p class="mq-muted">Le slug technique est genere automatiquement a partir du nom.</p>
+        <div class="mq-field">
+          <label for="fam-aliases">Alias acceptes</label>
+          <textarea id="fam-aliases" rows="5" placeholder="Un alias par ligne&#10;Ex: GTA V&#10;GTA 5"></textarea>
+        </div>
+
+        <p class="mq-muted">Le slug technique est genere automatiquement a partir du nom. Les alias servent a accepter plusieurs formulations de la meme oeuvre pendant la partie.</p>
       </div>
       <div class="mq-admin-form-actions">
         <button id="btn-fam-create" type="button">Ajouter</button>

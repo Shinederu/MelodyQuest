@@ -186,8 +186,13 @@ export class GameController {
 
     const videoId = String(track?.youtube_video_id || "");
     if (showVideo && videoId) {
+      const expected = String(track?.family_name || track?.title || "").trim();
+      const details = [String(track?.title || "").trim(), String(track?.artist || "").trim()].filter(Boolean);
+      const solutionText = expected
+        ? [expected, details.filter((value) => value !== expected).join(" - ")].filter(Boolean).join(" · ")
+        : details.join(" - ");
       host.innerHTML = `<iframe src="https://www.youtube.com/embed/${this.escapeAttr(videoId)}?autoplay=1" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
-      solution.textContent = `${track?.title || ""} - ${track?.artist || ""}`;
+      solution.textContent = solutionText;
       solution.className = "status success";
     } else {
       host.innerHTML = `<div class="mq-video-placeholder"><p>La video reste cachee jusqu'a la revelation.</p></div>`;

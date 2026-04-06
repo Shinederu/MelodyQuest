@@ -80,7 +80,9 @@ export class ManagementFamiliesController {
         <strong>${this.escapeHtml(item.name)}</strong>
         <div class="mq-admin-item__meta">
           <span class="mq-admin-badge">${this.escapeHtml(item.category_name || "Sans categorie")}</span>
+          ${Number(item.alias_count || 0) > 0 ? `<span class="mq-admin-badge">${Number(item.alias_count)} alias</span>` : ""}
           ${item.description ? `<span class="mq-muted">${this.escapeHtml(item.description)}</span>` : ""}
+          ${this.renderAliasPreview(item.aliases)}
         </div>
       </button>
     `).join("");
@@ -100,10 +102,12 @@ export class ManagementFamiliesController {
     const category = document.getElementById("fam-category");
     const name = document.getElementById("fam-name");
     const description = document.getElementById("fam-description");
+    const aliases = document.getElementById("fam-aliases");
     if (form) form.hidden = false;
     if (category) category.value = String(Number(item.category_id || 0));
     if (name) name.value = item.name || "";
     if (description) description.value = item.description || "";
+    if (aliases) aliases.value = Array.isArray(item.aliases) ? item.aliases.join("\n") : "";
     this.renderList();
     this.updateFormState();
   }
@@ -122,10 +126,12 @@ export class ManagementFamiliesController {
     const category = document.getElementById("fam-category");
     const name = document.getElementById("fam-name");
     const description = document.getElementById("fam-description");
+    const aliases = document.getElementById("fam-aliases");
     if (form) form.hidden = false;
     if (category) category.value = "";
     if (name) name.value = "";
     if (description) description.value = "";
+    if (aliases) aliases.value = "";
     this.renderList();
     this.updateFormState();
   }
@@ -140,8 +146,8 @@ export class ManagementFamiliesController {
     if (title) title.textContent = this.selectedId ? "Modifier l'oeuvre" : "Nouvelle oeuvre";
     if (helper) {
       helper.textContent = this.selectedId
-        ? "Mode modification actif. Utilise Ajouter ou le reset pour repartir d'une fiche vide."
-        : "Mode creation actif. Choisis d'abord une categorie, puis saisis l'oeuvre attendue.";
+        ? "Mode modification actif. Mets a jour le nom principal et les alias acceptes sans quitter l'ecran."
+        : "Mode creation actif. Choisis d'abord une categorie, puis saisis l'oeuvre attendue et ses alias si besoin.";
     }
     if (createBtn) createBtn.disabled = !!this.selectedId;
     if (updateBtn) updateBtn.disabled = !this.selectedId;
@@ -153,8 +159,9 @@ export class ManagementFamiliesController {
     const category_id = Number(document.getElementById("fam-category")?.value ?? 0);
     const name = document.getElementById("fam-name")?.value ?? "";
     const description = document.getElementById("fam-description")?.value ?? "";
+    const aliases = this.parseAliases(document.getElementById("fam-aliases")?.value ?? "");
     const slug = slugify(name);
-    const res = await window.httpClient.createFamily({ category_id, name, slug, description });
+    const res = await window.httpClient.createFamily({ category_id, name, slug, description, aliases });
     this.setStatus(res.success ? "Oeuvre creee" : (res.error || "Erreur"), res.success);
     if (res.success) {
       this.selectedId = null;
@@ -167,8 +174,9 @@ export class ManagementFamiliesController {
     const category_id = Number(document.getElementById("fam-category")?.value ?? 0);
     const name = document.getElementById("fam-name")?.value ?? "";
     const description = document.getElementById("fam-description")?.value ?? "";
+    const aliases = this.parseAliases(document.getElementById("fam-aliases")?.value ?? "");
     const slug = slugify(name);
-    const res = await window.httpClient.updateFamily({ id: this.selectedId, category_id, name, slug, description });
+    const res = await window.httpClient.updateFamily({ id: this.selectedId, category_id, name, slug, description, aliases });
     this.setStatus(res.success ? "Oeuvre mise a jour" : (res.error || "Erreur"), res.success);
     if (res.success) await this.refresh();
   }
@@ -196,6 +204,31 @@ export class ManagementFamiliesController {
       const el = document.getElementById(id);
       if (el) el.textContent = text;
     });
+  }
+
+  parseAliases(rawValue) {
+    const seen = new Set();
+    const values = String(rawValue || "")
+      .split(/\r?\n|,/)
+      .map((value) => String(value || "").trim())
+      .filter(Boolean);
+
+    return values.filter((value) => {
+      const key = value
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
+  renderAliasPreview(aliases) {
+    if (!Array.isArray(aliases) || !aliases.length) return "";
+    const preview = aliases.slice(0, 3).map((alias) => this.escapeHtml(alias)).join(" · ");
+    const suffix = aliases.length > 3 ? " ..." : "";
+    return `<span class="mq-muted">Alias: ${preview}${suffix}</span>`;
   }
 
   escapeHtml(value) {
