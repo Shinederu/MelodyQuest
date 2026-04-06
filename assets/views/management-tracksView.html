@@ -2,7 +2,7 @@
   <header class="mq-page-header">
     <div class="mq-kicker">Catalogue</div>
     <h1>Gestion des musiques</h1>
-    <p>Choisis une categorie, indique l'oeuvre attendue, puis renseigne le titre reel de la piste et l'URL YouTube.</p>
+    <p>Choisis une categorie, indique l'oeuvre attendue, puis renseigne le titre reel de la piste et l'URL YouTube. Toute nouvelle musique passe ensuite par l'ecran de validation.</p>
   </header>
 
   <section class="mq-card mq-card--soft">
@@ -16,6 +16,7 @@
         <div class="mq-admin-toolbar__cluster">
           <span id="track-count" class="mq-chip">0 musiques</span>
           <span class="mq-chip">Creation inline</span>
+          <span class="mq-chip">Validation manuelle</span>
         </div>
         <p id="track-status" class="status">Selectionne une musique pour l'editer ou ajoute une nouvelle entree.</p>
       </div>
@@ -41,7 +42,7 @@
       <div class="mq-card-heading">
         <div class="mq-kicker">Edition</div>
         <h2 id="track-form-title">Nouvelle musique</h2>
-        <p id="track-form-helper" class="mq-admin-helper">Mode creation actif. Si l'oeuvre n'existe pas encore dans la categorie choisie, elle sera creee automatiquement.</p>
+        <p id="track-form-helper" class="mq-admin-helper">Mode creation actif. Si l'oeuvre n'existe pas encore dans la categorie choisie, elle sera creee automatiquement, puis la piste devra etre validee.</p>
       </div>
       <div id="track-form" class="mq-admin-form-grid">
         <div class="mq-admin-form-split">

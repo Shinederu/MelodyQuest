@@ -774,7 +774,7 @@ li {
 
 .mq-admin-step-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 18px;
 }
 
@@ -892,9 +892,57 @@ li {
   font-weight: 700;
 }
 
+.mq-admin-badge--pending {
+  background: rgba(231, 141, 104, 0.14);
+  color: var(--mq-accent-strong);
+}
+
+.mq-admin-badge--success {
+  background: rgba(47, 143, 91, 0.14);
+  color: var(--mq-success);
+}
+
 .mq-admin-form-grid {
   display: grid;
   gap: 14px;
+}
+
+.mq-link {
+  color: var(--mq-primary-strong);
+  font-weight: 700;
+  text-decoration: none;
+  word-break: break-word;
+}
+
+.mq-link:hover {
+  text-decoration: underline;
+}
+
+.mq-validation-video-shell {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 1px solid rgba(65, 105, 130, 0.18);
+  border-radius: 26px;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(255, 223, 196, 0.2), transparent 22%),
+    linear-gradient(135deg, #325d71 0%, #1d3346 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+.mq-validation-video-shell iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.mq-validation-meta {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(133, 160, 184, 0.18);
+  background: rgba(255, 255, 255, 0.82);
 }
 
 .mq-alias-editor {
@@ -980,6 +1028,12 @@ li {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@media (max-width: 1260px) {
+  .mq-admin-step-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

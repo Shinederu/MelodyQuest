@@ -240,6 +240,10 @@ export class HttpService {
     return this.request(MELODY_BASE_URL, "GET", "listTracks", body);
   }
 
+  async listPendingTracks() {
+    return this.request(MELODY_BASE_URL, "GET", "listPendingTracks");
+  }
+
   async createCategory(data) {
     return this.request(MELODY_BASE_URL, "POST", "createCategory", data);
   }
@@ -250,6 +254,12 @@ export class HttpService {
 
   async createTrack(data) {
     return this.request(MELODY_BASE_URL, "POST", "createTrack", data);
+  }
+
+  async validateTrack(trackId) {
+    return this.request(MELODY_BASE_URL, "POST", "validateTrack", {
+      track_id: trackId,
+    });
   }
 
   async updateCategory(data) {

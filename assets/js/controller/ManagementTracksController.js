@@ -1,26 +1,4 @@
-function extractYouTubeVideoId(value) {
-  const input = String(value || "").trim();
-  if (!input) return "";
-
-  try {
-    const url = new URL(input);
-    if (url.hostname.includes("youtu.be")) {
-      return url.pathname.replaceAll("/", "").trim();
-    }
-    if (url.searchParams.get("v")) {
-      return String(url.searchParams.get("v") || "").trim();
-    }
-    const segments = url.pathname.split("/").filter(Boolean);
-    const embedIndex = segments.findIndex((segment) => segment === "embed" || segment === "shorts");
-    if (embedIndex >= 0 && segments[embedIndex + 1]) {
-      return segments[embedIndex + 1].trim();
-    }
-  } catch {
-    return "";
-  }
-
-  return "";
-}
+import { extractYouTubeVideoId } from "../utils/youtube.js";
 
 export class ManagementTracksController {
   constructor() {
@@ -332,6 +310,9 @@ export class ManagementTracksController {
         <div class="mq-admin-item__meta">
           <span class="mq-admin-badge">${this.escapeHtml(item.category_name || "Sans categorie")}</span>
           <span class="mq-admin-badge">${this.escapeHtml(item.family_name || "Sans oeuvre")}</span>
+          <span class="mq-admin-badge ${Number(item.is_validated) === 1 ? "mq-admin-badge--success" : "mq-admin-badge--pending"}">
+            ${Number(item.is_validated) === 1 ? "Validee" : "En attente"}
+          </span>
           ${item.artist ? `<span class="mq-muted">${this.escapeHtml(item.artist)}</span>` : ""}
         </div>
       </button>
@@ -424,8 +405,8 @@ export class ManagementTracksController {
     if (title) title.textContent = this.selectedId ? "Modifier la musique" : "Nouvelle musique";
     if (helper) {
       helper.textContent = this.selectedId
-        ? "Mode modification actif. Tu peux changer categorie, oeuvre attendue ou piste sans sortir de cet ecran."
-        : "Mode creation actif. La categorie et l'oeuvre sont conservees pour enchainer rapidement plusieurs pistes liees.";
+        ? "Mode modification actif. Toute modification sur une piste la remettra en attente de validation."
+        : "Mode creation actif. Les nouvelles musiques sont ajoutees en attente de validation, avec categorie et oeuvre conservees pour enchainer rapidement.";
     }
     if (createBtn) createBtn.disabled = !!this.selectedId;
     if (updateBtn) updateBtn.disabled = !this.selectedId;
@@ -464,7 +445,7 @@ export class ManagementTracksController {
       youtube_video_id,
     });
 
-    this.setStatus(res.success ? "Musique creee" : (res.error || "Erreur"), res.success);
+    this.setStatus(res.success ? "Musique creee en attente de validation" : (res.error || "Erreur"), res.success);
     if (res.success) {
       this.draftCategoryId = category_id || null;
       this.draftFamilyName = family_name;
@@ -493,7 +474,7 @@ export class ManagementTracksController {
       youtube_video_id,
     });
 
-    this.setStatus(res.success ? "Musique mise a jour" : (res.error || "Erreur"), res.success);
+    this.setStatus(res.success ? "Musique mise a jour et repassee en attente de validation" : (res.error || "Erreur"), res.success);
     if (res.success) {
       this.draftCategoryId = category_id || null;
       this.draftFamilyName = family_name;

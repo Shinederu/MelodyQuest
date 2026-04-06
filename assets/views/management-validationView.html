@@ -1,0 +1,81 @@
+<section class="mq-page">
+  <header class="mq-page-header">
+    <div class="mq-kicker">Administration</div>
+    <h1>Verification / validation</h1>
+    <p>Les nouvelles musiques arrivent ici en attente de controle. Verifie la video YouTube, puis valide la piste pour qu'elle puisse etre utilisee en partie.</p>
+  </header>
+
+  <section class="mq-card mq-card--soft">
+    <div class="mq-admin-toolbar">
+      <div class="mq-actions">
+        <button id="btn-validation-back" type="button" class="mq-secondary">Retour management</button>
+        <button id="btn-validation-refresh" type="button">Rafraichir</button>
+      </div>
+      <div class="mq-admin-toolbar__meta">
+        <div class="mq-admin-toolbar__cluster">
+          <span id="validation-count" class="mq-chip">0 musique en attente</span>
+          <span class="mq-chip">Controle manuel</span>
+        </div>
+        <p id="validation-status" class="status">Selectionne une musique en attente pour verifier sa preview YouTube.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="mq-admin-workspace">
+    <section class="mq-card mq-admin-pane">
+      <div class="mq-admin-pane__header">
+        <div class="mq-card-heading">
+          <div class="mq-kicker">File d'attente</div>
+          <h2>Musiques a verifier</h2>
+          <p class="mq-card-copy">Chaque nouvelle piste reste ici tant qu'un controle manuel n'a pas ete effectue.</p>
+        </div>
+        <span id="validation-count-inline" class="mq-chip">0 musique en attente</span>
+      </div>
+      <div class="mq-admin-list-shell">
+        <div id="validation-list" class="mq-admin-list"></div>
+      </div>
+    </section>
+
+    <section class="mq-card mq-card--accent mq-admin-pane mq-admin-pane--sticky">
+      <div class="mq-card-heading">
+        <div class="mq-kicker">Controle</div>
+        <h2 id="validation-detail-title">Aucune musique selectionnee</h2>
+        <p id="validation-detail-helper" class="mq-admin-helper">Choisis une piste en attente pour verifier son URL YouTube et la valider.</p>
+      </div>
+
+      <div class="mq-admin-form-grid">
+        <div id="validation-detail-meta" class="mq-admin-item__meta">
+          <span class="mq-muted">La file d'attente se remplira automatiquement a chaque ajout ou modification de musique.</span>
+        </div>
+
+        <div class="mq-validation-video-shell">
+          <div id="validation-preview-empty" class="mq-video-placeholder">
+            <p class="mq-muted">Aucune preview disponible pour le moment.</p>
+          </div>
+          <iframe
+            id="validation-preview-frame"
+            hidden
+            src=""
+            title="Preview YouTube de validation"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            referrerpolicy="strict-origin-when-cross-origin"
+            allowfullscreen
+          ></iframe>
+        </div>
+
+        <div class="mq-validation-meta">
+          <div class="mq-field">
+            <label for="validation-track-url">URL enregistree</label>
+            <a id="validation-track-url" class="mq-link" href="#" target="_blank" rel="noreferrer noopener">Aucune URL</a>
+          </div>
+          <p id="validation-track-created" class="mq-muted">Date d'ajout indisponible</p>
+        </div>
+      </div>
+
+      <div class="mq-admin-form-actions">
+        <button id="btn-validation-approve" type="button" disabled>Valider la musique</button>
+        <button id="btn-validation-open-youtube" type="button" class="mq-secondary" disabled>Ouvrir sur YouTube</button>
+      </div>
+    </section>
+  </div>
+</section>

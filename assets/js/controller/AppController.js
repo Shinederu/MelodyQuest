@@ -10,6 +10,7 @@ import { ManagementController } from "./ManagementController.js";
 import { ManagementCategoriesController } from "./ManagementCategoriesController.js";
 import { ManagementFamiliesController } from "./ManagementFamiliesController.js";
 import { ManagementTracksController } from "./ManagementTracksController.js";
+import { ManagementValidationController } from "./ManagementValidationController.js";
 
 let currentUser = null;
 let headerManager = null;
@@ -25,6 +26,7 @@ const ROUTES = {
   "management-categories": { auth: true, admin: true, controller: ManagementCategoriesController },
   "management-families": { auth: true, admin: true, controller: ManagementFamiliesController },
   "management-tracks": { auth: true, admin: true, controller: ManagementTracksController },
+  "management-validation": { auth: true, admin: true, controller: ManagementValidationController },
 };
 
 function toBool(value) {
