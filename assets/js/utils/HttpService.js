@@ -262,6 +262,12 @@ export class HttpService {
     });
   }
 
+  async unvalidateTrack(trackId) {
+    return this.request(MELODY_BASE_URL, "POST", "unvalidateTrack", {
+      track_id: trackId,
+    });
+  }
+
   async updateCategory(data) {
     return this.request(MELODY_BASE_URL, "PUT", "updateCategory", data);
   }

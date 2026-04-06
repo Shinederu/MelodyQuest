@@ -16,6 +16,7 @@ export class ManagementTracksController {
     document.getElementById("btn-track-refresh")?.addEventListener("click", () => this.refresh());
     document.getElementById("btn-track-create")?.addEventListener("click", () => this.create());
     document.getElementById("btn-track-update")?.addEventListener("click", () => this.update());
+    document.getElementById("btn-track-unvalidate")?.addEventListener("click", () => this.unvalidate());
     document.getElementById("btn-track-delete")?.addEventListener("click", () => this.remove());
     document.getElementById("btn-track-reset")?.addEventListener("click", () => this.resetForm());
     document.getElementById("btn-track-add")?.addEventListener("click", () => this.openCreateForm());
@@ -399,17 +400,21 @@ export class ManagementTracksController {
     const helper = document.getElementById("track-form-helper");
     const createBtn = document.getElementById("btn-track-create");
     const updateBtn = document.getElementById("btn-track-update");
+    const unvalidateBtn = document.getElementById("btn-track-unvalidate");
     const deleteBtn = document.getElementById("btn-track-delete");
     const resetBtn = document.getElementById("btn-track-reset");
+    const selectedItem = this.items.find((item) => Number(item.id) === Number(this.selectedId));
+    const isValidated = Number(selectedItem?.is_validated || 0) === 1;
 
     if (title) title.textContent = this.selectedId ? "Modifier la musique" : "Nouvelle musique";
     if (helper) {
       helper.textContent = this.selectedId
-        ? "Mode modification actif. Toute modification sur une piste la remettra en attente de validation."
+        ? "Mode modification actif. Toute mise a jour repasse la piste en attente, et tu peux aussi la rebasculer manuellement si besoin."
         : "Mode creation actif. Les nouvelles musiques sont ajoutees en attente de validation, avec categorie et oeuvre conservees pour enchainer rapidement.";
     }
     if (createBtn) createBtn.disabled = !!this.selectedId;
     if (updateBtn) updateBtn.disabled = !this.selectedId;
+    if (unvalidateBtn) unvalidateBtn.disabled = !this.selectedId || !isValidated;
     if (deleteBtn) deleteBtn.disabled = !this.selectedId;
     if (resetBtn) resetBtn.textContent = this.selectedId ? "Nouvelle musique" : "Vider";
   }
@@ -489,6 +494,16 @@ export class ManagementTracksController {
     this.setStatus(res.success ? "Musique supprimee" : (res.error || "Erreur"), res.success);
     if (res.success) {
       this.selectedId = null;
+      await this.refresh();
+    }
+  }
+
+  async unvalidate() {
+    if (!this.selectedId) return;
+
+    const res = await window.httpClient.unvalidateTrack(this.selectedId);
+    this.setStatus(res.success ? "Musique repassee en attente de validation" : (res.error || "Erreur"), res.success);
+    if (res.success) {
       await this.refresh();
     }
   }
