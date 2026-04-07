@@ -49,11 +49,11 @@
     </section>
   </div>
 
-  <section class="mq-card mq-card--soft owner-only" style="display:none;">
+  <section class="mq-card mq-card--soft">
     <div class="mq-card-heading">
-      <div class="mq-kicker">Controles proprietaire</div>
+      <div class="mq-kicker">Configuration partagee</div>
       <h2>Configuration du lobby</h2>
-      <p class="mq-card-copy">Ajuste le rythme de la partie et le perimetre musical avant de la demarrer.</p>
+      <p class="mq-card-copy">Tous les joueurs voient ces reglages. Seul le createur peut les modifier avant le lancement.</p>
     </div>
     <div class="mq-grid">
       <div class="mq-field">
@@ -71,8 +71,9 @@
       <div id="lobby-config-categories" class="mq-check-grid"></div>
     </div>
 
-    <div class="mq-actions">
-      <button id="btn-lobby-save-config" type="button">Enregistrer</button>
+    <p id="lobby-config-help" class="mq-muted">Chargement de la configuration...</p>
+
+    <div class="mq-actions owner-only" style="display:none;">
       <button id="btn-lobby-start" type="button">Commencer</button>
       <button id="btn-lobby-delete" type="button" class="mq-danger">Supprimer le lobby</button>
     </div>

@@ -11,6 +11,9 @@ export class LobbyController {
     this.isDestroyed = false;
     this.configDirty = false;
     this.configDraft = null;
+    this.configSaveTimeout = null;
+    this.configSaveInFlight = false;
+    this.pendingConfigSave = false;
 
     this.visibilityHandler = () => {
       if (!document.hidden) {
@@ -20,7 +23,6 @@ export class LobbyController {
 
     document.getElementById("btn-lobby-main")?.addEventListener("click", () => window.appCtrl.changeView("main"));
     document.getElementById("btn-lobby-leave")?.addEventListener("click", () => this.leaveLobby());
-    document.getElementById("btn-lobby-save-config")?.addEventListener("click", () => this.saveConfig());
     document.getElementById("btn-lobby-delete")?.addEventListener("click", () => this.deleteLobby());
     document.getElementById("btn-lobby-start")?.addEventListener("click", () => this.startGame());
 
@@ -189,19 +191,33 @@ export class LobbyController {
     const categoriesForm = document.getElementById("lobby-config-categories");
     const roundsInput = document.getElementById("lobby-config-rounds");
     const timerInput = document.getElementById("lobby-config-timer");
+    const helper = document.getElementById("lobby-config-help");
     if (!categoriesForm) return;
 
+    const editable = this.isOwner();
     const source = this.configDirty ? this.getDraftConfig(lobby) : this.getServerConfig(lobby);
-    if (roundsInput) roundsInput.value = String(Number(source.total_rounds || 5));
-    if (timerInput) timerInput.value = String(Number(source.round_duration_seconds || 30));
+    if (roundsInput) {
+      roundsInput.value = String(Number(source.total_rounds || 5));
+      roundsInput.disabled = !editable;
+    }
+    if (timerInput) {
+      timerInput.value = String(Number(source.round_duration_seconds || 30));
+      timerInput.disabled = !editable;
+    }
 
     const selected = new Set((source.selected_category_ids || []).map((id) => Number(id)));
     categoriesForm.innerHTML = this.categories.map((category) => `
       <label class="mq-check">
-        <input type="checkbox" value="${Number(category.id || 0)}" ${selected.has(Number(category.id || 0)) ? "checked" : ""} />
+        <input type="checkbox" value="${Number(category.id || 0)}" ${selected.has(Number(category.id || 0)) ? "checked" : ""} ${editable ? "" : "disabled"} />
         <span>${this.escapeHtml(category.name || "Categorie")}</span>
       </label>
     `).join("");
+
+    if (helper) {
+      helper.textContent = editable
+        ? (this.configSaveInFlight ? "Configuration en cours d'application..." : "Les changements sont appliques automatiquement.")
+        : "Configuration en lecture seule. Seul le createur peut la modifier.";
+    }
 
     this.bindConfigInputs(lobby);
   }
@@ -210,12 +226,32 @@ export class LobbyController {
     const roundsInput = document.getElementById("lobby-config-rounds");
     const timerInput = document.getElementById("lobby-config-timer");
     const categoryInputs = document.querySelectorAll("#lobby-config-categories input");
+    const handleInput = () => this.handleConfigInput(lobby);
+    const handleCategoryChange = () => this.handleConfigInput(lobby, true);
 
-    roundsInput?.addEventListener("input", () => this.captureDraftConfig(lobby));
-    timerInput?.addEventListener("input", () => this.captureDraftConfig(lobby));
+    if (roundsInput) roundsInput.oninput = handleInput;
+    if (timerInput) timerInput.oninput = handleInput;
     categoryInputs.forEach((input) => {
-      input.addEventListener("change", () => this.captureDraftConfig(lobby));
+      input.onchange = handleCategoryChange;
     });
+  }
+
+  handleConfigInput(lobby, immediate = false) {
+    if (!this.isOwner()) return;
+    this.captureDraftConfig(lobby);
+    this.queueConfigSave(immediate ? 0 : 350);
+  }
+
+  queueConfigSave(delay = 350) {
+    if (!this.isOwner()) return;
+    if (this.configSaveTimeout) {
+      clearTimeout(this.configSaveTimeout);
+    }
+
+    this.configSaveTimeout = window.setTimeout(() => {
+      this.configSaveTimeout = null;
+      this.saveConfig();
+    }, delay);
   }
 
   getServerConfig(lobby) {
@@ -255,31 +291,54 @@ export class LobbyController {
   }
 
   async saveConfig() {
+    if (!this.isOwner()) return;
+
     const lobbyId = this.getLobbyId();
     if (!lobbyId) return;
+    if (!this.configDirty && !this.configDraft) return;
+    if (this.configSaveInFlight) {
+      this.pendingConfigSave = true;
+      return;
+    }
 
-    const rounds = Number(document.getElementById("lobby-config-rounds")?.value || 5);
-    const timer = Number(document.getElementById("lobby-config-timer")?.value || 30);
-    const selectedCategoryIds = Array.from(document.querySelectorAll("#lobby-config-categories input:checked"))
-      .map((input) => Number(input.value))
-      .filter((value) => value > 0);
+    const draft = this.getDraftConfig(this.currentLobby);
+    const draftKey = this.serializeConfig(draft);
+    const serverKey = this.serializeConfig(this.getServerConfig(this.currentLobby));
+    if (draftKey === serverKey) {
+      this.configDirty = false;
+      this.configDraft = null;
+      return;
+    }
+
+    this.configSaveInFlight = true;
+    this.pendingConfigSave = false;
+    this.setStatus("Configuration en cours d'application...", true);
 
     const res = await window.httpClient.updateLobbyConfig({
       lobby_id: lobbyId,
-      total_rounds: rounds,
-      round_duration_seconds: timer,
-      selected_category_ids: selectedCategoryIds,
-      guess_mode: "title",
+      total_rounds: Number(draft.total_rounds || 5),
+      round_duration_seconds: Number(draft.round_duration_seconds || 30),
+      selected_category_ids: Array.isArray(draft.selected_category_ids) ? draft.selected_category_ids : [],
     });
 
-    this.setStatus(res.success ? "Configuration enregistree" : (res.error || "Erreur"), res.success);
+    this.configSaveInFlight = false;
 
     if (res.success && res.data?.lobby) {
-      this.configDirty = false;
-      this.configDraft = null;
+      if (this.serializeConfig(this.configDraft || this.getServerConfig(this.currentLobby)) === draftKey) {
+        this.configDirty = false;
+        this.configDraft = null;
+      }
       this.currentLobby = res.data.lobby;
       setCurrentLobby(this.currentLobby);
       this.renderLobby(res.data);
+      this.setStatus("Configuration synchronisee", true);
+    } else {
+      this.setStatus(res.error || "Erreur", false);
+    }
+
+    if (this.pendingConfigSave || this.configDirty) {
+      this.pendingConfigSave = false;
+      this.queueConfigSave(150);
     }
   }
 
@@ -389,10 +448,23 @@ export class LobbyController {
     el.className = ok ? "status success" : "status error";
   }
 
+  serializeConfig(config) {
+    if (!config || typeof config !== "object") return "";
+    return JSON.stringify({
+      total_rounds: Number(config.total_rounds || 5),
+      round_duration_seconds: Number(config.round_duration_seconds || 30),
+      selected_category_ids: Array.isArray(config.selected_category_ids) ? config.selected_category_ids.map(Number) : [],
+    });
+  }
+
   destroy() {
     this.isDestroyed = true;
     this.stopStream();
     this.stopHeartbeat();
+    if (this.configSaveTimeout) {
+      clearTimeout(this.configSaveTimeout);
+      this.configSaveTimeout = null;
+    }
     document.removeEventListener("visibilitychange", this.visibilityHandler);
   }
 }
