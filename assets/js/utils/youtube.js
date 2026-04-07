@@ -2,6 +2,10 @@ export function extractYouTubeVideoId(value) {
   const input = String(value || "").trim();
   if (!input) return "";
 
+  if (/^[A-Za-z0-9_-]{6,32}$/.test(input)) {
+    return input;
+  }
+
   try {
     const url = new URL(input);
     if (url.hostname.includes("youtu.be")) {
@@ -22,8 +26,14 @@ export function extractYouTubeVideoId(value) {
   return "";
 }
 
+export function buildYouTubeWatchUrl(videoId) {
+  const normalizedVideoId = extractYouTubeVideoId(videoId);
+  if (!normalizedVideoId) return "";
+  return `https://www.youtube.com/watch?v=${encodeURIComponent(normalizedVideoId)}`;
+}
+
 export function buildYouTubeEmbedUrl(videoId) {
-  const normalizedVideoId = String(videoId || "").trim();
+  const normalizedVideoId = extractYouTubeVideoId(videoId);
   if (!normalizedVideoId) return "";
   return `https://www.youtube.com/embed/${encodeURIComponent(normalizedVideoId)}`;
 }

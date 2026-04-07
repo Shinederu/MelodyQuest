@@ -342,7 +342,7 @@ export class ManagementTracksController {
     if (familyName) familyName.value = item.family_name || "";
     if (title) title.value = item.title || "";
     if (artist) artist.value = item.artist || "";
-    if (url) url.value = item.youtube_url || "";
+    if (url) url.value = item.youtube_video_id || item.youtube_url || "";
 
     this.draftCategoryId = Number(item.category_id || 0) || null;
     this.draftFamilyName = item.family_name || "";
@@ -438,15 +438,19 @@ export class ManagementTracksController {
     const family_name = this.getFamilyName();
     const title = String(document.getElementById("track-title")?.value || "").trim();
     const artist = String(document.getElementById("track-artist")?.value || "").trim();
-    const youtube_url = String(document.getElementById("track-youtube-url")?.value || "").trim();
-    const youtube_video_id = extractYouTubeVideoId(youtube_url);
+    const youtube_input = String(document.getElementById("track-youtube-url")?.value || "").trim();
+    const youtube_video_id = extractYouTubeVideoId(youtube_input);
+
+    if (!youtube_video_id) {
+      this.setStatus("ID ou URL YouTube invalide", false);
+      return;
+    }
 
     const res = await window.httpClient.createTrack({
       category_id,
       family_name,
       title,
       artist,
-      youtube_url,
       youtube_video_id,
     });
 
@@ -466,8 +470,13 @@ export class ManagementTracksController {
     const family_name = this.getFamilyName();
     const title = String(document.getElementById("track-title")?.value || "").trim();
     const artist = String(document.getElementById("track-artist")?.value || "").trim();
-    const youtube_url = String(document.getElementById("track-youtube-url")?.value || "").trim();
-    const youtube_video_id = extractYouTubeVideoId(youtube_url);
+    const youtube_input = String(document.getElementById("track-youtube-url")?.value || "").trim();
+    const youtube_video_id = extractYouTubeVideoId(youtube_input);
+
+    if (!youtube_video_id) {
+      this.setStatus("ID ou URL YouTube invalide", false);
+      return;
+    }
 
     const res = await window.httpClient.updateTrack({
       id: this.selectedId,
@@ -475,7 +484,6 @@ export class ManagementTracksController {
       family_name,
       title,
       artist,
-      youtube_url,
       youtube_video_id,
     });
 

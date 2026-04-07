@@ -2,7 +2,7 @@
   <header class="mq-page-header">
     <div class="mq-kicker">Catalogue</div>
     <h1>Gestion des musiques</h1>
-    <p>Choisis une categorie, indique l'oeuvre attendue, puis renseigne le titre reel de la piste et l'URL YouTube. Toute nouvelle musique passe ensuite par l'ecran de validation.</p>
+    <p>Choisis une categorie, indique l'oeuvre attendue, puis renseigne le titre reel de la piste et l'identifiant YouTube. Tu peux aussi coller une URL complete, elle sera convertie automatiquement.</p>
   </header>
 
   <section class="mq-card mq-card--soft">
@@ -82,12 +82,12 @@
         </div>
 
         <div class="mq-field">
-          <label for="track-youtube-url">URL YouTube complete</label>
-          <input id="track-youtube-url" type="url" placeholder="https://www.youtube.com/watch?v=..." />
+          <label for="track-youtube-url">ID ou URL YouTube</label>
+          <input id="track-youtube-url" type="text" placeholder="Ex: dQw4w9WgXcQ ou https://www.youtube.com/watch?v=..." />
         </div>
 
         <p id="track-family-hint" class="mq-muted">Selectionne d'abord une categorie pour voir les oeuvres existantes reutilisables.</p>
-        <p class="mq-muted">L'identifiant video est extrait automatiquement depuis l'URL.</p>
+        <p class="mq-muted">Seul l'identifiant video est conserve en base. Le lien YouTube est reconstruit a partir de celui-ci.</p>
       </div>
       <div class="mq-admin-form-actions">
         <button id="btn-track-create" type="button">Ajouter</button>

@@ -33,7 +33,7 @@ L'API `auth` utilise aussi ce meme schema partage avec ses variables (`DB_*`).
 - Lobby configurable uniquement par son createur
 - Musiques organisees en categories (films, dessins animes, series, animes, Disney, etc.)
 - Musiques organisees en familles (ex: plusieurs themes d'une meme oeuvre)
-- Aucune piste audio stockee en DB: uniquement des URL YouTube
+- Aucune piste audio stockee en DB: uniquement des identifiants video YouTube
 - Lecture via player YouTube avec video cachee
 - Lecture synchronisee entre tous les joueurs d'un lobby
 - Administrateurs definis par users.is_admin (ou users.role='admin') via modification manuelle DB

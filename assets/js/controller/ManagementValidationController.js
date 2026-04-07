@@ -1,4 +1,4 @@
-import { buildYouTubeEmbedUrl, extractYouTubeVideoId } from "../utils/youtube.js";
+import { buildYouTubeEmbedUrl, buildYouTubeWatchUrl, extractYouTubeVideoId } from "../utils/youtube.js";
 
 export class ManagementValidationController {
   constructor() {
@@ -93,7 +93,7 @@ export class ManagementValidationController {
     const item = this.getSelectedItem();
     if (!item) {
       if (title) title.textContent = "Aucune musique selectionnee";
-      if (helper) helper.textContent = "Choisis une piste en attente pour verifier son URL YouTube et la valider.";
+      if (helper) helper.textContent = "Choisis une piste en attente pour verifier sa video YouTube et la valider.";
       if (meta) meta.innerHTML = `<span class="mq-muted">La file d'attente se remplira automatiquement a chaque ajout ou modification de musique.</span>`;
       if (frame) {
         frame.hidden = true;
@@ -103,15 +103,16 @@ export class ManagementValidationController {
         empty.hidden = false;
         empty.innerHTML = `<p class="mq-muted">Aucune preview disponible pour le moment.</p>`;
       }
-      if (url) url.textContent = "Aucune URL";
+      if (url) url.textContent = "Aucun lien";
       if (created) created.textContent = "Date d'ajout indisponible";
       if (approve) approve.disabled = true;
       if (openYoutube) openYoutube.disabled = true;
       return;
     }
 
-    const videoId = String(item.youtube_video_id || "").trim() || extractYouTubeVideoId(item.youtube_url);
+    const videoId = extractYouTubeVideoId(item.youtube_video_id || item.youtube_url);
     const embedUrl = buildYouTubeEmbedUrl(videoId);
+    const youtubeUrl = buildYouTubeWatchUrl(videoId);
 
     if (title) title.textContent = item.title || "Sans titre";
     if (helper) helper.textContent = "Verifie que la video charge correctement et que la piste correspond bien a l'oeuvre attendue avant de la valider.";
@@ -136,13 +137,13 @@ export class ManagementValidationController {
     if (empty) {
       empty.hidden = Boolean(embedUrl);
       if (!embedUrl) {
-        empty.innerHTML = `<p class="mq-muted">Impossible de generer la preview YouTube. L'URL enregistree doit probablement etre corrigee avant validation.</p>`;
+        empty.innerHTML = `<p class="mq-muted">Impossible de generer la preview YouTube. L'identifiant video doit probablement etre corrige avant validation.</p>`;
       }
     }
 
     if (url) {
-      url.textContent = item.youtube_url || "Aucune URL";
-      url.href = item.youtube_url || "#";
+      url.textContent = youtubeUrl || "Aucun lien";
+      url.href = youtubeUrl || "#";
     }
 
     if (created) {
@@ -150,7 +151,7 @@ export class ManagementValidationController {
     }
 
     if (approve) approve.disabled = false;
-    if (openYoutube) openYoutube.disabled = !item.youtube_url;
+    if (openYoutube) openYoutube.disabled = !youtubeUrl;
   }
 
   async validateSelected() {
@@ -166,8 +167,9 @@ export class ManagementValidationController {
 
   openSelectedTrackOnYouTube() {
     const item = this.getSelectedItem();
-    if (!item?.youtube_url) return;
-    window.open(item.youtube_url, "_blank", "noopener,noreferrer");
+    const youtubeUrl = buildYouTubeWatchUrl(extractYouTubeVideoId(item?.youtube_video_id || item?.youtube_url));
+    if (!youtubeUrl) return;
+    window.open(youtubeUrl, "_blank", "noopener,noreferrer");
   }
 
   getSelectedItem() {
