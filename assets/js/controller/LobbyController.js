@@ -336,7 +336,7 @@ export class LobbyController {
       this.setStatus(res.error || "Erreur", false);
     }
 
-    if (this.pendingConfigSave || this.configDirty) {
+    if (this.pendingConfigSave) {
       this.pendingConfigSave = false;
       this.queueConfigSave(150);
     }

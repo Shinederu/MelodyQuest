@@ -1,6 +1,6 @@
 const API_ROOT = window.__SHINEDERU_API_ROOT__ || "https://api.shinederu.ch";
 const AUTH_BASE_URL = `${API_ROOT}/auth/`;
-const MELODY_BASE_URL = `${API_ROOT}/melodyquest/`;
+const MELODY_BASE_URL = `${API_ROOT}/melodyquest/index.php`;
 
 import { createAuthClient } from "../vendor/shinederu-auth-core/index.js";
 const extractMessage = (payload, fallback = "") => {
