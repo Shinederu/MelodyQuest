@@ -22,7 +22,6 @@ export class LobbyController {
       }
     };
 
-    document.getElementById("btn-lobby-main")?.addEventListener("click", () => window.appCtrl.changeView("main"));
     document.getElementById("btn-lobby-leave")?.addEventListener("click", () => this.leaveLobby());
     document.getElementById("btn-lobby-delete")?.addEventListener("click", () => this.deleteLobby());
     document.getElementById("btn-lobby-start")?.addEventListener("click", () => this.startGame());
@@ -193,8 +192,9 @@ export class LobbyController {
     const meta = document.getElementById("lobby-meta");
     const rounds = document.getElementById("lobby-rounds");
     const timer = document.getElementById("lobby-timer");
+    const displayConfig = this.configDirty ? this.getDraftConfig(lobby) : this.getServerConfig(lobby);
 
-    if (header) header.textContent = lobby?.name || "Lobby";
+    if (header) header.textContent = displayConfig.name || lobby?.name || "Lobby";
     if (meta) meta.textContent = `Code ${lobby?.lobby_code || ""} · ${players.length}/${lobby?.max_players || 0} joueurs`;
     if (rounds) rounds.textContent = `${Number(lobby?.rounds_finished || 0)} / ${Number(lobby?.total_rounds || 0)} manches jouees`;
     if (timer) timer.textContent = `${Number(lobby?.round_duration_seconds || 0)} secondes par manche`;
@@ -227,6 +227,7 @@ export class LobbyController {
   }
 
   renderOwnerForm(lobby) {
+    const nameInput = document.getElementById("lobby-config-name");
     const categoriesForm = document.getElementById("lobby-config-categories");
     const roundsInput = document.getElementById("lobby-config-rounds");
     const timerInput = document.getElementById("lobby-config-timer");
@@ -235,6 +236,10 @@ export class LobbyController {
 
     const editable = this.isOwner();
     const source = this.configDirty ? this.getDraftConfig(lobby) : this.getServerConfig(lobby);
+    if (nameInput) {
+      nameInput.value = String(source.name || "");
+      nameInput.disabled = !editable;
+    }
     if (roundsInput) {
       roundsInput.value = String(Number(source.total_rounds || 5));
       roundsInput.disabled = !editable;
@@ -254,7 +259,7 @@ export class LobbyController {
 
     if (helper) {
       helper.textContent = editable
-        ? (this.configSaveInFlight ? "Configuration en cours d'application..." : "Les changements sont appliques automatiquement.")
+        ? (this.configSaveInFlight ? "Configuration en cours d'application..." : "Le nom et les reglages sont appliques automatiquement.")
         : "Configuration en lecture seule. Seul le createur peut la modifier.";
     }
 
@@ -262,12 +267,14 @@ export class LobbyController {
   }
 
   bindConfigInputs(lobby) {
+    const nameInput = document.getElementById("lobby-config-name");
     const roundsInput = document.getElementById("lobby-config-rounds");
     const timerInput = document.getElementById("lobby-config-timer");
     const categoryInputs = document.querySelectorAll("#lobby-config-categories input");
     const handleInput = () => this.handleConfigInput(lobby);
     const handleCategoryChange = () => this.handleConfigInput(lobby, true);
 
+    if (nameInput) nameInput.oninput = handleInput;
     if (roundsInput) roundsInput.oninput = handleInput;
     if (timerInput) timerInput.oninput = handleInput;
     categoryInputs.forEach((input) => {
@@ -295,6 +302,7 @@ export class LobbyController {
 
   getServerConfig(lobby) {
     return {
+      name: this.normalizeLobbyName(lobby?.name, "Nouveau lobby"),
       total_rounds: Number(lobby?.total_rounds || 5),
       round_duration_seconds: Number(lobby?.round_duration_seconds || 30),
       selected_category_ids: (Array.isArray(lobby?.selected_category_ids) ? lobby.selected_category_ids : []).map(Number),
@@ -309,12 +317,21 @@ export class LobbyController {
   captureDraftConfig(lobby) {
     this.configDirty = true;
     this.configDraft = {
+      name: this.normalizeLobbyName(
+        document.getElementById("lobby-config-name")?.value,
+        this.getServerConfig(lobby).name
+      ),
       total_rounds: Number(document.getElementById("lobby-config-rounds")?.value || lobby?.total_rounds || 5),
       round_duration_seconds: Number(document.getElementById("lobby-config-timer")?.value || lobby?.round_duration_seconds || 30),
       selected_category_ids: Array.from(document.querySelectorAll("#lobby-config-categories input:checked"))
         .map((input) => Number(input.value))
         .filter((value) => value > 0),
     };
+
+    const header = document.getElementById("lobby-title");
+    if (header) {
+      header.textContent = this.configDraft.name;
+    }
   }
 
   async leaveLobby() {
@@ -355,6 +372,7 @@ export class LobbyController {
 
     const res = await window.httpClient.updateLobbyConfig({
       lobby_id: lobbyId,
+      name: draft.name,
       total_rounds: Number(draft.total_rounds || 5),
       round_duration_seconds: Number(draft.round_duration_seconds || 30),
       selected_category_ids: Array.isArray(draft.selected_category_ids) ? draft.selected_category_ids : [],
@@ -490,10 +508,16 @@ export class LobbyController {
   serializeConfig(config) {
     if (!config || typeof config !== "object") return "";
     return JSON.stringify({
+      name: this.normalizeLobbyName(config.name, "Nouveau lobby"),
       total_rounds: Number(config.total_rounds || 5),
       round_duration_seconds: Number(config.round_duration_seconds || 30),
       selected_category_ids: Array.isArray(config.selected_category_ids) ? config.selected_category_ids.map(Number) : [],
     });
+  }
+
+  normalizeLobbyName(value, fallback = "Nouveau lobby") {
+    const normalized = String(value || "").trim().replace(/\s+/g, " ").slice(0, 120);
+    return normalized || fallback;
   }
 
   destroy() {

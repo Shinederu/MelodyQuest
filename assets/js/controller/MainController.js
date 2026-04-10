@@ -21,8 +21,13 @@ export class MainController {
   }
 
   async createLobby() {
+    const lobbyName = this.normalizeLobbyName(
+      document.getElementById("main-lobby-name")?.value,
+      "Nouveau lobby"
+    );
+
     const res = await window.httpClient.createLobby({
-      name: "Nouveau lobby",
+      name: lobbyName,
       visibility: "public",
       max_players: 8,
       round_duration_seconds: 30,
@@ -183,6 +188,11 @@ export class MainController {
 
   escapeAttr(value) {
     return this.escapeHtml(value).replaceAll('"', "&quot;");
+  }
+
+  normalizeLobbyName(value, fallback = "Nouveau lobby") {
+    const normalized = String(value || "").trim().replace(/\s+/g, " ").slice(0, 120);
+    return normalized || fallback;
   }
 
   destroy() {

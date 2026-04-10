@@ -25,7 +25,6 @@
 
   <section class="mq-card mq-card--soft">
     <div class="mq-actions">
-      <button id="btn-lobby-main" type="button" class="mq-secondary">Menu principal</button>
       <button id="btn-lobby-leave" type="button" class="mq-danger">Quitter</button>
     </div>
     <p id="lobby-status" class="status"></p>
@@ -46,6 +45,10 @@
       <p class="mq-card-copy">Tous les joueurs voient ces reglages. Seul le createur peut les modifier avant le lancement.</p>
     </div>
     <div class="mq-grid">
+      <div class="mq-field">
+        <label for="lobby-config-name">Nom du lobby</label>
+        <input id="lobby-config-name" type="text" maxlength="120" placeholder="Ex: Blindtest du vendredi" />
+      </div>
       <div class="mq-field">
         <label for="lobby-config-rounds">Nombre de manches</label>
         <input id="lobby-config-rounds" type="number" min="1" max="50" />
