@@ -48,6 +48,7 @@ function normalizeUser(rawUser) {
 export class AppController {
   constructor() {
     this.ctrl = null;
+    this.selectViewRunId = 0;
 
     window.httpClient = new HttpService();
     headerManager = new HeaderModel();
@@ -75,10 +76,20 @@ export class AppController {
   }
 
   async selectView() {
+    const runId = ++this.selectViewRunId;
     let requested = window.location.hash.replace(/^#\/?/, "").toLowerCase();
     if (!requested) requested = "public";
 
+    if (this.ctrl && typeof this.ctrl.destroy === "function") {
+      this.ctrl.destroy();
+      this.ctrl = null;
+    }
+
     const session = await this.resolveSession();
+    if (runId !== this.selectViewRunId) {
+      return;
+    }
+
     const isAdmin = Boolean(currentUser?.is_admin);
 
     if (!ROUTES[requested]) {
@@ -94,15 +105,14 @@ export class AppController {
       requested = "main";
     }
 
-    if (this.ctrl && typeof this.ctrl.destroy === "function") {
-      this.ctrl.destroy();
-    }
-
     if (this.navigateTo(requested)) {
       return;
     }
 
     await this.loadView(requested);
+    if (runId !== this.selectViewRunId) {
+      return;
+    }
 
     const Controller = ROUTES[requested].controller;
     this.ctrl = new Controller();

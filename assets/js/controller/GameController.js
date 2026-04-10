@@ -63,10 +63,13 @@ export class GameController {
     this.correctUnlockedScore = 0;
     this.localNextVoteRoundId = 0;
     this.roundRefreshRequested = false;
+    this.roundRefreshTimeout = null;
+    this.advanceRefreshTimeout = null;
     this.roundRefreshInFlight = false;
     this.nextVoteRequestInFlight = false;
     this.videoRenderKey = "";
     this.autoNextEnabled = localStorage.getItem(AUTO_NEXT_STORAGE_KEY) === "1";
+    this.resultNavigationTriggered = false;
     this.serverClockOffsetMs = 0;
     this.player = null;
     this.playerReady = false;
@@ -133,6 +136,10 @@ export class GameController {
   }
 
   applySnapshot(snapshot = {}) {
+    if (this.isDestroyed) {
+      return;
+    }
+
     if (snapshot?.lobby) {
       this.currentLobby = snapshot.lobby;
       setCurrentLobby(snapshot.lobby);
@@ -174,6 +181,16 @@ export class GameController {
     this.roundRefreshRequested = false;
     this.nextVoteRequestInFlight = false;
     this.videoRenderKey = "";
+    this.resultNavigationTriggered = false;
+
+    if (this.roundRefreshTimeout) {
+      clearTimeout(this.roundRefreshTimeout);
+      this.roundRefreshTimeout = null;
+    }
+    if (this.advanceRefreshTimeout) {
+      clearTimeout(this.advanceRefreshTimeout);
+      this.advanceRefreshTimeout = null;
+    }
 
     const answerInput = document.getElementById("game-answer");
     if (answerInput) {
@@ -311,6 +328,10 @@ export class GameController {
   }
 
   updateRoundPresentation() {
+    if (this.isDestroyed) {
+      return;
+    }
+
     const round = this.roundState?.round;
     if (!round) {
       this.renderVideo(null, false);
@@ -337,7 +358,10 @@ export class GameController {
 
     if (answerClosed && !this.roundRefreshRequested) {
       this.roundRefreshRequested = true;
-      window.setTimeout(() => this.refreshGameState(), 200);
+      this.roundRefreshTimeout = window.setTimeout(() => {
+        this.roundRefreshTimeout = null;
+        this.refreshGameState();
+      }, 200);
     }
 
     if (answerClosed && nextVoteAvailable && this.autoNextEnabled && !this.hasCurrentUserVoted(round)) {
@@ -681,13 +705,16 @@ export class GameController {
       true
     );
     if (res.data?.advanced) {
-      window.setTimeout(() => this.refreshGameState(), 200);
+      this.advanceRefreshTimeout = window.setTimeout(() => {
+        this.advanceRefreshTimeout = null;
+        this.refreshGameState();
+      }, 200);
     }
     this.updateRoundPresentation();
   }
 
   async refreshGameState() {
-    if (this.roundRefreshInFlight || !this.getLobbyId()) {
+    if (this.isDestroyed || this.roundRefreshInFlight || !this.getLobbyId()) {
       return;
     }
 
@@ -697,6 +724,10 @@ export class GameController {
       window.httpClient.getScoreboard(this.getLobbyId()),
     ]);
     this.roundRefreshInFlight = false;
+
+    if (this.isDestroyed) {
+      return;
+    }
 
     if (!roundRes.success) {
       if (this.shouldExitLobby(roundRes.error)) {
@@ -906,6 +937,11 @@ export class GameController {
   }
 
   finishToResult(scoreboard) {
+    if (this.resultNavigationTriggered || this.isDestroyed) {
+      return;
+    }
+
+    this.resultNavigationTriggered = true;
     localStorage.setItem("mq_last_scoreboard", JSON.stringify(scoreboard || []));
     window.appCtrl.changeView("result");
   }
@@ -979,6 +1015,14 @@ export class GameController {
     this.stopRealtime();
     this.stopHeartbeat();
     this.destroyPlayer();
+    if (this.roundRefreshTimeout) {
+      clearTimeout(this.roundRefreshTimeout);
+      this.roundRefreshTimeout = null;
+    }
+    if (this.advanceRefreshTimeout) {
+      clearTimeout(this.advanceRefreshTimeout);
+      this.advanceRefreshTimeout = null;
+    }
     if (this.timerInterval) {
       clearInterval(this.timerInterval);
       this.timerInterval = null;
