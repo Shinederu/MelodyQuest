@@ -143,6 +143,12 @@ export class HttpService {
     });
   }
 
+  async resetLobbyForReplay(lobbyId) {
+    return this.request(MELODY_BASE_URL, "POST", "resetLobbyForReplay", {
+      lobby_id: lobbyId,
+    });
+  }
+
   async getLobbyByCode(lobbyCode) {
     return this.request(MELODY_BASE_URL, "GET", "getLobbyByCode", {
       lobby_code: lobbyCode,

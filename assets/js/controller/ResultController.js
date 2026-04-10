@@ -1,11 +1,12 @@
-import { getCurrentLobby, clearCurrentLobby } from "../utils/LobbyState.js";
+import { getCurrentLobby, setCurrentLobby, clearCurrentLobby } from "../utils/LobbyState.js";
 
 export class ResultController {
   constructor() {
     this.currentLobby = getCurrentLobby();
     this.heartbeatInterval = null;
     this.isDestroyed = false;
-    document.getElementById("btn-result-continue")?.addEventListener("click", () => window.appCtrl.changeView("lobby"));
+    this.returnInFlight = false;
+    document.getElementById("btn-result-continue")?.addEventListener("click", () => this.returnToLobby());
     this.bootstrap();
   }
 
@@ -46,6 +47,42 @@ export class ResultController {
     this.startHeartbeat();
   }
 
+  async returnToLobby() {
+    if (this.returnInFlight) {
+      return;
+    }
+
+    const lobbyId = Number(this.currentLobby?.id || 0);
+    if (lobbyId <= 0) {
+      window.appCtrl.changeView("main");
+      return;
+    }
+
+    this.returnInFlight = true;
+    this.setStatus("Reinitialisation du lobby...", null);
+    this.setContinueDisabled(true);
+
+    const res = await window.httpClient.resetLobbyForReplay(lobbyId);
+    this.returnInFlight = false;
+
+    if (!res.success || !res.data?.lobby) {
+      if (this.shouldExitLobby(res.error)) {
+        this.exitLobbyIfActive();
+        return;
+      }
+
+      this.setContinueDisabled(false);
+      this.setStatus(res.error || "Impossible de reinitialiser le lobby", false);
+      return;
+    }
+
+    this.currentLobby = res.data.lobby;
+    setCurrentLobby(res.data.lobby);
+    localStorage.removeItem("mq_last_scoreboard");
+    this.setStatus("Lobby reinitialise", true);
+    window.appCtrl.changeView("lobby");
+  }
+
   startHeartbeat() {
     this.stopHeartbeat();
     this.heartbeatInterval = setInterval(() => this.touchPresence(), 15000);
@@ -84,6 +121,28 @@ export class ResultController {
       .replaceAll("&", "&amp;")
       .replaceAll("<", "&lt;")
       .replaceAll(">", "&gt;");
+  }
+
+  setContinueDisabled(disabled) {
+    const button = document.getElementById("btn-result-continue");
+    if (button) {
+      button.disabled = Boolean(disabled);
+    }
+  }
+
+  setStatus(text, ok = null) {
+    const el = document.getElementById("result-status");
+    if (!el) return;
+    el.textContent = text || "";
+    if (ok === true) {
+      el.className = "status success";
+      return;
+    }
+    if (ok === false) {
+      el.className = "status error";
+      return;
+    }
+    el.className = "status";
   }
 
   destroy() {
