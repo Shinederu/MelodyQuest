@@ -187,7 +187,6 @@ export class LobbyController {
   renderLobby(data) {
     const lobby = data?.lobby;
     const players = data?.players ?? [];
-    const categoriesHost = document.getElementById("lobby-categories-selected");
     const playersHost = document.getElementById("lobby-players");
     const ownerOnly = document.querySelectorAll(".owner-only");
     const header = document.getElementById("lobby-title");
@@ -217,16 +216,6 @@ export class LobbyController {
       playersHost.querySelectorAll("[data-kick-user]").forEach((button) => {
         button.addEventListener("click", () => this.kickPlayer(Number(button.dataset.kickUser || 0)));
       });
-    }
-
-    if (categoriesHost) {
-      const selected = Array.isArray(lobby?.selected_category_ids) ? lobby.selected_category_ids.map(Number) : [];
-      const names = this.categories
-        .filter((category) => selected.includes(Number(category.id || 0)))
-        .map((category) => category.name);
-      categoriesHost.innerHTML = names.length
-        ? names.map((name) => `<span class="mq-chip">${this.escapeHtml(name)}</span>`).join("")
-        : `<span class="mq-muted">Toutes les categories actives</span>`;
     }
 
     const isOwner = Number(lobby?.owner_user_id || 0) === Number(this.user?.id || 0);
