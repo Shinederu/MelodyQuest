@@ -1,12 +1,15 @@
 import { getCurrentLobby, setCurrentLobby, clearCurrentLobby } from "../utils/LobbyState.js";
 
+const AUTO_RETURN_DELAY_SECONDS = 15;
+
 export class ResultController {
   constructor() {
     this.currentLobby = getCurrentLobby();
     this.heartbeatInterval = null;
+    this.countdownInterval = null;
     this.isDestroyed = false;
     this.returnInFlight = false;
-    document.getElementById("btn-result-continue")?.addEventListener("click", () => this.returnToLobby());
+    this.countdownRemaining = AUTO_RETURN_DELAY_SECONDS;
     this.bootstrap();
   }
 
@@ -45,6 +48,7 @@ export class ResultController {
     `).join("");
 
     this.startHeartbeat();
+    this.startAutoReturnCountdown();
   }
 
   async returnToLobby() {
@@ -59,8 +63,8 @@ export class ResultController {
     }
 
     this.returnInFlight = true;
+    this.stopAutoReturnCountdown();
     this.setStatus("Reinitialisation du lobby...", null);
-    this.setContinueDisabled(true);
 
     const res = await window.httpClient.resetLobbyForReplay(lobbyId);
     this.returnInFlight = false;
@@ -71,7 +75,7 @@ export class ResultController {
         return;
       }
 
-      this.setContinueDisabled(false);
+      this.startAutoReturnCountdown();
       this.setStatus(res.error || "Impossible de reinitialiser le lobby", false);
       return;
     }
@@ -81,6 +85,38 @@ export class ResultController {
     localStorage.removeItem("mq_last_scoreboard");
     this.setStatus("Lobby reinitialise", true);
     window.appCtrl.changeView("lobby");
+  }
+
+  startAutoReturnCountdown() {
+    this.stopAutoReturnCountdown();
+    this.countdownRemaining = AUTO_RETURN_DELAY_SECONDS;
+    this.renderCountdown();
+
+    this.countdownInterval = setInterval(() => {
+      if (this.isDestroyed || this.returnInFlight) {
+        return;
+      }
+
+      this.countdownRemaining = Math.max(0, this.countdownRemaining - 1);
+      this.renderCountdown();
+
+      if (this.countdownRemaining <= 0) {
+        this.returnToLobby();
+      }
+    }, 1000);
+  }
+
+  stopAutoReturnCountdown() {
+    if (this.countdownInterval) {
+      clearInterval(this.countdownInterval);
+      this.countdownInterval = null;
+    }
+  }
+
+  renderCountdown() {
+    const el = document.getElementById("result-countdown");
+    if (!el) return;
+    el.textContent = `Retour automatique au lobby dans ${this.countdownRemaining}s`;
   }
 
   startHeartbeat() {
@@ -123,13 +159,6 @@ export class ResultController {
       .replaceAll(">", "&gt;");
   }
 
-  setContinueDisabled(disabled) {
-    const button = document.getElementById("btn-result-continue");
-    if (button) {
-      button.disabled = Boolean(disabled);
-    }
-  }
-
   setStatus(text, ok = null) {
     const el = document.getElementById("result-status");
     if (!el) return;
@@ -148,5 +177,6 @@ export class ResultController {
   destroy() {
     this.isDestroyed = true;
     this.stopHeartbeat();
+    this.stopAutoReturnCountdown();
   }
 }
