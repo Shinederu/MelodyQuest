@@ -887,6 +887,32 @@ li {
   margin-bottom: 8px;
 }
 
+#game-answer.is-invalid {
+  border-color: rgba(206, 93, 86, 0.58);
+  box-shadow: 0 0 0 4px rgba(206, 93, 86, 0.12);
+}
+
+.mq-game-note,
+.mq-game-vote-panel {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid rgba(117, 146, 171, 0.18);
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgba(248, 242, 234, 0.96), rgba(236, 240, 237, 0.94)),
+    radial-gradient(circle at right top, rgba(58, 112, 122, 0.1), transparent 46%);
+}
+
+.mq-game-note strong,
+.mq-game-vote-panel strong {
+  font-size: 1rem;
+}
+
+.mq-game-vote-panel {
+  margin-top: 16px;
+}
+
 .mq-admin-dashboard {
   display: grid;
   gap: 22px;

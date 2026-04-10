@@ -202,6 +202,12 @@ export class HttpService {
     });
   }
 
+  async voteNextRound(lobbyId) {
+    return this.request(MELODY_BASE_URL, "POST", "voteNextRound", {
+      lobby_id: lobbyId,
+    });
+  }
+
   async submitAnswer(lobbyId, guessTitle, guessArtist) {
     return this.request(MELODY_BASE_URL, "POST", "submitAnswer", {
       lobby_id: lobbyId,

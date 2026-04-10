@@ -1,20 +1,44 @@
-import { getCurrentLobby, clearCurrentLobby } from "../utils/LobbyState.js";
+import { getCurrentLobby, setCurrentLobby, clearCurrentLobby } from "../utils/LobbyState.js";
+
+const AUTO_NEXT_STORAGE_KEY = "mq_auto_next_round";
 
 export class GameController {
   constructor() {
     this.user = JSON.parse(localStorage.getItem("user") || "null");
     this.currentLobby = getCurrentLobby();
+    this.players = [];
+    this.scoreboard = [];
+    this.roundState = { round: null, answers: [] };
     this.stream = null;
     this.lastRevision = 0;
     this.realtimeConfig = null;
     this.timerInterval = null;
     this.heartbeatInterval = null;
     this.isDestroyed = false;
+    this.currentRoundId = 0;
+    this.correctUnlockedRoundId = 0;
+    this.correctUnlockedScore = 0;
+    this.localNextVoteRoundId = 0;
+    this.roundRefreshRequested = false;
+    this.roundRefreshInFlight = false;
+    this.nextVoteRequestInFlight = false;
+    this.videoRenderKey = "";
+    this.autoNextEnabled = localStorage.getItem(AUTO_NEXT_STORAGE_KEY) === "1";
 
     document.getElementById("btn-game-submit")?.addEventListener("click", () => this.submitAnswer());
-    document.getElementById("btn-game-reveal")?.addEventListener("click", () => this.revealNow());
-    document.getElementById("btn-game-next")?.addEventListener("click", () => this.finishRound());
+    document.getElementById("btn-game-next")?.addEventListener("click", () => this.voteNextRound(false));
     document.getElementById("btn-game-leave")?.addEventListener("click", () => this.leaveLobby());
+    document.getElementById("game-answer")?.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        this.submitAnswer();
+      }
+    });
+    document.getElementById("game-auto-next")?.addEventListener("change", (event) => {
+      this.autoNextEnabled = Boolean(event?.target?.checked);
+      localStorage.setItem(AUTO_NEXT_STORAGE_KEY, this.autoNextEnabled ? "1" : "0");
+      this.updateRoundPresentation();
+    });
 
     this.bootstrap();
   }
@@ -41,14 +65,65 @@ export class GameController {
       return;
     }
 
-    this.currentLobby = detail.data.lobby;
-    this.realtimeConfig = detail.data?.realtime ?? null;
-    this.renderPlayers(detail.data.players ?? [], scoreboard.data?.items ?? []);
-    this.renderLobbyHeader(detail.data.lobby);
-    this.applyRoundState(roundState.data || { round: null, answers: [] });
-    this.renderOwnerActions();
+    this.applySnapshot({
+      lobby: detail.data.lobby,
+      players: detail.data.players ?? [],
+      scoreboard: { items: scoreboard.data?.items ?? [] },
+      round: roundState.data || { round: null, answers: [] },
+      realtime: detail.data?.realtime ?? null,
+    });
+
     this.startRealtime();
     this.startHeartbeat();
+  }
+
+  applySnapshot(snapshot = {}) {
+    if (snapshot?.lobby) {
+      this.currentLobby = snapshot.lobby;
+      setCurrentLobby(snapshot.lobby);
+    }
+    if (Array.isArray(snapshot?.players)) {
+      this.players = snapshot.players;
+    }
+    if (Array.isArray(snapshot?.scoreboard?.items)) {
+      this.scoreboard = snapshot.scoreboard.items;
+    }
+    if (snapshot?.round) {
+      this.trackRoundChange(snapshot.round.round);
+      this.roundState = snapshot.round;
+    }
+    if (snapshot?.realtime) {
+      this.realtimeConfig = snapshot.realtime;
+    }
+
+    this.renderLobbyHeader();
+    this.renderScoreboard();
+    this.updateRoundPresentation();
+    this.startTimerLoop();
+  }
+
+  trackRoundChange(round) {
+    const roundId = Number(round?.id || 0);
+    if (roundId === this.currentRoundId) {
+      return;
+    }
+
+    this.currentRoundId = roundId;
+    this.correctUnlockedRoundId = 0;
+    this.correctUnlockedScore = 0;
+    this.localNextVoteRoundId = 0;
+    this.roundRefreshRequested = false;
+    this.nextVoteRequestInFlight = false;
+    this.videoRenderKey = "";
+
+    const answerInput = document.getElementById("game-answer");
+    if (answerInput) {
+      answerInput.value = "";
+      answerInput.classList.remove("is-invalid");
+    }
+
+    this.setAnswerFeedback("");
+    this.setStatus(roundId ? "Nouvelle manche" : "", null);
   }
 
   startRealtime() {
@@ -70,8 +145,7 @@ export class GameController {
       this.stream = window.httpClient.openMercureSubscription(this.realtimeConfig);
       this.stream.addEventListener(this.realtimeConfig.event || "message", (evt) => {
         if (!evt?.data) return;
-        const payload = JSON.parse(evt.data);
-        this.handleSnapshot(payload);
+        this.handleSnapshot(JSON.parse(evt.data));
       });
       this.stream.onerror = () => {
         this.stopRealtime();
@@ -123,109 +197,204 @@ export class GameController {
       }
     }
 
-    if (snapshot?.lobby) {
-      this.currentLobby = snapshot.lobby;
-      this.renderLobbyHeader(snapshot.lobby);
-    }
-    if (snapshot?.players || snapshot?.scoreboard?.items) {
-      this.renderPlayers(snapshot.players ?? [], snapshot.scoreboard?.items ?? []);
-    }
-    if (snapshot?.round) {
-      const status = String(snapshot.round?.round?.status || "").toLowerCase();
-      if (status === "finished" || !snapshot.round?.round) {
-        this.finishToResult(snapshot.scoreboard?.items ?? []);
-        return;
-      }
-      this.applyRoundState(snapshot.round);
-    }
+    this.applySnapshot(snapshot);
   }
 
-  renderLobbyHeader(lobby) {
+  renderLobbyHeader() {
     const title = document.getElementById("game-title");
     const meta = document.getElementById("game-meta");
-    if (title) title.textContent = lobby?.name || "Partie en cours";
+    const round = this.roundState?.round;
+    const currentRoundNumber = Number(round?.round_number || this.currentLobby?.current_round_number || 1);
+    const totalRounds = Number(this.currentLobby?.total_rounds || 0);
+
+    if (title) {
+      title.textContent = this.currentLobby?.name || "Partie en cours";
+    }
     if (meta) {
-      meta.textContent = `Manche ${Number(lobby?.current_round_number || 1)} / ${Number(lobby?.total_rounds || 0)} · ${String(lobby?.lobby_code || "")}`;
+      meta.textContent = `Manche ${currentRoundNumber} / ${totalRounds} · ${String(this.currentLobby?.lobby_code || "")}`;
     }
   }
 
-  renderPlayers(players, scoreboard) {
-    const list = document.getElementById("game-players");
+  renderScoreboard() {
+    const list = document.getElementById("game-scoreboard");
     if (!list) return;
 
-    const scoreMap = new Map((scoreboard || []).map((entry) => [Number(entry.user_id || 0), Number(entry.score || 0)]));
-    list.innerHTML = (players || []).map((player) => `
+    const fallbackEntries = this.players.map((player, index) => ({
+      user_id: Number(player.user_id || 0),
+      username: String(player.username || "joueur"),
+      score: Number(player.score || 0),
+      _order: index,
+    }));
+    const source = (this.scoreboard?.length ? this.scoreboard : fallbackEntries)
+      .map((entry, index) => ({
+        user_id: Number(entry.user_id || 0),
+        username: String(entry.username || "joueur"),
+        score: Number(entry.score || 0),
+        _order: index,
+      }))
+      .sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return a._order - b._order;
+      });
+
+    list.innerHTML = source.map((entry, index) => `
       <li class="mq-list-row">
         <div>
-          <strong>${this.escapeHtml(player.username || "joueur")}</strong>
-          <span class="mq-muted">${this.escapeHtml(player.role || "player")}</span>
+          <strong>${this.formatRank(index + 1)} ${this.escapeHtml(entry.username)}</strong>
         </div>
-        <span class="mq-chip">${scoreMap.get(Number(player.user_id || 0)) ?? Number(player.score || 0)} pt</span>
+        <span class="mq-chip">${Number(entry.score || 0)} pt</span>
       </li>
     `).join("");
   }
 
-  applyRoundState(data) {
-    const round = data?.round;
+  updateRoundPresentation() {
+    const round = this.roundState?.round;
     if (!round) {
-      this.finishToResult([]);
+      this.renderVideo(null, false);
+      if (String(this.currentLobby?.status || "").toLowerCase() === "finished") {
+        this.finishToResult(this.scoreboard || []);
+        return;
+      }
+      if (String(this.currentLobby?.status || "").toLowerCase() === "waiting") {
+        window.appCtrl.changeView("lobby");
+      }
       return;
     }
 
-    const reveal = String(round.status || "").toLowerCase() === "reveal";
-    const answers = data?.answers ?? [];
-    const currentUserId = Number(this.user?.id || 0);
-    const userAnswer = answers.find((answer) => Number(answer.user_id || 0) === currentUserId);
-    const hasCorrect = Boolean(userAnswer && Number(userAnswer.score_awarded || 0) > 0);
+    const userAnswer = this.getCurrentUserAnswer();
+    const hasCorrectAnswer = this.hasCorrectAnswer(round, userAnswer);
+    const answerClosed = this.isAnswerWindowClosed(round);
+    const revealVisible = hasCorrectAnswer || answerClosed || Boolean(round?.is_reveal_visible);
+    const nextVoteAvailable = this.isNextVoteAvailable(round);
 
-    this.renderTimer(round, reveal);
-    this.renderAnswers(answers);
-    this.renderVideo(round.track, reveal || hasCorrect);
-    this.renderOwnerActions(reveal);
+    this.renderTimer(round, answerClosed, nextVoteAvailable);
+    this.renderVideo(round?.track, revealVisible);
+    this.renderAnswerPhase(round, userAnswer, hasCorrectAnswer, answerClosed);
+    this.renderVotePhase(round, answerClosed, nextVoteAvailable);
+
+    if (answerClosed && !this.roundRefreshRequested) {
+      this.roundRefreshRequested = true;
+      window.setTimeout(() => this.refreshGameState(), 200);
+    }
+
+    if (answerClosed && nextVoteAvailable && this.autoNextEnabled && !this.hasCurrentUserVoted(round)) {
+      this.voteNextRound(true);
+    }
   }
 
-  renderTimer(round, reveal) {
-    const el = document.getElementById("game-timer");
-    if (!el) return;
-
+  startTimerLoop() {
     if (this.timerInterval) {
       clearInterval(this.timerInterval);
       this.timerInterval = null;
     }
 
-    const duration = reveal
-      ? Number(this.currentLobby?.reveal_duration_seconds || 10)
-      : Number(this.currentLobby?.round_duration_seconds || 30);
-    const reference = reveal ? round.reveal_started_at : round.started_at;
-
-    if (!reference) {
-      el.textContent = "--";
+    if (!this.roundState?.round) {
       return;
     }
 
-    const tick = () => {
-      const endTime = new Date(reference).getTime() + duration * 1000;
-      const remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
-      el.textContent = `${remaining}s`;
-    };
-
-    tick();
-    this.timerInterval = setInterval(tick, 1000);
+    this.timerInterval = setInterval(() => {
+      if (this.isDestroyed) return;
+      this.updateRoundPresentation();
+    }, 1000);
   }
 
-  renderAnswers(answers) {
-    const list = document.getElementById("game-answers");
-    if (!list) return;
+  renderTimer(round, answerClosed, nextVoteAvailable) {
+    const el = document.getElementById("game-timer");
+    if (!el) return;
 
-    list.innerHTML = answers.map((answer) => `
-      <li class="mq-list-row">
-        <div>
-          <strong>${this.escapeHtml(answer.username || "joueur")}</strong>
-          <span class="mq-muted">${this.escapeHtml(answer.guess_title || answer.guess_artist || "A repondu")}</span>
-        </div>
-        <span class="mq-chip">+${Number(answer.score_awarded || 0)}</span>
-      </li>
-    `).join("");
+    if (!answerClosed) {
+      const remaining = Math.max(0, Math.ceil((this.getAnswerDeadlineMs(round) - Date.now()) / 1000));
+      el.textContent = `${remaining}s`;
+      return;
+    }
+
+    if (!nextVoteAvailable) {
+      const remaining = Math.max(0, Math.ceil((this.getNextVoteAvailableMs(round) - Date.now()) / 1000));
+      el.textContent = `Solution ${remaining}s`;
+      return;
+    }
+
+    el.textContent = "Votes";
+  }
+
+  renderAnswerPhase(round, userAnswer, hasCorrectAnswer, answerClosed) {
+    const shell = document.getElementById("game-answer-shell");
+    const locked = document.getElementById("game-answer-locked");
+    const lockedTitle = document.getElementById("game-answer-locked-title");
+    const lockedCopy = document.getElementById("game-answer-locked-copy");
+    const input = document.getElementById("game-answer");
+    const submit = document.getElementById("btn-game-submit");
+
+    if (!shell || !locked || !lockedTitle || !lockedCopy || !input || !submit) return;
+
+    const solutionText = this.buildSolutionText(round?.track);
+    if (!answerClosed && !hasCorrectAnswer) {
+      shell.hidden = false;
+      locked.hidden = true;
+      input.disabled = false;
+      submit.disabled = false;
+      return;
+    }
+
+    shell.hidden = true;
+    locked.hidden = false;
+    input.disabled = true;
+    submit.disabled = true;
+    input.classList.remove("is-invalid");
+
+    if (hasCorrectAnswer && !answerClosed) {
+      const awardedScore = Number(userAnswer?.score_awarded || this.correctUnlockedScore || 0);
+      lockedTitle.textContent = "Bonne reponse";
+      lockedCopy.textContent = awardedScore > 0
+        ? `+${awardedScore} pt. La video est desormais disponible pour toi.`
+        : "La video est desormais disponible pour toi.";
+      return;
+    }
+
+    lockedTitle.textContent = "Solution";
+    lockedCopy.textContent = solutionText || "Le chrono est termine pour cette manche.";
+  }
+
+  renderVotePhase(round, answerClosed, nextVoteAvailable) {
+    const panel = document.getElementById("game-next-panel");
+    const info = document.getElementById("game-next-info");
+    const summary = document.getElementById("game-next-summary");
+    const button = document.getElementById("btn-game-next");
+    const checkbox = document.getElementById("game-auto-next");
+    if (!panel || !info || !summary || !button || !checkbox) return;
+
+    checkbox.checked = this.autoNextEnabled;
+
+    if (!answerClosed) {
+      panel.hidden = true;
+      return;
+    }
+
+    panel.hidden = false;
+
+    const playersCount = Math.max(1, this.players.length);
+    const requiredCount = Math.max(1, Math.ceil(playersCount * 0.5));
+    const currentUserId = Number(this.user?.id || 0);
+    const serverHasCurrentVote = this.players.some((player) => Number(player.user_id || 0) === currentUserId && Number(player.is_ready || 0) === 1);
+    const readyCount = this.players.filter((player) => Number(player.is_ready || 0) === 1).length
+      + (!serverHasCurrentVote && this.localNextVoteRoundId === Number(round?.id || 0) ? 1 : 0);
+    const hasVoted = this.hasCurrentUserVoted(round);
+
+    summary.textContent = `${readyCount} / ${requiredCount} votes pour passer a la manche suivante`;
+
+    if (!nextVoteAvailable) {
+      const remaining = Math.max(0, Math.ceil((this.getNextVoteAvailableMs(round) - Date.now()) / 1000));
+      info.textContent = `Le vote sera disponible dans ${remaining}s.`;
+      button.hidden = true;
+      return;
+    }
+
+    info.textContent = hasVoted
+      ? "Ton vote est enregistre. En attente du reste du lobby."
+      : "Au moins 50% des joueurs doivent valider pour lancer la suite.";
+    button.hidden = false;
+    button.disabled = hasVoted || this.nextVoteRequestInFlight;
+    button.textContent = hasVoted ? "Vote enregistre" : "Passer au suivant";
   }
 
   renderVideo(track, showVideo) {
@@ -234,66 +403,254 @@ export class GameController {
     if (!host || !solution) return;
 
     const videoId = String(track?.youtube_video_id || "");
-    if (showVideo && videoId) {
-      const expected = String(track?.family_name || track?.title || "").trim();
-      const details = [String(track?.title || "").trim(), String(track?.artist || "").trim()].filter(Boolean);
-      const solutionText = expected
-        ? [expected, details.filter((value) => value !== expected).join(" - ")].filter(Boolean).join(" · ")
-        : details.join(" - ");
-      host.innerHTML = `<iframe src="https://www.youtube.com/embed/${this.escapeAttr(videoId)}?autoplay=1" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
-      solution.textContent = solutionText;
-      solution.className = "status success";
-    } else {
-      host.innerHTML = `<div class="mq-video-placeholder"><p>La video reste cachee jusqu'a la revelation.</p></div>`;
-      solution.textContent = "";
-      solution.className = "status";
+    const renderKey = showVideo && videoId ? `video:${videoId}` : "hidden";
+    if (renderKey !== this.videoRenderKey) {
+      if (showVideo && videoId) {
+        host.innerHTML = `<iframe src="https://www.youtube.com/embed/${this.escapeAttr(videoId)}?autoplay=1" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
+      } else {
+        host.innerHTML = `<div class="mq-video-placeholder"><p>La video reste cachee tant que tu n as pas trouve ou que le chrono n est pas termine.</p></div>`;
+      }
+      this.videoRenderKey = renderKey;
     }
+
+    if (showVideo) {
+      solution.textContent = this.buildSolutionText(track);
+      solution.className = "status success";
+      return;
+    }
+
+    solution.textContent = "";
+    solution.className = "status";
   }
 
-  renderOwnerActions(reveal = false) {
-    const owner = Number(this.currentLobby?.owner_user_id || 0) === Number(this.user?.id || 0);
-    const revealButton = document.getElementById("btn-game-reveal");
-    const nextButton = document.getElementById("btn-game-next");
-    if (revealButton) revealButton.style.display = owner && !reveal ? "" : "none";
-    if (nextButton) nextButton.style.display = owner && reveal ? "" : "none";
+  buildSolutionText(track) {
+    const expected = String(track?.family_name || track?.title || "").trim();
+    const details = [String(track?.title || "").trim(), String(track?.artist || "").trim()].filter(Boolean);
+    if (!expected) {
+      return details.join(" - ");
+    }
+
+    const extra = details.filter((value) => value !== expected).join(" - ");
+    return [expected, extra].filter(Boolean).join(" · ");
+  }
+
+  getCurrentUserAnswer() {
+    const currentUserId = Number(this.user?.id || 0);
+    return (this.roundState?.answers ?? []).find((answer) => Number(answer.user_id || 0) === currentUserId) || null;
+  }
+
+  hasCorrectAnswer(round, userAnswer) {
+    if (Number(userAnswer?.score_awarded || 0) > 0) {
+      this.correctUnlockedRoundId = Number(round?.id || 0);
+      this.correctUnlockedScore = Number(userAnswer?.score_awarded || 0);
+      return true;
+    }
+
+    return this.correctUnlockedRoundId === Number(round?.id || 0);
+  }
+
+  hasCurrentUserVoted(round) {
+    const roundId = Number(round?.id || 0);
+    if (roundId > 0 && this.localNextVoteRoundId === roundId) {
+      return true;
+    }
+
+    const currentUserId = Number(this.user?.id || 0);
+    return this.players.some((player) => Number(player.user_id || 0) === currentUserId && Number(player.is_ready || 0) === 1);
+  }
+
+  getAnswerDeadlineMs(round) {
+    const explicit = Date.parse(String(round?.answer_deadline_at || ""));
+    if (!Number.isNaN(explicit)) {
+      return explicit;
+    }
+
+    const startedAt = Date.parse(String(round?.started_at || ""));
+    const duration = Number(this.currentLobby?.round_duration_seconds || 30) * 1000;
+    return Number.isNaN(startedAt) ? Date.now() : startedAt + duration;
+  }
+
+  getNextVoteAvailableMs(round) {
+    const explicit = Date.parse(String(round?.next_vote_available_at || ""));
+    if (!Number.isNaN(explicit)) {
+      return explicit;
+    }
+
+    return this.getAnswerDeadlineMs(round) + (this.getRevealDelaySeconds(round) * 1000);
+  }
+
+  getRevealDelaySeconds(round) {
+    return Math.max(10, Number(round?.reveal_delay_seconds || this.currentLobby?.reveal_duration_seconds || 10));
+  }
+
+  isAnswerWindowClosed(round) {
+    if (round?.is_accepting_answers === false) {
+      return true;
+    }
+
+    return Date.now() >= this.getAnswerDeadlineMs(round);
+  }
+
+  isNextVoteAvailable(round) {
+    return Date.now() >= this.getNextVoteAvailableMs(round);
   }
 
   async submitAnswer() {
-    const answer = String(document.getElementById("game-answer")?.value || "").trim();
+    const round = this.roundState?.round;
+    if (!round) {
+      this.setStatus("Aucune manche en cours", false);
+      return;
+    }
+
+    if (this.isAnswerWindowClosed(round)) {
+      this.setAnswerFeedback("Le temps est ecoule.", "error");
+      this.clearAnswerInput();
+      this.updateRoundPresentation();
+      return;
+    }
+
+    if (this.hasCorrectAnswer(round, this.getCurrentUserAnswer())) {
+      return;
+    }
+
+    const input = document.getElementById("game-answer");
+    const answer = String(input?.value || "").trim();
     if (!answer) {
-      this.setStatus("Reponse requise", false);
+      this.setAnswerFeedback("Reponse requise", "error");
       return;
     }
 
     const res = await window.httpClient.submitAnswer(this.getLobbyId(), answer, answer);
-    this.setStatus(res.success ? "Reponse envoyee" : (res.error || "Erreur"), res.success);
-    if (!res.success && this.shouldExitLobby(res.error)) {
-      this.exitLobbyIfActive();
-    }
-  }
+    if (!res.success) {
+      if (this.shouldExitLobby(res.error)) {
+        this.exitLobbyIfActive();
+        return;
+      }
 
-  async revealNow() {
-    const res = await window.httpClient.revealRound(this.getLobbyId());
-    this.setStatus(res.success ? "Reponse affichee" : (res.error || "Erreur"), res.success);
-    if (res.success) {
-      this.applyRoundState(res.data);
+      this.setAnswerFeedback(res.error || "Erreur", "error");
+      this.clearAnswerInput();
+      if (/temps de reponse est ecoule/i.test(String(res.error || ""))) {
+        this.updateRoundPresentation();
+      } else {
+        this.flashWrongAnswer();
+      }
       return;
     }
-    if (this.shouldExitLobby(res.error)) {
-      this.exitLobbyIfActive();
-    }
-  }
 
-  async finishRound() {
-    const res = await window.httpClient.finishRound(this.getLobbyId());
-    this.setStatus(res.success ? "Manche terminee" : (res.error || "Erreur"), res.success);
-    if (res.success) {
-      this.finishToResult(res.data?.scoreboard?.items ?? []);
+    if (res.data?.is_correct) {
+      this.correctUnlockedRoundId = Number(round.id || 0);
+      this.correctUnlockedScore = Number(res.data?.score_awarded || 0);
+      this.setAnswerFeedback(`Bonne reponse, +${this.correctUnlockedScore} pt`, "success");
+      this.setStatus("Bonne reponse", true);
+      this.clearAnswerInput();
+      this.updateRoundPresentation();
       return;
     }
-    if (this.shouldExitLobby(res.error)) {
-      this.exitLobbyIfActive();
+
+    this.setAnswerFeedback("Mauvaise reponse, reessaie.", "error");
+    this.setStatus("Mauvaise reponse", false);
+    this.clearAnswerInput();
+    this.flashWrongAnswer();
+  }
+
+  async voteNextRound(isAutomatic) {
+    const round = this.roundState?.round;
+    if (!round || !this.isNextVoteAvailable(round) || this.hasCurrentUserVoted(round) || this.nextVoteRequestInFlight) {
+      return;
     }
+
+    this.nextVoteRequestInFlight = true;
+    const res = await window.httpClient.voteNextRound(this.getLobbyId());
+    this.nextVoteRequestInFlight = false;
+
+    if (!res.success) {
+      if (this.shouldExitLobby(res.error)) {
+        this.exitLobbyIfActive();
+        return;
+      }
+
+      if (!/pas encore disponible/i.test(String(res.error || ""))) {
+        this.setStatus(res.error || "Erreur", false);
+      }
+      return;
+    }
+
+    this.localNextVoteRoundId = Number(round.id || 0);
+    if (!res.data?.advanced) {
+      this.players = this.players.map((player) => (
+        Number(player.user_id || 0) === Number(this.user?.id || 0)
+          ? { ...player, is_ready: 1 }
+          : player
+      ));
+    }
+
+    const readyCount = Number(res.data?.ready_count || 0);
+    const requiredCount = Number(res.data?.required_count || Math.max(1, Math.ceil(this.players.length * 0.5)));
+    const label = isAutomatic ? "Vote automatique enregistre" : "Vote enregistre";
+    this.setStatus(
+      res.data?.advanced
+        ? (res.data?.finished_game ? "Fin de partie" : "Manche suivante en preparation")
+        : `${label} (${readyCount}/${requiredCount})`,
+      true
+    );
+    if (res.data?.advanced) {
+      window.setTimeout(() => this.refreshGameState(), 200);
+    }
+    this.updateRoundPresentation();
+  }
+
+  async refreshGameState() {
+    if (this.roundRefreshInFlight || !this.getLobbyId()) {
+      return;
+    }
+
+    this.roundRefreshInFlight = true;
+    const [roundRes, scoreRes] = await Promise.all([
+      window.httpClient.getRoundState(this.getLobbyId()),
+      window.httpClient.getScoreboard(this.getLobbyId()),
+    ]);
+    this.roundRefreshInFlight = false;
+
+    if (!roundRes.success) {
+      if (this.shouldExitLobby(roundRes.error)) {
+        this.exitLobbyIfActive();
+      }
+      return;
+    }
+
+    this.applySnapshot({
+      lobby: this.currentLobby,
+      players: this.players,
+      scoreboard: { items: scoreRes.success ? (scoreRes.data?.items ?? this.scoreboard) : this.scoreboard },
+      round: roundRes.data,
+      realtime: this.realtimeConfig,
+    });
+  }
+
+  clearAnswerInput() {
+    const input = document.getElementById("game-answer");
+    if (!input) return;
+    input.value = "";
+  }
+
+  flashWrongAnswer() {
+    const input = document.getElementById("game-answer");
+    if (!input) return;
+    input.classList.remove("is-invalid");
+    void input.offsetWidth;
+    input.classList.add("is-invalid");
+    window.setTimeout(() => input.classList.remove("is-invalid"), 700);
+  }
+
+  setAnswerFeedback(text, kind = null) {
+    const el = document.getElementById("game-answer-feedback");
+    if (!el) return;
+    el.textContent = text || "";
+    if (!text) {
+      el.className = "status";
+      return;
+    }
+    el.className = kind === "success" ? "status success" : kind === "error" ? "status error" : "status";
   }
 
   async leaveLobby() {
@@ -344,6 +701,11 @@ export class GameController {
     window.appCtrl.changeView("main");
   }
 
+  formatRank(rank) {
+    if (rank === 1) return "1er";
+    return `${rank}e`;
+  }
+
   escapeHtml(value) {
     return String(value)
       .replaceAll("&", "&amp;")
@@ -355,11 +717,19 @@ export class GameController {
     return this.escapeHtml(value).replaceAll('"', "&quot;");
   }
 
-  setStatus(text, ok) {
+  setStatus(text, ok = null) {
     const el = document.getElementById("game-status");
     if (!el) return;
-    el.textContent = text;
-    el.className = ok ? "status success" : "status error";
+    el.textContent = text || "";
+    if (ok === true) {
+      el.className = "status success";
+      return;
+    }
+    if (ok === false) {
+      el.className = "status error";
+      return;
+    }
+    el.className = "status";
   }
 
   destroy() {

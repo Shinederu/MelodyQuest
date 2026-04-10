@@ -11,30 +11,12 @@
         <div class="mq-kicker">Chrono</div>
         <p id="game-timer" class="mq-chip mq-chip--timer">--</p>
         <p id="game-status" class="status"></p>
-        <div class="mq-actions">
+        <div class="mq-actions mq-actions--full">
           <button id="btn-game-leave" type="button" class="mq-danger">Quitter le lobby</button>
         </div>
       </aside>
     </div>
   </header>
-
-  <div class="mq-two-cols">
-    <section class="mq-card">
-      <div class="mq-card-heading">
-        <div class="mq-kicker">Joueurs</div>
-        <h2>Participants</h2>
-      </div>
-      <ul id="game-players" class="mq-clean-list"></ul>
-    </section>
-
-    <section class="mq-card mq-card--accent">
-      <div class="mq-card-heading">
-        <div class="mq-kicker">Conseil</div>
-        <h2>Garde le rythme</h2>
-        <p class="mq-card-copy">Envoie ta reponse des que tu reconnais le morceau. Le reveal affiche la video et la solution a la fin du chrono.</p>
-      </div>
-    </section>
-  </div>
 
   <section class="mq-card mq-card--soft">
     <div class="mq-card-heading">
@@ -54,22 +36,46 @@
       <div class="mq-card-heading">
         <div class="mq-kicker">A toi de jouer</div>
         <h2>Ta reponse</h2>
+        <p class="mq-card-copy">Trouve le morceau avant la fin du chrono. Une bonne reponse debloque la video pour toi immediatement.</p>
       </div>
-      <label for="game-answer">Reponse</label>
-      <input id="game-answer" type="text" placeholder="Oeuvre ou artiste" />
-      <div class="mq-actions">
-        <button id="btn-game-submit" type="button">Envoyer la reponse</button>
-        <button id="btn-game-reveal" type="button" class="mq-secondary" style="display:none;">Afficher la reponse maintenant</button>
-        <button id="btn-game-next" type="button" style="display:none;">Manche suivante</button>
+
+      <div id="game-answer-shell" class="mq-form-stack">
+        <label for="game-answer">Reponse</label>
+        <input id="game-answer" type="text" placeholder="Nom du morceau" autocomplete="off" />
+        <p id="game-answer-feedback" class="status"></p>
+        <div class="mq-actions">
+          <button id="btn-game-submit" type="button">Envoyer la reponse</button>
+        </div>
+      </div>
+
+      <div id="game-answer-locked" class="mq-game-note" hidden>
+        <strong id="game-answer-locked-title">Solution</strong>
+        <p id="game-answer-locked-copy" class="mq-muted"></p>
+      </div>
+
+      <div id="game-next-panel" class="mq-game-vote-panel" hidden>
+        <div>
+          <p class="mq-section-label">Passer au suivant</p>
+          <p id="game-next-info" class="mq-muted">Le vote sera disponible apres quelques secondes de solution.</p>
+          <p id="game-next-summary" class="mq-muted"></p>
+        </div>
+        <label class="mq-check">
+          <input id="game-auto-next" type="checkbox" />
+          <span>Activer le suivant automatique</span>
+        </label>
+        <div class="mq-actions">
+          <button id="btn-game-next" type="button">Passer au suivant</button>
+        </div>
       </div>
     </section>
 
     <section class="mq-card mq-card--accent">
       <div class="mq-card-heading">
-        <div class="mq-kicker">Activite</div>
-        <h2>Reponses deja envoyees</h2>
+        <div class="mq-kicker">Scoreboard</div>
+        <h2>Classement</h2>
+        <p class="mq-card-copy">Le score evolue en direct en fonction de la vitesse de reponse.</p>
       </div>
-      <ul id="game-answers" class="mq-clean-list"></ul>
+      <ul id="game-scoreboard" class="mq-clean-list"></ul>
     </section>
   </div>
 </section>
