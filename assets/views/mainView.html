@@ -45,22 +45,27 @@
         <h2>Actions rapides</h2>
         <p class="mq-card-copy">Entre un code si tu as deja un salon ou choisis un nom avant de creer ton propre lobby.</p>
       </div>
-      <div class="mq-form-stack">
-        <div class="mq-field">
-          <label for="main-lobby-name">Nom du lobby</label>
-          <input id="main-lobby-name" type="text" maxlength="120" placeholder="Ex: Blindtest du vendredi" />
+      <div class="mq-main-action-stack">
+        <div class="mq-main-action-block">
+          <p class="mq-section-label">Creer un lobby</p>
+          <div class="mq-field">
+            <label for="main-lobby-name">Nom du lobby</label>
+            <input id="main-lobby-name" type="text" maxlength="120" placeholder="Ex: Blindtest du vendredi" />
+          </div>
+          <button id="btn-main-create" type="button">Creer un lobby</button>
         </div>
-        <div class="mq-field">
-          <label for="main-lobby-code">Rejoindre via un code de lobby</label>
-          <input id="main-lobby-code" type="text" maxlength="16" placeholder="Ex: ABC123" />
+
+        <div class="mq-main-action-block">
+          <p class="mq-section-label">Rejoindre via un code</p>
+          <div class="mq-field">
+            <label for="main-lobby-code">Code du lobby</label>
+            <input id="main-lobby-code" type="text" maxlength="16" placeholder="Ex: ABC123" />
+          </div>
+          <button id="btn-main-join-code" type="button">Rejoindre le lobby</button>
         </div>
       </div>
-      <div class="mq-actions">
-        <button id="btn-main-join-code" type="button">Rejoindre</button>
-        <button id="btn-main-create" type="button">Creer un nouveau lobby</button>
-      </div>
-      <div id="main-admin-actions" class="mq-actions">
-        <button id="btn-main-management" type="button" class="mq-secondary">Management</button>
+      <div id="main-admin-actions" class="mq-actions mq-actions--full">
+        <button id="btn-main-management" type="button" class="mq-secondary mq-button-block">Interface d'administration</button>
       </div>
     </section>
   </div>
