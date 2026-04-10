@@ -5,13 +5,18 @@ export class MainController {
     this.user = JSON.parse(localStorage.getItem("user") || "null");
     this.stream = null;
     this.lastRevision = 0;
+    this.realtimeConfig = null;
 
     document.getElementById("btn-main-create")?.addEventListener("click", () => this.createLobby());
     document.getElementById("btn-main-join-code")?.addEventListener("click", () => this.joinLobbyByCode());
     document.getElementById("btn-main-management")?.addEventListener("click", () => window.appCtrl.changeView("management"));
 
+    this.bootstrap();
+  }
+
+  async bootstrap() {
     this.renderAdminActions();
-    this.refreshLobbies();
+    await this.refreshLobbies();
     this.startRealtime();
   }
 
@@ -57,10 +62,43 @@ export class MainController {
       return;
     }
 
+    this.realtimeConfig = res.data?.realtime ?? null;
     this.renderLobbyList(res.data?.items ?? []);
   }
 
   startRealtime() {
+    this.stopRealtime();
+    if (this.startMercureRealtime()) {
+      return;
+    }
+
+    this.startLegacyRealtime();
+  }
+
+  startMercureRealtime() {
+    if (this.realtimeConfig?.transport !== "mercure") {
+      return false;
+    }
+
+    try {
+      this.stream = window.httpClient.openMercureSubscription(this.realtimeConfig);
+      this.stream.addEventListener(this.realtimeConfig.event || "message", (evt) => {
+        if (!evt?.data) return;
+        const payload = JSON.parse(evt.data);
+        this.renderLobbyList(payload?.items ?? []);
+      });
+      this.stream.onerror = () => {
+        this.stopRealtime();
+        this.setStatus("Flux Mercure indisponible, bascule SSE", false);
+        this.startLegacyRealtime();
+      };
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  startLegacyRealtime() {
     if (typeof EventSource !== "function") return;
 
     try {

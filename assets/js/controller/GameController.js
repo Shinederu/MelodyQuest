@@ -6,6 +6,7 @@ export class GameController {
     this.currentLobby = getCurrentLobby();
     this.stream = null;
     this.lastRevision = 0;
+    this.realtimeConfig = null;
     this.timerInterval = null;
     this.heartbeatInterval = null;
     this.isDestroyed = false;
@@ -41,6 +42,7 @@ export class GameController {
     }
 
     this.currentLobby = detail.data.lobby;
+    this.realtimeConfig = detail.data?.realtime ?? null;
     this.renderPlayers(detail.data.players ?? [], scoreboard.data?.items ?? []);
     this.renderLobbyHeader(detail.data.lobby);
     this.applyRoundState(roundState.data || { round: null, answers: [] });
@@ -50,6 +52,39 @@ export class GameController {
   }
 
   startRealtime() {
+    this.stopRealtime();
+
+    if (this.startMercureRealtime()) {
+      return;
+    }
+
+    this.startLegacyRealtime();
+  }
+
+  startMercureRealtime() {
+    if (this.realtimeConfig?.transport !== "mercure") {
+      return false;
+    }
+
+    try {
+      this.stream = window.httpClient.openMercureSubscription(this.realtimeConfig);
+      this.stream.addEventListener(this.realtimeConfig.event || "message", (evt) => {
+        if (!evt?.data) return;
+        const payload = JSON.parse(evt.data);
+        this.handleSnapshot(payload);
+      });
+      this.stream.onerror = () => {
+        this.stopRealtime();
+        this.setStatus("Flux Mercure indisponible, bascule SSE", false);
+        this.startLegacyRealtime();
+      };
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  startLegacyRealtime() {
     if (typeof EventSource !== "function") return;
 
     try {
@@ -74,6 +109,20 @@ export class GameController {
   }
 
   handleSnapshot(snapshot) {
+    if (snapshot?.deleted) {
+      this.exitLobbyIfActive();
+      return;
+    }
+
+    if (Array.isArray(snapshot?.players)) {
+      const currentUserId = Number(this.user?.id || 0);
+      const stillPresent = snapshot.players.some((player) => Number(player.user_id || 0) === currentUserId);
+      if (!stillPresent) {
+        this.exitLobbyIfActive();
+        return;
+      }
+    }
+
     if (snapshot?.lobby) {
       this.currentLobby = snapshot.lobby;
       this.renderLobbyHeader(snapshot.lobby);

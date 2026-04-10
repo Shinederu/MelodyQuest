@@ -6,6 +6,7 @@ export class LobbyListController {
     this.isRefreshing = false;
     this.stream = null;
     this.lastStreamRevision = 0;
+    this.realtimeConfig = null;
 
     this.visibilityHandler = () => {
       if (!document.hidden) {
@@ -18,7 +19,11 @@ export class LobbyListController {
     document.getElementById("btn-lobbylist-back")?.addEventListener("click", () => window.appCtrl.changeView("main"));
     document.addEventListener("visibilitychange", this.visibilityHandler);
 
-    this.refresh();
+    this.bootstrap();
+  }
+
+  async bootstrap() {
+    await this.refresh();
     this.startRealtime();
   }
 
@@ -26,9 +31,13 @@ export class LobbyListController {
     this.stopLiveRefresh();
     this.stopStream();
 
+    if (this.startMercureRealtime()) {
+      return;
+    }
+
     if (typeof EventSource === "function") {
       try {
-        this.startStream();
+        this.startLegacyStream();
         return;
       } catch {
         // fallback polling
@@ -38,7 +47,42 @@ export class LobbyListController {
     this.startLiveRefresh();
   }
 
-  startStream() {
+  startMercureRealtime() {
+    if (this.realtimeConfig?.transport !== "mercure") {
+      return false;
+    }
+
+    try {
+      this.stream = window.httpClient.openMercureSubscription(this.realtimeConfig);
+      this.stream.addEventListener(this.realtimeConfig.event || "message", (evt) => {
+        if (!evt?.data) return;
+
+        const payload = JSON.parse(evt.data);
+        this.renderList(payload?.items ?? [], true);
+        this.setStatus("Liste synchronisee via Mercure", true);
+      });
+
+      this.stream.onerror = () => {
+        this.stopStream();
+        this.setStatus("Flux Mercure indisponible, bascule SSE/rafraichissement auto", false);
+        if (typeof EventSource === "function") {
+          try {
+            this.startLegacyStream();
+            return;
+          } catch {
+            // fallback polling
+          }
+        }
+        this.startLiveRefresh();
+      };
+
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  startLegacyStream() {
     this.stream = window.httpClient.openPublicLobbiesStream(this.lastStreamRevision || null);
 
     this.stream.addEventListener("lobbies", (evt) => {
@@ -87,6 +131,7 @@ export class LobbyListController {
         return;
       }
 
+      this.realtimeConfig = res.data?.realtime ?? null;
       this.renderList(res.data?.items ?? [], silent);
       if (!silent) this.setStatus("Lobbies charges", true);
     } finally {

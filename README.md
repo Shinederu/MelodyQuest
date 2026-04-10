@@ -48,6 +48,13 @@ Le client utilise `shinederu-auth-core` (version browser embarquee):
 
 Les flux `login/register/logout/me` passent par ce client auth partage.
 
+## Temps reel
+
+- priorite: Mercure via `https://mercure.shinederu.ch/.well-known/mercure`
+- fallback de transition: SSE historique sur `api.shinederu.ch/melodyquest`
+- les ecrans `main`, `lobby-list`, `lobby` et `game` consomment `data.realtime` renvoye par l'API
+- les topics Mercure MelodyQuest sont derives de `https://api.shinederu.ch/melodyquest/topics/...`
+
 ## Etat client actuel
 
 - Vue `public`: login/register
@@ -70,6 +77,7 @@ Servir le dossier statique avec un serveur HTTP (ex: nginx, caddy, vite static, 
 - Front route en hash (`#/main`, `#/lobby-list`, etc.) pour eviter toute dependance au rewrite Nginx.
 - API auth: `https://api.shinederu.ch/auth/`
 - API MelodyQuest: `https://api.shinederu.ch/melodyquest/`
+- Hub Mercure: `https://mercure.shinederu.ch/.well-known/mercure`
 - Surcharge possible via `window.__SHINEDERU_API_ROOT__` dans `index.html`.
 
 ## Nginx (exemple)

@@ -6,6 +6,7 @@ export class LobbyController {
     this.user = JSON.parse(localStorage.getItem("user") || "null");
     this.stream = null;
     this.lastStreamRevision = 0;
+    this.realtimeConfig = null;
     this.categories = [];
     this.heartbeatInterval = null;
     this.isDestroyed = false;
@@ -61,6 +62,7 @@ export class LobbyController {
     }
 
     this.currentLobby = detail.data.lobby;
+    this.realtimeConfig = detail.data?.realtime ?? null;
     setCurrentLobby(this.currentLobby);
     this.renderLobby(detail.data);
     await this.refreshRoundState(true);
@@ -71,6 +73,41 @@ export class LobbyController {
   startRealtime() {
     this.stopStream();
 
+    if (this.startMercureRealtime()) {
+      return;
+    }
+
+    this.startLegacyRealtime();
+  }
+
+  startMercureRealtime() {
+    if (this.realtimeConfig?.transport !== "mercure") {
+      return false;
+    }
+
+    try {
+      this.stream = window.httpClient.openMercureSubscription(this.realtimeConfig);
+      this.stream.addEventListener(this.realtimeConfig.event || "message", (evt) => {
+        if (!evt?.data) return;
+
+        const payload = JSON.parse(evt.data);
+        this.applyRealtimeSnapshot(payload);
+        this.setStatus("Synchronise via Mercure", true);
+      });
+
+      this.stream.onerror = () => {
+        this.stopStream();
+        this.setStatus("Flux Mercure indisponible, bascule SSE", false);
+        this.startLegacyRealtime();
+      };
+
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  startLegacyRealtime() {
     if (typeof EventSource !== "function") return;
 
     try {
@@ -118,6 +155,19 @@ export class LobbyController {
 
   applyRealtimeSnapshot(snapshot) {
     if (!snapshot || typeof snapshot !== "object") return;
+    if (snapshot.deleted) {
+      this.exitLobbyIfActive();
+      return;
+    }
+
+    if (Array.isArray(snapshot.players)) {
+      const currentUserId = Number(this.user?.id || 0);
+      const stillPresent = snapshot.players.some((player) => Number(player.user_id || 0) === currentUserId);
+      if (!stillPresent) {
+        this.exitLobbyIfActive();
+        return;
+      }
+    }
 
     if (snapshot.lobby) {
       this.currentLobby = snapshot.lobby;

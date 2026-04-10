@@ -304,6 +304,34 @@ export class HttpService {
     return url;
   }
 
+  buildMercureUrl(hubUrl, topics = []) {
+    const url = new URL(hubUrl);
+    const topicList = Array.isArray(topics) ? topics : [topics];
+
+    topicList.forEach((topic) => {
+      if (!topic) return;
+      url.searchParams.append("topic", String(topic));
+    });
+
+    return url;
+  }
+
+  openMercureSubscription(config = {}) {
+    const hubUrl = String(config.hub_url || config.hubUrl || "");
+    if (!hubUrl) {
+      throw new Error("Mercure hub URL missing");
+    }
+
+    const topics = Array.isArray(config.topics)
+      ? config.topics
+      : [config.topic];
+    const url = this.buildMercureUrl(hubUrl, topics);
+
+    return new EventSource(url.toString(), {
+      withCredentials: Boolean(config.with_credentials ?? config.withCredentials),
+    });
+  }
+
   openLobbyStream(lobbyId, since = null) {
     const url = this.buildStreamUrl("streamLobby", {
       lobby_id: lobbyId,
