@@ -10,6 +10,7 @@
       <aside class="mq-hero-panel">
         <div class="mq-kicker">Chrono</div>
         <p id="game-timer" class="mq-chip mq-chip--timer">--</p>
+        <p id="game-progress" class="mq-chip mq-chip--progress">Manche -- / --</p>
         <p id="game-status" class="status"></p>
         <div class="mq-actions mq-actions--full">
           <button id="btn-game-leave" type="button" class="mq-danger">Quitter le lobby</button>
@@ -24,9 +25,20 @@
       <h2>Video</h2>
     </div>
     <div id="game-video" class="mq-video-shell">
-      <div class="mq-video-placeholder">
-        <p>La video reste cachee jusqu'a la revelation.</p>
+      <div id="game-video-player" class="mq-video-player"></div>
+      <div id="game-video-overlay" class="mq-video-overlay">
+        <div class="mq-video-overlay__content">
+          <strong>Video cachee</strong>
+          <p id="game-video-overlay-copy">Ecoute l'extrait et trouve la bonne reponse pour reveler l'image.</p>
+        </div>
       </div>
+    </div>
+    <div class="mq-video-toolbar">
+      <label class="mq-volume-control" for="game-volume">
+        <span>Volume</span>
+        <input id="game-volume" type="range" min="0" max="100" step="1" value="70" />
+      </label>
+      <span id="game-volume-value" class="mq-chip">70%</span>
     </div>
     <p id="game-solution" class="status"></p>
   </section>

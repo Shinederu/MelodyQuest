@@ -1,5 +1,10 @@
 import { getCurrentLobby, setCurrentLobby, clearCurrentLobby } from "../utils/LobbyState.js";
 
+const MIN_TOTAL_ROUNDS = 1;
+const MAX_TOTAL_ROUNDS = 1000;
+const MIN_ROUND_DURATION = 1;
+const MAX_ROUND_DURATION = 600;
+
 export class LobbyController {
   constructor() {
     this.currentLobby = getCurrentLobby();
@@ -231,7 +236,6 @@ export class LobbyController {
     const categoriesForm = document.getElementById("lobby-config-categories");
     const roundsInput = document.getElementById("lobby-config-rounds");
     const timerInput = document.getElementById("lobby-config-timer");
-    const helper = document.getElementById("lobby-config-help");
     if (!categoriesForm) return;
 
     const editable = this.isOwner();
@@ -241,11 +245,11 @@ export class LobbyController {
       nameInput.disabled = !editable;
     }
     if (roundsInput) {
-      roundsInput.value = String(Number(source.total_rounds || 5));
+      roundsInput.value = Number.isFinite(source.total_rounds) ? String(source.total_rounds) : "";
       roundsInput.disabled = !editable;
     }
     if (timerInput) {
-      timerInput.value = String(Number(source.round_duration_seconds || 30));
+      timerInput.value = Number.isFinite(source.round_duration_seconds) ? String(source.round_duration_seconds) : "";
       timerInput.disabled = !editable;
     }
 
@@ -253,17 +257,12 @@ export class LobbyController {
     categoriesForm.innerHTML = this.categories.map((category) => `
       <label class="mq-check">
         <input type="checkbox" value="${Number(category.id || 0)}" ${selected.has(Number(category.id || 0)) ? "checked" : ""} ${editable ? "" : "disabled"} />
-        <span>${this.escapeHtml(category.name || "Categorie")}</span>
+        <span>${this.escapeHtml(category.name || "Categorie")} (${this.getCategoryTrackCount(category)})</span>
       </label>
     `).join("");
 
-    if (helper) {
-      helper.textContent = editable
-        ? (this.configSaveInFlight ? "Configuration en cours d'application..." : "Le nom et les reglages sont appliques automatiquement.")
-        : "Configuration en lecture seule. Seul le createur peut la modifier.";
-    }
-
     this.bindConfigInputs(lobby);
+    this.updateConfigUiState(source, editable);
   }
 
   bindConfigInputs(lobby) {
@@ -303,8 +302,8 @@ export class LobbyController {
   getServerConfig(lobby) {
     return {
       name: this.normalizeLobbyName(lobby?.name, "Nouveau lobby"),
-      total_rounds: Number(lobby?.total_rounds || 5),
-      round_duration_seconds: Number(lobby?.round_duration_seconds || 30),
+      total_rounds: Number.parseInt(lobby?.total_rounds ?? 5, 10),
+      round_duration_seconds: Number.parseInt(lobby?.round_duration_seconds ?? 30, 10),
       selected_category_ids: (Array.isArray(lobby?.selected_category_ids) ? lobby.selected_category_ids : []).map(Number),
     };
   }
@@ -321,8 +320,8 @@ export class LobbyController {
         document.getElementById("lobby-config-name")?.value,
         this.getServerConfig(lobby).name
       ),
-      total_rounds: Number(document.getElementById("lobby-config-rounds")?.value || lobby?.total_rounds || 5),
-      round_duration_seconds: Number(document.getElementById("lobby-config-timer")?.value || lobby?.round_duration_seconds || 30),
+      total_rounds: this.parseIntegerInput(document.getElementById("lobby-config-rounds")?.value),
+      round_duration_seconds: this.parseIntegerInput(document.getElementById("lobby-config-timer")?.value),
       selected_category_ids: Array.from(document.querySelectorAll("#lobby-config-categories input:checked"))
         .map((input) => Number(input.value))
         .filter((value) => value > 0),
@@ -332,6 +331,8 @@ export class LobbyController {
     if (header) {
       header.textContent = this.configDraft.name;
     }
+
+    this.updateConfigUiState(this.configDraft, this.isOwner());
   }
 
   async leaveLobby() {
@@ -358,11 +359,18 @@ export class LobbyController {
     }
 
     const draft = this.getDraftConfig(this.currentLobby);
+    const validation = this.validateConfig(draft);
+    if (validation.issues.length) {
+      this.updateConfigUiState(draft, true, validation);
+      return;
+    }
+
     const draftKey = this.serializeConfig(draft);
     const serverKey = this.serializeConfig(this.getServerConfig(this.currentLobby));
     if (draftKey === serverKey) {
       this.configDirty = false;
       this.configDraft = null;
+      this.updateConfigUiState(this.getServerConfig(this.currentLobby), true);
       return;
     }
 
@@ -390,6 +398,7 @@ export class LobbyController {
       this.renderLobby(res.data);
       this.setStatus("Configuration synchronisee", true);
     } else {
+      this.updateConfigUiState(draft, true, validation);
       this.setStatus(res.error || "Erreur", false);
     }
 
@@ -402,6 +411,26 @@ export class LobbyController {
   async startGame() {
     const lobbyId = this.getLobbyId();
     if (!lobbyId) return;
+
+    this.captureDraftConfig(this.currentLobby);
+    const draft = this.getDraftConfig(this.currentLobby);
+    const validation = this.validateConfig(draft);
+    if (validation.issues.length) {
+      this.updateConfigUiState(draft, true, validation);
+      this.setStatus(validation.issues[0], false);
+      return;
+    }
+
+    if (this.configSaveTimeout) {
+      clearTimeout(this.configSaveTimeout);
+      this.configSaveTimeout = null;
+    }
+    if (this.configDirty || this.configSaveInFlight) {
+      await this.saveConfig();
+      if (this.configSaveInFlight || this.configDirty) {
+        return;
+      }
+    }
 
     const res = await window.httpClient.startRound(lobbyId);
     this.setStatus(res.success ? "Partie demarree" : (res.error || "Erreur"), res.success);
@@ -509,8 +538,8 @@ export class LobbyController {
     if (!config || typeof config !== "object") return "";
     return JSON.stringify({
       name: this.normalizeLobbyName(config.name, "Nouveau lobby"),
-      total_rounds: Number(config.total_rounds || 5),
-      round_duration_seconds: Number(config.round_duration_seconds || 30),
+      total_rounds: Number.parseInt(config.total_rounds ?? 0, 10),
+      round_duration_seconds: Number.parseInt(config.round_duration_seconds ?? 0, 10),
       selected_category_ids: Array.isArray(config.selected_category_ids) ? config.selected_category_ids.map(Number) : [],
     });
   }
@@ -518,6 +547,83 @@ export class LobbyController {
   normalizeLobbyName(value, fallback = "Nouveau lobby") {
     const normalized = String(value || "").trim().replace(/\s+/g, " ").slice(0, 120);
     return normalized || fallback;
+  }
+
+  parseIntegerInput(value) {
+    const parsed = Number.parseInt(String(value ?? "").trim(), 10);
+    return Number.isFinite(parsed) ? parsed : Number.NaN;
+  }
+
+  getCategoryTrackCount(category) {
+    return Math.max(0, Number(category?.track_count || 0));
+  }
+
+  getAvailableTrackCount(selectedCategoryIds = []) {
+    const selected = new Set((Array.isArray(selectedCategoryIds) ? selectedCategoryIds : []).map(Number));
+    return this.categories.reduce((total, category) => {
+      if (!selected.has(Number(category?.id || 0))) {
+        return total;
+      }
+      return total + this.getCategoryTrackCount(category);
+    }, 0);
+  }
+
+  validateConfig(config) {
+    const totalRounds = Number.parseInt(config?.total_rounds ?? 0, 10);
+    const roundDuration = Number.parseInt(config?.round_duration_seconds ?? 0, 10);
+    const selectedCategoryIds = Array.isArray(config?.selected_category_ids) ? config.selected_category_ids.map(Number) : [];
+    const availableTracks = this.getAvailableTrackCount(selectedCategoryIds);
+    const issues = [];
+
+    if (selectedCategoryIds.length === 0) {
+      issues.push("Selectionne au moins une categorie.");
+    }
+    if (!Number.isInteger(totalRounds) || totalRounds < MIN_TOTAL_ROUNDS || totalRounds > MAX_TOTAL_ROUNDS) {
+      issues.push(`Le nombre de manches doit etre compris entre ${MIN_TOTAL_ROUNDS} et ${MAX_TOTAL_ROUNDS}.`);
+    }
+    if (!Number.isInteger(roundDuration) || roundDuration < MIN_ROUND_DURATION || roundDuration > MAX_ROUND_DURATION) {
+      issues.push(`Le chrono doit etre compris entre ${MIN_ROUND_DURATION} et ${MAX_ROUND_DURATION} secondes.`);
+    }
+    if (selectedCategoryIds.length > 0 && availableTracks < Math.max(0, totalRounds || 0)) {
+      issues.push(`Pas assez de musiques disponibles: ${availableTracks} pour ${Number.isInteger(totalRounds) ? totalRounds : 0} manches.`);
+    }
+
+    return {
+      issues,
+      selectedCount: selectedCategoryIds.length,
+      availableTracks,
+      totalRounds,
+      roundDuration,
+    };
+  }
+
+  updateConfigUiState(config, editable, validation = null) {
+    const helper = document.getElementById("lobby-config-help");
+    const startButton = document.getElementById("btn-lobby-start");
+    const review = validation || this.validateConfig(config);
+
+    if (helper) {
+      if (!editable) {
+        helper.textContent = `Configuration en lecture seule · ${review.selectedCount} categorie(s) selectionnee(s) · ${review.availableTracks} musique(s) disponible(s).`;
+        helper.className = "mq-muted";
+      } else if (review.issues.length) {
+        helper.textContent = review.issues[0];
+        helper.className = "status error";
+      } else if (this.configSaveInFlight) {
+        helper.textContent = "Configuration en cours d'application...";
+        helper.className = "status";
+      } else if (this.configDirty) {
+        helper.textContent = `${review.selectedCount} categorie(s) selectionnee(s) · ${review.availableTracks} musique(s) disponibles.`;
+        helper.className = "status success";
+      } else {
+        helper.textContent = `Configuration synchronisee · ${review.selectedCount} categorie(s) · ${review.availableTracks} musique(s) disponibles.`;
+        helper.className = "mq-muted";
+      }
+    }
+
+    if (startButton) {
+      startButton.disabled = !editable || this.configSaveInFlight || review.issues.length > 0;
+    }
   }
 
   destroy() {

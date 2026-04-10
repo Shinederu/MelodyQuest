@@ -1,6 +1,49 @@
 import { getCurrentLobby, setCurrentLobby, clearCurrentLobby } from "../utils/LobbyState.js";
 
 const AUTO_NEXT_STORAGE_KEY = "mq_auto_next_round";
+const PLAYER_VOLUME_STORAGE_KEY = "mq_game_volume";
+const DEFAULT_PLAYER_VOLUME = 70;
+
+let youtubeIframeApiPromise = null;
+
+function loadYouTubeIframeApi() {
+  if (window.YT?.Player) {
+    return Promise.resolve(window.YT);
+  }
+
+  if (youtubeIframeApiPromise) {
+    return youtubeIframeApiPromise;
+  }
+
+  youtubeIframeApiPromise = new Promise((resolve, reject) => {
+    const previousReady = window.onYouTubeIframeAPIReady;
+    const timeoutId = window.setTimeout(() => reject(new Error("YouTube iframe API timeout")), 15000);
+
+    window.onYouTubeIframeAPIReady = () => {
+      window.clearTimeout(timeoutId);
+      if (typeof previousReady === "function") {
+        previousReady();
+      }
+      resolve(window.YT);
+    };
+
+    const existing = document.querySelector('script[src="https://www.youtube.com/iframe_api"]');
+    if (existing) {
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://www.youtube.com/iframe_api";
+    script.async = true;
+    script.onerror = () => {
+      window.clearTimeout(timeoutId);
+      reject(new Error("Unable to load YouTube iframe API"));
+    };
+    document.head.appendChild(script);
+  });
+
+  return youtubeIframeApiPromise;
+}
 
 export class GameController {
   constructor() {
@@ -24,6 +67,14 @@ export class GameController {
     this.nextVoteRequestInFlight = false;
     this.videoRenderKey = "";
     this.autoNextEnabled = localStorage.getItem(AUTO_NEXT_STORAGE_KEY) === "1";
+    this.serverClockOffsetMs = 0;
+    this.player = null;
+    this.playerReady = false;
+    this.playerHostId = "game-video-player";
+    this.playerVideoId = "";
+    this.playerRequestedVideoId = "";
+    this.playerVisible = false;
+    this.playerVolume = this.loadStoredVolume();
 
     document.getElementById("btn-game-submit")?.addEventListener("click", () => this.submitAnswer());
     document.getElementById("btn-game-next")?.addEventListener("click", () => this.voteNextRound(false));
@@ -39,7 +90,11 @@ export class GameController {
       localStorage.setItem(AUTO_NEXT_STORAGE_KEY, this.autoNextEnabled ? "1" : "0");
       this.updateRoundPresentation();
     });
+    document.getElementById("game-volume")?.addEventListener("input", (event) => {
+      this.handleVolumeInput(event);
+    });
 
+    this.updateVolumeUi();
     this.bootstrap();
   }
 
@@ -89,6 +144,10 @@ export class GameController {
       this.scoreboard = snapshot.scoreboard.items;
     }
     if (snapshot?.round) {
+      const serverTimeUnix = Number(snapshot.round?.server_time_unix || 0);
+      if (serverTimeUnix > 0) {
+        this.serverClockOffsetMs = Date.now() - (serverTimeUnix * 1000);
+      }
       this.trackRoundChange(snapshot.round.round);
       this.roundState = snapshot.round;
     }
@@ -203,6 +262,7 @@ export class GameController {
   renderLobbyHeader() {
     const title = document.getElementById("game-title");
     const meta = document.getElementById("game-meta");
+    const progress = document.getElementById("game-progress");
     const round = this.roundState?.round;
     const currentRoundNumber = Number(round?.round_number || this.currentLobby?.current_round_number || 1);
     const totalRounds = Number(this.currentLobby?.total_rounds || 0);
@@ -211,7 +271,10 @@ export class GameController {
       title.textContent = this.currentLobby?.name || "Partie en cours";
     }
     if (meta) {
-      meta.textContent = `Manche ${currentRoundNumber} / ${totalRounds} · ${String(this.currentLobby?.lobby_code || "")}`;
+      meta.textContent = `Code ${String(this.currentLobby?.lobby_code || "")}`;
+    }
+    if (progress) {
+      progress.textContent = `Manche ${currentRoundNumber} / ${totalRounds}`;
     }
   }
 
@@ -303,13 +366,13 @@ export class GameController {
     if (!el) return;
 
     if (!answerClosed) {
-      const remaining = Math.max(0, Math.ceil((this.getAnswerDeadlineMs(round) - Date.now()) / 1000));
+      const remaining = Math.max(0, Math.ceil((this.getAnswerDeadlineMs(round) - this.getNowMs()) / 1000));
       el.textContent = `${remaining}s`;
       return;
     }
 
     if (!nextVoteAvailable) {
-      const remaining = Math.max(0, Math.ceil((this.getNextVoteAvailableMs(round) - Date.now()) / 1000));
+      const remaining = Math.max(0, Math.ceil((this.getNextVoteAvailableMs(round) - this.getNowMs()) / 1000));
       el.textContent = `Solution ${remaining}s`;
       return;
     }
@@ -383,7 +446,7 @@ export class GameController {
     summary.textContent = `${readyCount} / ${requiredCount} votes pour passer a la manche suivante`;
 
     if (!nextVoteAvailable) {
-      const remaining = Math.max(0, Math.ceil((this.getNextVoteAvailableMs(round) - Date.now()) / 1000));
+      const remaining = Math.max(0, Math.ceil((this.getNextVoteAvailableMs(round) - this.getNowMs()) / 1000));
       info.textContent = `Le vote sera disponible dans ${remaining}s.`;
       button.hidden = true;
       return;
@@ -400,18 +463,22 @@ export class GameController {
   renderVideo(track, showVideo) {
     const host = document.getElementById("game-video");
     const solution = document.getElementById("game-solution");
-    if (!host || !solution) return;
+    const overlay = document.getElementById("game-video-overlay");
+    const overlayCopy = document.getElementById("game-video-overlay-copy");
+    if (!host || !solution || !overlay || !overlayCopy) return;
 
     const videoId = String(track?.youtube_video_id || "");
-    const renderKey = showVideo && videoId ? `video:${videoId}` : "hidden";
+    const renderKey = `${videoId}:${showVideo ? "visible" : "hidden"}`;
     if (renderKey !== this.videoRenderKey) {
-      if (showVideo && videoId) {
-        host.innerHTML = `<iframe src="https://www.youtube.com/embed/${this.escapeAttr(videoId)}?autoplay=1" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
-      } else {
-        host.innerHTML = `<div class="mq-video-placeholder"><p>La video reste cachee tant que tu n as pas trouve ou que le chrono n est pas termine.</p></div>`;
-      }
+      host.classList.toggle("is-concealed", !showVideo);
+      overlay.hidden = showVideo;
+      overlayCopy.textContent = videoId
+        ? "Ecoute l'extrait et trouve la bonne reponse pour reveler la video."
+        : "Aucune video exploitable n est disponible pour cette manche.";
       this.videoRenderKey = renderKey;
     }
+
+    this.ensurePlayer(videoId, showVideo);
 
     if (showVideo) {
       solution.textContent = this.buildSolutionText(track);
@@ -460,17 +527,33 @@ export class GameController {
   }
 
   getAnswerDeadlineMs(round) {
+    const explicitUnix = Number(round?.answer_deadline_unix || 0);
+    if (explicitUnix > 0) {
+      return explicitUnix * 1000;
+    }
+
     const explicit = Date.parse(String(round?.answer_deadline_at || ""));
     if (!Number.isNaN(explicit)) {
       return explicit;
     }
 
+    const startedAtUnix = Number(round?.started_at_unix || 0);
+    if (startedAtUnix > 0) {
+      const duration = Number(this.currentLobby?.round_duration_seconds || 30) * 1000;
+      return (startedAtUnix * 1000) + duration;
+    }
+
     const startedAt = Date.parse(String(round?.started_at || ""));
     const duration = Number(this.currentLobby?.round_duration_seconds || 30) * 1000;
-    return Number.isNaN(startedAt) ? Date.now() : startedAt + duration;
+    return Number.isNaN(startedAt) ? this.getNowMs() : startedAt + duration;
   }
 
   getNextVoteAvailableMs(round) {
+    const explicitUnix = Number(round?.next_vote_available_unix || 0);
+    if (explicitUnix > 0) {
+      return explicitUnix * 1000;
+    }
+
     const explicit = Date.parse(String(round?.next_vote_available_at || ""));
     if (!Number.isNaN(explicit)) {
       return explicit;
@@ -488,11 +571,15 @@ export class GameController {
       return true;
     }
 
-    return Date.now() >= this.getAnswerDeadlineMs(round);
+    return this.getNowMs() >= this.getAnswerDeadlineMs(round);
   }
 
   isNextVoteAvailable(round) {
-    return Date.now() >= this.getNextVoteAvailableMs(round);
+    return this.getNowMs() >= this.getNextVoteAvailableMs(round);
+  }
+
+  getNowMs() {
+    return Date.now() - this.serverClockOffsetMs;
   }
 
   async submitAnswer() {
@@ -627,6 +714,161 @@ export class GameController {
     });
   }
 
+  loadStoredVolume() {
+    const parsed = Number.parseInt(localStorage.getItem(PLAYER_VOLUME_STORAGE_KEY) || "", 10);
+    if (!Number.isFinite(parsed)) {
+      return DEFAULT_PLAYER_VOLUME;
+    }
+
+    return Math.max(0, Math.min(100, parsed));
+  }
+
+  handleVolumeInput(event) {
+    const value = Math.max(0, Math.min(100, Number(event?.target?.value || 0)));
+    this.playerVolume = value;
+    localStorage.setItem(PLAYER_VOLUME_STORAGE_KEY, String(value));
+    this.updateVolumeUi();
+    this.applyPlayerVolume();
+  }
+
+  updateVolumeUi() {
+    const input = document.getElementById("game-volume");
+    const label = document.getElementById("game-volume-value");
+    if (input) {
+      input.value = String(this.playerVolume);
+    }
+    if (label) {
+      label.textContent = `${this.playerVolume}%`;
+    }
+  }
+
+  async ensurePlayer(videoId, showVideo) {
+    this.playerRequestedVideoId = videoId;
+    this.playerVisible = Boolean(showVideo);
+    this.updateVolumeUi();
+
+    let host = document.getElementById(this.playerHostId);
+    if (!host) {
+      const shell = document.getElementById("game-video");
+      if (!shell) {
+        return;
+      }
+      host = document.createElement("div");
+      host.id = this.playerHostId;
+      host.className = "mq-video-player";
+      shell.prepend(host);
+    }
+
+    if (!host) {
+      return;
+    }
+
+    if (!videoId) {
+      this.destroyPlayer();
+      return;
+    }
+
+    try {
+      await loadYouTubeIframeApi();
+    } catch {
+      return;
+    }
+
+    if (this.isDestroyed || this.playerRequestedVideoId !== videoId) {
+      return;
+    }
+
+    if (!this.player) {
+      this.player = new window.YT.Player(this.playerHostId, {
+        videoId,
+        playerVars: {
+          autoplay: 1,
+          controls: 1,
+          disablekb: 0,
+          fs: 1,
+          modestbranding: 1,
+          playsinline: 1,
+          rel: 0,
+        },
+        events: {
+          onReady: () => {
+            this.playerReady = true;
+            this.playerVideoId = videoId;
+            this.applyPlayerVolume();
+            this.safePlayerCall(() => this.player.playVideo());
+          },
+          onStateChange: (event) => this.handlePlayerStateChange(event),
+        },
+      });
+      return;
+    }
+
+    if (!this.playerReady) {
+      return;
+    }
+
+    if (this.playerVideoId !== videoId) {
+      this.playerVideoId = videoId;
+      this.safePlayerCall(() => this.player.loadVideoById(videoId));
+      this.applyPlayerVolume();
+      return;
+    }
+
+    this.applyPlayerVolume();
+    this.safePlayerCall(() => this.player.playVideo());
+  }
+
+  handlePlayerStateChange(event) {
+    if (!this.player || !this.playerReady || !window.YT?.PlayerState) {
+      return;
+    }
+
+    if (event?.data === window.YT.PlayerState.ENDED) {
+      this.safePlayerCall(() => {
+        this.player.seekTo(0, true);
+        this.player.playVideo();
+      });
+    }
+  }
+
+  applyPlayerVolume() {
+    if (!this.player || !this.playerReady) {
+      return;
+    }
+
+    this.safePlayerCall(() => {
+      if (this.playerVolume <= 0) {
+        this.player.mute();
+      } else {
+        this.player.unMute();
+        this.player.setVolume(this.playerVolume);
+      }
+    });
+  }
+
+  safePlayerCall(fn) {
+    if (!this.player || typeof fn !== "function") {
+      return;
+    }
+
+    try {
+      fn();
+    } catch {
+      // noop
+    }
+  }
+
+  destroyPlayer() {
+    if (this.player) {
+      this.safePlayerCall(() => this.player.stopVideo());
+      this.safePlayerCall(() => this.player.destroy());
+    }
+
+    this.player = null;
+    this.playerReady = false;
+    this.playerVideoId = "";
+  }
+
   clearAnswerInput() {
     const input = document.getElementById("game-answer");
     if (!input) return;
@@ -736,6 +978,7 @@ export class GameController {
     this.isDestroyed = true;
     this.stopRealtime();
     this.stopHeartbeat();
+    this.destroyPlayer();
     if (this.timerInterval) {
       clearInterval(this.timerInterval);
       this.timerInterval = null;
