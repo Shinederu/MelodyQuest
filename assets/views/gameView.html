@@ -1,35 +1,35 @@
 <section class="mq-page">
-  <header class="mq-page-header mq-page-header--hero">
-    <div class="mq-kicker">Session en cours</div>
-    <div class="mq-hero-grid">
-      <div>
+  <section class="mq-card mq-card--soft mq-game-stage">
+    <div class="mq-game-stage__head">
+      <div class="mq-card-heading">
+        <div class="mq-kicker">Session en cours</div>
         <h1 id="game-title">Partie en cours</h1>
-        <p id="game-meta">Chargement...</p>
       </div>
-
-      <aside class="mq-hero-panel">
-        <div class="mq-kicker">Chrono</div>
-        <p id="game-timer" class="mq-chip mq-chip--timer">--</p>
-        <p id="game-progress" class="mq-chip mq-chip--progress">Manche -- / --</p>
-        <p id="game-status" class="status"></p>
-        <div class="mq-actions mq-actions--full">
-          <button id="btn-game-leave" type="button" class="mq-danger">Quitter le lobby</button>
-        </div>
-      </aside>
+      <div class="mq-actions">
+        <button id="btn-game-leave" type="button" class="mq-danger">Quitter le lobby</button>
+      </div>
     </div>
-  </header>
+    <p id="game-status" class="status"></p>
 
-  <section class="mq-card mq-card--soft">
-    <div class="mq-card-heading">
+    <div class="mq-card-heading mq-card-heading--compact">
       <div class="mq-kicker">Lecture</div>
-      <h2>Video</h2>
     </div>
     <div id="game-video" class="mq-video-shell">
       <div id="game-video-player" class="mq-video-player"></div>
+      <div id="game-video-guard" class="mq-video-guard" hidden></div>
       <div id="game-video-overlay" class="mq-video-overlay">
         <div class="mq-video-overlay__content">
-          <strong>Video cachee</strong>
-          <p id="game-video-overlay-copy">Ecoute l'extrait et trouve la bonne reponse pour reveler l'image.</p>
+          <div class="mq-video-overlay__timer">
+            <svg class="mq-timer-ring" viewBox="0 0 120 120" aria-hidden="true">
+              <circle class="mq-timer-ring__track" cx="60" cy="60" r="44"></circle>
+              <circle id="game-video-ring-progress" class="mq-timer-ring__progress" cx="60" cy="60" r="44"></circle>
+            </svg>
+            <div class="mq-video-overlay__timer-copy">
+              <strong id="game-video-overlay-title">Video cachee</strong>
+              <p id="game-video-overlay-copy">Reponds dans -- secondes.</p>
+            </div>
+          </div>
+          <p id="game-video-overlay-hint" class="mq-video-overlay__hint">Ecoute l'extrait et trouve la bonne reponse pour reveler la video.</p>
         </div>
       </div>
     </div>
@@ -83,9 +83,28 @@
 
     <section class="mq-card mq-card--accent">
       <div class="mq-card-heading">
-        <div class="mq-kicker">Scoreboard</div>
-        <h2>Classement</h2>
-        <p class="mq-card-copy">Le score evolue en direct en fonction de la vitesse de reponse.</p>
+        <div class="mq-kicker">Information de la partie</div>
+        <h2>Informations</h2>
+        <p class="mq-card-copy">Classement en direct, manche en cours et code de salon masquable.</p>
+      </div>
+
+      <div class="mq-game-info-grid">
+        <article class="mq-game-fact">
+          <span>Manche</span>
+          <strong id="game-progress">-- / --</strong>
+        </article>
+        <article class="mq-game-fact">
+          <span>Code du lobby</span>
+          <button id="btn-game-toggle-code" type="button" class="mq-game-code" aria-pressed="false">
+            <span id="game-lobby-code">------</span>
+            <small id="game-lobby-code-hint">Masquer</small>
+          </button>
+        </article>
+      </div>
+
+      <div class="mq-card-heading mq-card-heading--compact">
+        <div class="mq-kicker">Classement</div>
+        <h3>Classement</h3>
       </div>
       <ul id="game-scoreboard" class="mq-clean-list"></ul>
     </section>

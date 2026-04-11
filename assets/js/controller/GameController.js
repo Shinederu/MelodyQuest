@@ -3,6 +3,8 @@ import { getCurrentLobby, setCurrentLobby, clearCurrentLobby } from "../utils/Lo
 const AUTO_NEXT_STORAGE_KEY = "mq_auto_next_round";
 const PLAYER_VOLUME_STORAGE_KEY = "mq_game_volume";
 const DEFAULT_PLAYER_VOLUME = 70;
+const TIMER_RING_RADIUS = 44;
+const TIMER_RING_CIRCUMFERENCE = 2 * Math.PI * TIMER_RING_RADIUS;
 
 let youtubeIframeApiPromise = null;
 
@@ -80,10 +82,12 @@ export class GameController {
     this.playerRequestedVideoId = "";
     this.playerVisible = false;
     this.playerVolume = this.loadStoredVolume();
+    this.isLobbyCodeHidden = false;
 
     document.getElementById("btn-game-submit")?.addEventListener("click", () => this.submitAnswer());
     document.getElementById("btn-game-next")?.addEventListener("click", () => this.voteNextRound(false));
     document.getElementById("btn-game-leave")?.addEventListener("click", () => this.leaveLobby());
+    document.getElementById("btn-game-toggle-code")?.addEventListener("click", () => this.toggleLobbyCodeVisibility());
     document.getElementById("game-answer")?.addEventListener("keydown", (event) => {
       if (event.key === "Enter") {
         event.preventDefault();
@@ -314,7 +318,6 @@ export class GameController {
 
   renderLobbyHeader() {
     const title = document.getElementById("game-title");
-    const meta = document.getElementById("game-meta");
     const progress = document.getElementById("game-progress");
     const round = this.roundState?.round;
     const currentRoundNumber = Number(round?.round_number || this.currentLobby?.current_round_number || 1);
@@ -323,12 +326,34 @@ export class GameController {
     if (title) {
       title.textContent = this.currentLobby?.name || "Partie en cours";
     }
-    if (meta) {
-      meta.textContent = `Code ${String(this.currentLobby?.lobby_code || "")}`;
-    }
     if (progress) {
-      progress.textContent = `Manche ${currentRoundNumber} / ${totalRounds}`;
+      progress.textContent = `${currentRoundNumber} / ${totalRounds}`;
     }
+
+    this.renderLobbyCode();
+  }
+
+  renderLobbyCode() {
+    const code = String(this.currentLobby?.lobby_code || "").trim();
+    const button = document.getElementById("btn-game-toggle-code");
+    const label = document.getElementById("game-lobby-code");
+    const hint = document.getElementById("game-lobby-code-hint");
+
+    if (button) {
+      button.setAttribute("aria-pressed", this.isLobbyCodeHidden ? "true" : "false");
+      button.classList.toggle("is-masked", this.isLobbyCodeHidden);
+    }
+    if (label) {
+      label.textContent = this.isLobbyCodeHidden && code ? "•".repeat(code.length) : (code || "------");
+    }
+    if (hint) {
+      hint.textContent = this.isLobbyCodeHidden ? "Afficher" : "Masquer";
+    }
+  }
+
+  toggleLobbyCodeVisibility() {
+    this.isLobbyCodeHidden = !this.isLobbyCodeHidden;
+    this.renderLobbyCode();
   }
 
   renderScoreboard() {
@@ -425,22 +450,46 @@ export class GameController {
   }
 
   renderTimer(round, answerClosed, nextVoteAvailable) {
-    const el = document.getElementById("game-timer");
-    if (!el) return;
+    const title = document.getElementById("game-video-overlay-title");
+    const copy = document.getElementById("game-video-overlay-copy");
+    const hint = document.getElementById("game-video-overlay-hint");
+    const ring = document.getElementById("game-video-ring-progress");
+    if (!title || !copy || !hint || !ring) return;
 
     if (!answerClosed) {
-      const remaining = Math.max(0, Math.ceil((this.getAnswerDeadlineMs(round) - this.getNowMs()) / 1000));
-      el.textContent = `${remaining}s`;
+      const totalMs = Math.max(1000, Number(this.currentLobby?.round_duration_seconds || 30) * 1000);
+      const remainingMs = Math.max(0, this.getAnswerDeadlineMs(round) - this.getNowMs());
+      const remaining = Math.max(0, Math.ceil(remainingMs / 1000));
+      title.textContent = "Video cachee";
+      copy.textContent = `Reponds dans ${remaining}s.`;
+      hint.textContent = "Ecoute l'extrait et trouve la bonne reponse pour reveler la video.";
+      this.renderTimerRing(ring, 1 - (remainingMs / totalMs));
       return;
     }
 
     if (!nextVoteAvailable) {
-      const remaining = Math.max(0, Math.ceil((this.getNextVoteAvailableMs(round) - this.getNowMs()) / 1000));
-      el.textContent = `Solution ${remaining}s`;
+      const revealDelayMs = Math.max(1000, this.getRevealDelaySeconds(round) * 1000);
+      const remainingMs = Math.max(0, this.getNextVoteAvailableMs(round) - this.getNowMs());
+      const remaining = Math.max(0, Math.ceil(remainingMs / 1000));
+      title.textContent = "Solution revelee";
+      copy.textContent = `Passage au vote dans ${remaining}s.`;
+      hint.textContent = "Observe la reponse et prepare le passage a la manche suivante.";
+      this.renderTimerRing(ring, 1 - (remainingMs / revealDelayMs));
       return;
     }
 
-    el.textContent = "Votes";
+    title.textContent = "Vote disponible";
+    copy.textContent = "Le passage a la manche suivante est ouvert.";
+    hint.textContent = "Attends le reste du lobby ou active le suivant automatique.";
+    this.renderTimerRing(ring, 1);
+  }
+
+  renderTimerRing(ring, ratio) {
+    if (!ring) return;
+
+    const safeRatio = Math.max(0, Math.min(1, Number(ratio || 0)));
+    ring.style.strokeDasharray = String(TIMER_RING_CIRCUMFERENCE);
+    ring.style.strokeDashoffset = String(TIMER_RING_CIRCUMFERENCE * (1 - safeRatio));
   }
 
   renderAnswerPhase(round, userAnswer, hasCorrectAnswer, answerClosed) {
@@ -525,19 +574,23 @@ export class GameController {
 
   renderVideo(track, showVideo) {
     const host = document.getElementById("game-video");
+    const guard = document.getElementById("game-video-guard");
     const solution = document.getElementById("game-solution");
     const overlay = document.getElementById("game-video-overlay");
-    const overlayCopy = document.getElementById("game-video-overlay-copy");
-    if (!host || !solution || !overlay || !overlayCopy) return;
+    const overlayHint = document.getElementById("game-video-overlay-hint");
+    if (!host || !solution || !overlay || !overlayHint) return;
 
     const videoId = String(track?.youtube_video_id || "");
     const renderKey = `${videoId}:${showVideo ? "visible" : "hidden"}`;
     if (renderKey !== this.videoRenderKey) {
       host.classList.toggle("is-concealed", !showVideo);
       overlay.hidden = showVideo;
-      overlayCopy.textContent = videoId
-        ? "Ecoute l'extrait et trouve la bonne reponse pour reveler la video."
-        : "Aucune video exploitable n est disponible pour cette manche.";
+      if (guard) {
+        guard.hidden = !showVideo;
+      }
+      if (!videoId) {
+        overlayHint.textContent = "Aucune video exploitable n est disponible pour cette manche.";
+      }
       this.videoRenderKey = renderKey;
     }
 
@@ -853,9 +906,10 @@ export class GameController {
         videoId,
         playerVars: {
           autoplay: 1,
-          controls: 1,
-          disablekb: 0,
-          fs: 1,
+          controls: 0,
+          disablekb: 1,
+          fs: 0,
+          iv_load_policy: 3,
           modestbranding: 1,
           playsinline: 1,
           rel: 0,
