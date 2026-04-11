@@ -10,7 +10,6 @@ export class LobbyController {
     this.currentLobby = getCurrentLobby();
     this.user = JSON.parse(localStorage.getItem("user") || "null");
     this.stream = null;
-    this.lastStreamRevision = 0;
     this.realtimeConfig = null;
     this.categories = [];
     this.heartbeatInterval = null;
@@ -76,12 +75,9 @@ export class LobbyController {
 
   startRealtime() {
     this.stopStream();
-
-    if (this.startMercureRealtime()) {
-      return;
+    if (!this.startMercureRealtime()) {
+      this.setStatus("Temps reel Mercure indisponible", false);
     }
-
-    this.startLegacyRealtime();
   }
 
   startMercureRealtime() {
@@ -101,36 +97,12 @@ export class LobbyController {
 
       this.stream.onerror = () => {
         this.stopStream();
-        this.setStatus("Flux Mercure indisponible, bascule SSE", false);
-        this.startLegacyRealtime();
+        this.setStatus("Flux Mercure indisponible", false);
       };
 
       return true;
     } catch {
       return false;
-    }
-  }
-
-  startLegacyRealtime() {
-    if (typeof EventSource !== "function") return;
-
-    try {
-      this.stream = window.httpClient.openLobbyStream(this.getLobbyId(), this.lastStreamRevision || null);
-      this.stream.addEventListener("lobby", (evt) => {
-        if (!evt?.data) return;
-
-        const payload = JSON.parse(evt.data);
-        this.lastStreamRevision = Number(payload?.revision || evt.lastEventId || this.lastStreamRevision || 0);
-        this.applyRealtimeSnapshot(payload);
-        this.setStatus("Synchronise en direct", true);
-      });
-
-      this.stream.onerror = () => {
-        this.stopStream();
-        this.setStatus("Flux direct indisponible", false);
-      };
-    } catch {
-      this.stopStream();
     }
   }
 

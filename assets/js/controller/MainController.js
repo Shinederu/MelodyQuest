@@ -4,7 +4,6 @@ export class MainController {
   constructor() {
     this.user = JSON.parse(localStorage.getItem("user") || "null");
     this.stream = null;
-    this.lastRevision = 0;
     this.realtimeConfig = null;
 
     document.getElementById("btn-main-create")?.addEventListener("click", () => this.createLobby());
@@ -73,11 +72,9 @@ export class MainController {
 
   startRealtime() {
     this.stopRealtime();
-    if (this.startMercureRealtime()) {
-      return;
+    if (!this.startMercureRealtime()) {
+      this.setStatus("Temps reel Mercure indisponible", false);
     }
-
-    this.startLegacyRealtime();
   }
 
   startMercureRealtime() {
@@ -94,29 +91,11 @@ export class MainController {
       });
       this.stream.onerror = () => {
         this.stopRealtime();
-        this.setStatus("Flux Mercure indisponible, bascule SSE", false);
-        this.startLegacyRealtime();
+        this.setStatus("Flux Mercure indisponible", false);
       };
       return true;
     } catch {
       return false;
-    }
-  }
-
-  startLegacyRealtime() {
-    if (typeof EventSource !== "function") return;
-
-    try {
-      this.stream = window.httpClient.openPublicLobbiesStream(this.lastRevision || null);
-      this.stream.addEventListener("lobbies", (evt) => {
-        if (!evt?.data) return;
-        const payload = JSON.parse(evt.data);
-        this.lastRevision = Number(payload?.revision || evt.lastEventId || this.lastRevision || 0);
-        this.renderLobbyList(payload?.items ?? []);
-      });
-      this.stream.onerror = () => this.stopRealtime();
-    } catch {
-      this.stopRealtime();
     }
   }
 

@@ -53,7 +53,6 @@ export class GameController {
     this.scoreboard = [];
     this.roundState = { round: null, answers: [] };
     this.stream = null;
-    this.lastRevision = 0;
     this.realtimeConfig = null;
     this.timerInterval = null;
     this.heartbeatInterval = null;
@@ -204,12 +203,9 @@ export class GameController {
 
   startRealtime() {
     this.stopRealtime();
-
-    if (this.startMercureRealtime()) {
-      return;
+    if (!this.startMercureRealtime()) {
+      this.setStatus("Temps reel Mercure indisponible", false);
     }
-
-    this.startLegacyRealtime();
   }
 
   startMercureRealtime() {
@@ -225,29 +221,11 @@ export class GameController {
       });
       this.stream.onerror = () => {
         this.stopRealtime();
-        this.setStatus("Flux Mercure indisponible, bascule SSE", false);
-        this.startLegacyRealtime();
+        this.setStatus("Flux Mercure indisponible", false);
       };
       return true;
     } catch {
       return false;
-    }
-  }
-
-  startLegacyRealtime() {
-    if (typeof EventSource !== "function") return;
-
-    try {
-      this.stream = window.httpClient.openLobbyStream(this.getLobbyId(), this.lastRevision || null);
-      this.stream.addEventListener("lobby", (evt) => {
-        if (!evt?.data) return;
-        const payload = JSON.parse(evt.data);
-        this.lastRevision = Number(payload?.revision || evt.lastEventId || this.lastRevision || 0);
-        this.handleSnapshot(payload);
-      });
-      this.stream.onerror = () => this.stopRealtime();
-    } catch {
-      this.stopRealtime();
     }
   }
 

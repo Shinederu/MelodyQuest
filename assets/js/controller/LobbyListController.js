@@ -2,10 +2,8 @@ import { setCurrentLobby } from "../utils/LobbyState.js";
 
 export class LobbyListController {
   constructor() {
-    this.liveInterval = null;
     this.isRefreshing = false;
     this.stream = null;
-    this.lastStreamRevision = 0;
     this.realtimeConfig = null;
 
     this.visibilityHandler = () => {
@@ -28,23 +26,10 @@ export class LobbyListController {
   }
 
   startRealtime() {
-    this.stopLiveRefresh();
     this.stopStream();
-
-    if (this.startMercureRealtime()) {
-      return;
+    if (!this.startMercureRealtime()) {
+      this.setStatus("Temps reel Mercure indisponible", false);
     }
-
-    if (typeof EventSource === "function") {
-      try {
-        this.startLegacyStream();
-        return;
-      } catch {
-        // fallback polling
-      }
-    }
-
-    this.startLiveRefresh();
   }
 
   startMercureRealtime() {
@@ -64,16 +49,7 @@ export class LobbyListController {
 
       this.stream.onerror = () => {
         this.stopStream();
-        this.setStatus("Flux Mercure indisponible, bascule SSE/rafraichissement auto", false);
-        if (typeof EventSource === "function") {
-          try {
-            this.startLegacyStream();
-            return;
-          } catch {
-            // fallback polling
-          }
-        }
-        this.startLiveRefresh();
+        this.setStatus("Flux Mercure indisponible", false);
       };
 
       return true;
@@ -82,41 +58,10 @@ export class LobbyListController {
     }
   }
 
-  startLegacyStream() {
-    this.stream = window.httpClient.openPublicLobbiesStream(this.lastStreamRevision || null);
-
-    this.stream.addEventListener("lobbies", (evt) => {
-      if (!evt?.data) return;
-
-      const payload = JSON.parse(evt.data);
-      this.lastStreamRevision = Number(payload?.revision || evt.lastEventId || this.lastStreamRevision || 0);
-      this.renderList(payload?.items ?? [], true);
-      this.setStatus("Liste synchronisee en direct", true);
-    });
-
-    this.stream.onerror = () => {
-      this.stopStream();
-      this.startLiveRefresh();
-      this.setStatus("Flux direct indisponible, bascule en rafraichissement auto", false);
-    };
-  }
-
   stopStream() {
     if (this.stream) {
       this.stream.close();
       this.stream = null;
-    }
-  }
-
-  startLiveRefresh() {
-    this.stopLiveRefresh();
-    this.liveInterval = setInterval(() => this.refresh(true), 3000);
-  }
-
-  stopLiveRefresh() {
-    if (this.liveInterval) {
-      clearInterval(this.liveInterval);
-      this.liveInterval = null;
     }
   }
 
@@ -202,7 +147,6 @@ export class LobbyListController {
 
   destroy() {
     this.stopStream();
-    this.stopLiveRefresh();
     document.removeEventListener("visibilitychange", this.visibilityHandler);
   }
 }
