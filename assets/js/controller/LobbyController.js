@@ -14,6 +14,9 @@ export class LobbyController {
     this.categories = [];
     this.heartbeatInterval = null;
     this.isDestroyed = false;
+    this.realtimeConnected = false;
+    this.hasRealtimeOpened = false;
+    this.lastRealtimeRevision = "";
     this.configDirty = false;
     this.configDraft = null;
     this.configSaveTimeout = null;
@@ -87,23 +90,68 @@ export class LobbyController {
 
     try {
       this.stream = window.httpClient.openMercureSubscription(this.realtimeConfig);
+      this.stream.addEventListener("open", () => this.handleMercureOpen());
       this.stream.addEventListener(this.realtimeConfig.event || "message", (evt) => {
         if (!evt?.data) return;
 
-        const payload = JSON.parse(evt.data);
+        let payload;
+        try {
+          payload = JSON.parse(evt.data);
+        } catch {
+          return;
+        }
+        if (!this.shouldApplyRealtimePayload(payload)) {
+          return;
+        }
         this.applyRealtimeSnapshot(payload);
-        this.setStatus("Synchronise via Mercure", true);
       });
 
-      this.stream.onerror = () => {
-        this.stopStream();
-        this.setStatus("Flux Mercure indisponible", false);
-      };
+      this.stream.onerror = () => this.handleMercureError();
 
       return true;
     } catch {
       return false;
     }
+  }
+
+  handleMercureOpen() {
+    if (this.isDestroyed) return;
+
+    const reopened = this.hasRealtimeOpened;
+    this.hasRealtimeOpened = true;
+    this.realtimeConnected = true;
+    this.setStatus("Synchronise via Mercure", true);
+
+    if (reopened) {
+      this.refreshNow();
+    }
+  }
+
+  handleMercureError() {
+    if (this.isDestroyed || !this.stream) return;
+
+    const wasConnected = this.realtimeConnected;
+    this.realtimeConnected = false;
+    this.setStatus(
+      wasConnected
+        ? "Connexion Mercure interrompue, tentative de reconnexion..."
+        : "Connexion Mercure en attente...",
+      false
+    );
+  }
+
+  shouldApplyRealtimePayload(payload) {
+    const revision = String(payload?.revision ?? "");
+    if (!revision) {
+      return true;
+    }
+
+    if (revision === this.lastRealtimeRevision) {
+      return false;
+    }
+
+    this.lastRealtimeRevision = revision;
+    return true;
   }
 
   stopStream() {
@@ -120,6 +168,7 @@ export class LobbyController {
     const detail = await window.httpClient.getLobbyByCode(code);
     if (detail.success && detail.data?.lobby) {
       this.currentLobby = detail.data.lobby;
+      this.realtimeConfig = detail.data?.realtime ?? this.realtimeConfig;
       setCurrentLobby(this.currentLobby);
       this.renderLobby(detail.data);
       await this.refreshRoundState(true);

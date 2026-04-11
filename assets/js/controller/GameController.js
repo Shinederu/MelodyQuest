@@ -70,6 +70,9 @@ export class GameController {
     this.autoNextEnabled = localStorage.getItem(AUTO_NEXT_STORAGE_KEY) === "1";
     this.resultNavigationTriggered = false;
     this.serverClockOffsetMs = 0;
+    this.realtimeConnected = false;
+    this.hasRealtimeOpened = false;
+    this.lastRealtimeRevision = "";
     this.player = null;
     this.playerReady = false;
     this.playerHostId = "game-video-player";
@@ -95,6 +98,13 @@ export class GameController {
     document.getElementById("game-volume")?.addEventListener("input", (event) => {
       this.handleVolumeInput(event);
     });
+
+    this.visibilityHandler = () => {
+      if (!document.hidden) {
+        this.refreshGameState();
+      }
+    };
+    document.addEventListener("visibilitychange", this.visibilityHandler);
 
     this.updateVolumeUi();
     this.bootstrap();
@@ -215,18 +225,66 @@ export class GameController {
 
     try {
       this.stream = window.httpClient.openMercureSubscription(this.realtimeConfig);
+      this.stream.addEventListener("open", () => this.handleMercureOpen());
       this.stream.addEventListener(this.realtimeConfig.event || "message", (evt) => {
         if (!evt?.data) return;
-        this.handleSnapshot(JSON.parse(evt.data));
+
+        let payload;
+        try {
+          payload = JSON.parse(evt.data);
+        } catch {
+          return;
+        }
+        if (!this.shouldApplyRealtimePayload(payload)) {
+          return;
+        }
+        this.handleSnapshot(payload);
       });
-      this.stream.onerror = () => {
-        this.stopRealtime();
-        this.setStatus("Flux Mercure indisponible", false);
-      };
+      this.stream.onerror = () => this.handleMercureError();
       return true;
     } catch {
       return false;
     }
+  }
+
+  handleMercureOpen() {
+    if (this.isDestroyed) return;
+
+    const reopened = this.hasRealtimeOpened;
+    this.hasRealtimeOpened = true;
+    this.realtimeConnected = true;
+    this.setStatus("Synchronise via Mercure", true);
+
+    if (reopened) {
+      this.refreshGameState();
+    }
+  }
+
+  handleMercureError() {
+    if (this.isDestroyed || !this.stream) return;
+
+    const wasConnected = this.realtimeConnected;
+    this.realtimeConnected = false;
+    this.setStatus(
+      wasConnected
+        ? "Connexion Mercure interrompue, tentative de reconnexion..."
+        : "Connexion Mercure en attente...",
+      false
+    );
+  }
+
+  shouldApplyRealtimePayload(payload) {
+    const revision = String(payload?.revision ?? "");
+    if (!revision) {
+      return true;
+    }
+
+    if (revision === this.lastRealtimeRevision) {
+      return false;
+    }
+
+    this.lastRealtimeRevision = revision;
+    return true;
   }
 
   stopRealtime() {
@@ -348,12 +406,15 @@ export class GameController {
   }
 
   startTimerLoop() {
-    if (this.timerInterval) {
-      clearInterval(this.timerInterval);
-      this.timerInterval = null;
+    if (!this.roundState?.round) {
+      if (this.timerInterval) {
+        clearInterval(this.timerInterval);
+        this.timerInterval = null;
+      }
+      return;
     }
 
-    if (!this.roundState?.round) {
+    if (this.timerInterval) {
       return;
     }
 
@@ -993,6 +1054,7 @@ export class GameController {
     this.stopRealtime();
     this.stopHeartbeat();
     this.destroyPlayer();
+    document.removeEventListener("visibilitychange", this.visibilityHandler);
     if (this.roundRefreshTimeout) {
       clearTimeout(this.roundRefreshTimeout);
       this.roundRefreshTimeout = null;

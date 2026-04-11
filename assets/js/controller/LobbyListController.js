@@ -5,6 +5,10 @@ export class LobbyListController {
     this.isRefreshing = false;
     this.stream = null;
     this.realtimeConfig = null;
+    this.isDestroyed = false;
+    this.realtimeConnected = false;
+    this.hasRealtimeOpened = false;
+    this.lastRealtimeRevision = "";
 
     this.visibilityHandler = () => {
       if (!document.hidden) {
@@ -39,23 +43,68 @@ export class LobbyListController {
 
     try {
       this.stream = window.httpClient.openMercureSubscription(this.realtimeConfig);
+      this.stream.addEventListener("open", () => this.handleMercureOpen());
       this.stream.addEventListener(this.realtimeConfig.event || "message", (evt) => {
         if (!evt?.data) return;
 
-        const payload = JSON.parse(evt.data);
+        let payload;
+        try {
+          payload = JSON.parse(evt.data);
+        } catch {
+          return;
+        }
+        if (!this.shouldApplyRealtimePayload(payload)) {
+          return;
+        }
         this.renderList(payload?.items ?? [], true);
-        this.setStatus("Liste synchronisee via Mercure", true);
       });
 
-      this.stream.onerror = () => {
-        this.stopStream();
-        this.setStatus("Flux Mercure indisponible", false);
-      };
+      this.stream.onerror = () => this.handleMercureError();
 
       return true;
     } catch {
       return false;
     }
+  }
+
+  handleMercureOpen() {
+    if (this.isDestroyed) return;
+
+    const reopened = this.hasRealtimeOpened;
+    this.hasRealtimeOpened = true;
+    this.realtimeConnected = true;
+    this.setStatus("Liste synchronisee via Mercure", true);
+
+    if (reopened) {
+      this.refresh(true);
+    }
+  }
+
+  handleMercureError() {
+    if (this.isDestroyed || !this.stream) return;
+
+    const wasConnected = this.realtimeConnected;
+    this.realtimeConnected = false;
+    this.setStatus(
+      wasConnected
+        ? "Connexion Mercure interrompue, tentative de reconnexion..."
+        : "Connexion Mercure en attente...",
+      false
+    );
+  }
+
+  shouldApplyRealtimePayload(payload) {
+    const revision = String(payload?.revision ?? "");
+    if (!revision) {
+      return true;
+    }
+
+    if (revision === this.lastRealtimeRevision) {
+      return false;
+    }
+
+    this.lastRealtimeRevision = revision;
+    return true;
   }
 
   stopStream() {
@@ -122,18 +171,12 @@ export class LobbyListController {
 
   async join(code) {
     const joinRes = await window.httpClient.joinLobby(code);
-    if (!joinRes.success) {
+    if (!joinRes.success || !joinRes.data?.lobby) {
       this.setStatus(joinRes.error || "Echec join", false);
       return;
     }
 
-    const detail = await window.httpClient.getLobbyByCode(code);
-    if (!detail.success || !detail.data?.lobby) {
-      this.setStatus(detail.error || "Echec recup lobby", false);
-      return;
-    }
-
-    setCurrentLobby(detail.data.lobby);
+    setCurrentLobby(joinRes.data.lobby);
     this.setStatus("Lobby rejoint", true);
     window.appCtrl.changeView("lobby");
   }
@@ -146,6 +189,7 @@ export class LobbyListController {
   }
 
   destroy() {
+    this.isDestroyed = true;
     this.stopStream();
     document.removeEventListener("visibilitychange", this.visibilityHandler);
   }

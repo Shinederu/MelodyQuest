@@ -59,9 +59,10 @@ export class AppController {
     this.selectView();
   }
 
-  changeView(path) {
+  changeView(path, options = {}) {
+    const force = Boolean(options?.force);
     const changed = this.navigateTo(path);
-    if (!changed) {
+    if (!changed && force) {
       this.selectView();
     }
   }

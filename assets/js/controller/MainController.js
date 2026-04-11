@@ -5,10 +5,21 @@ export class MainController {
     this.user = JSON.parse(localStorage.getItem("user") || "null");
     this.stream = null;
     this.realtimeConfig = null;
+    this.isDestroyed = false;
+    this.realtimeConnected = false;
+    this.hasRealtimeOpened = false;
+    this.lastRealtimeRevision = "";
+
+    this.visibilityHandler = () => {
+      if (!document.hidden) {
+        this.refreshLobbies(true);
+      }
+    };
 
     document.getElementById("btn-main-create")?.addEventListener("click", () => this.createLobby());
     document.getElementById("btn-main-join-code")?.addEventListener("click", () => this.joinLobbyByCode());
     document.getElementById("btn-main-management")?.addEventListener("click", () => window.appCtrl.changeView("management"));
+    document.addEventListener("visibilitychange", this.visibilityHandler);
 
     this.bootstrap();
   }
@@ -59,15 +70,20 @@ export class MainController {
     }
   }
 
-  async refreshLobbies() {
+  async refreshLobbies(silent = false) {
     const res = await window.httpClient.listPublicLobbies();
     if (!res.success) {
-      this.setStatus(res.error || "Impossible de charger les lobbies", false);
+      if (!silent) {
+        this.setStatus(res.error || "Impossible de charger les lobbies", false);
+      }
       return;
     }
 
     this.realtimeConfig = res.data?.realtime ?? null;
     this.renderLobbyList(res.data?.items ?? []);
+    if (!silent && !this.hasRealtimeOpened) {
+      this.setStatus("Lobbies charges", true);
+    }
   }
 
   startRealtime() {
@@ -84,19 +100,65 @@ export class MainController {
 
     try {
       this.stream = window.httpClient.openMercureSubscription(this.realtimeConfig);
+      this.stream.addEventListener("open", () => this.handleMercureOpen());
       this.stream.addEventListener(this.realtimeConfig.event || "message", (evt) => {
         if (!evt?.data) return;
-        const payload = JSON.parse(evt.data);
+        let payload;
+        try {
+          payload = JSON.parse(evt.data);
+        } catch {
+          return;
+        }
+        if (!this.shouldApplyRealtimePayload(payload)) {
+          return;
+        }
         this.renderLobbyList(payload?.items ?? []);
       });
-      this.stream.onerror = () => {
-        this.stopRealtime();
-        this.setStatus("Flux Mercure indisponible", false);
-      };
+      this.stream.onerror = () => this.handleMercureError();
       return true;
     } catch {
       return false;
     }
+  }
+
+  handleMercureOpen() {
+    if (this.isDestroyed) return;
+
+    const reopened = this.hasRealtimeOpened;
+    this.hasRealtimeOpened = true;
+    this.realtimeConnected = true;
+    this.setStatus("Liste synchronisee via Mercure", true);
+
+    if (reopened) {
+      this.refreshLobbies(true);
+    }
+  }
+
+  handleMercureError() {
+    if (this.isDestroyed || !this.stream) return;
+
+    const wasConnected = this.realtimeConnected;
+    this.realtimeConnected = false;
+    this.setStatus(
+      wasConnected
+        ? "Connexion Mercure interrompue, tentative de reconnexion..."
+        : "Connexion Mercure en attente...",
+      false
+    );
+  }
+
+  shouldApplyRealtimePayload(payload) {
+    const revision = String(payload?.revision ?? "");
+    if (!revision) {
+      return true;
+    }
+
+    if (revision === this.lastRealtimeRevision) {
+      return false;
+    }
+
+    this.lastRealtimeRevision = revision;
+    return true;
   }
 
   stopRealtime() {
@@ -175,6 +237,8 @@ export class MainController {
   }
 
   destroy() {
+    this.isDestroyed = true;
     this.stopRealtime();
+    document.removeEventListener("visibilitychange", this.visibilityHandler);
   }
 }
