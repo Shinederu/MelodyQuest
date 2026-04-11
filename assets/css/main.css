@@ -627,11 +627,15 @@ body::before {
 .mq-video-player {
   position: relative;
   height: 100%;
+  transition: opacity 180ms ease, transform 220ms ease;
 }
 
+.mq-video-shell.is-concealed .mq-video-player,
 .mq-video-shell.is-concealed iframe {
-  filter: blur(18px) brightness(0.38) saturate(0.75);
-  transform: scale(1.06);
+  opacity: 0.015;
+  filter: blur(24px) brightness(0.2) saturate(0.45);
+  transform: scale(1.1);
+  pointer-events: none;
 }
 
 .mq-video-overlay {
@@ -641,8 +645,8 @@ body::before {
   place-items: center;
   padding: 24px;
   background:
-    linear-gradient(180deg, rgba(19, 34, 46, 0.56), rgba(22, 38, 47, 0.72)),
-    radial-gradient(circle at top left, rgba(197, 127, 98, 0.18), transparent 28%);
+    linear-gradient(180deg, rgba(17, 30, 41, 0.92), rgba(20, 35, 46, 0.97)),
+    radial-gradient(circle at top left, rgba(197, 127, 98, 0.12), transparent 24%);
   color: rgba(255, 249, 239, 0.94);
   text-align: center;
 }
