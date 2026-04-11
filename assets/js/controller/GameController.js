@@ -5,7 +5,9 @@ const PLAYER_VOLUME_STORAGE_KEY = "mq_game_volume";
 const DEFAULT_PLAYER_VOLUME = 70;
 const TIMER_RING_RADIUS = 44;
 const TIMER_RING_CIRCUMFERENCE = 2 * Math.PI * TIMER_RING_RADIUS;
-const PLAYER_SYNC_DRIFT_SECONDS = 0.45;
+const PLAYER_SYNC_DRIFT_SECONDS = 1.35;
+const PLAYER_SYNC_INTERVAL_MS = 4000;
+const PLAYER_SYNC_COOLDOWN_MS = 1500;
 
 let youtubeIframeApiPromise = null;
 
@@ -78,6 +80,9 @@ export class GameController {
     this.lastRealtimeRevision = "";
     this.player = null;
     this.playerReady = false;
+    this.playerSyncInterval = null;
+    this.playerSyncTimeout = null;
+    this.playerLastSeekAtMs = 0;
     this.playerHostId = "game-video-player";
     this.playerVideoId = "";
     this.playerRequestedVideoId = "";
@@ -147,6 +152,7 @@ export class GameController {
 
     this.startRealtime();
     this.startHeartbeat();
+    this.startPlayerSyncLoop();
   }
 
   applySnapshot(snapshot = {}) {
@@ -204,6 +210,10 @@ export class GameController {
     if (this.advanceRefreshTimeout) {
       clearTimeout(this.advanceRefreshTimeout);
       this.advanceRefreshTimeout = null;
+    }
+    if (this.playerSyncTimeout) {
+      clearTimeout(this.playerSyncTimeout);
+      this.playerSyncTimeout = null;
     }
 
     const answerInput = document.getElementById("game-answer");
@@ -417,7 +427,6 @@ export class GameController {
     this.renderVideo(round?.track, revealVisible);
     this.renderAnswerPhase(round, userAnswer, hasCorrectAnswer, answerClosed);
     this.renderVotePhase(round, answerClosed, nextVoteAvailable);
-    this.syncPlayerPlayback();
 
     if (answerClosed && !this.roundRefreshRequested) {
       this.roundRefreshRequested = true;
@@ -449,6 +458,37 @@ export class GameController {
       if (this.isDestroyed) return;
       this.updateRoundPresentation();
     }, 1000);
+  }
+
+  startPlayerSyncLoop() {
+    this.stopPlayerSyncLoop();
+    this.playerSyncInterval = setInterval(() => {
+      if (this.isDestroyed) return;
+      this.syncPlayerPlayback(false);
+    }, PLAYER_SYNC_INTERVAL_MS);
+  }
+
+  stopPlayerSyncLoop() {
+    if (this.playerSyncInterval) {
+      clearInterval(this.playerSyncInterval);
+      this.playerSyncInterval = null;
+    }
+    if (this.playerSyncTimeout) {
+      clearTimeout(this.playerSyncTimeout);
+      this.playerSyncTimeout = null;
+    }
+  }
+
+  schedulePlayerSync(force = false, delayMs = 0) {
+    if (this.playerSyncTimeout) {
+      clearTimeout(this.playerSyncTimeout);
+      this.playerSyncTimeout = null;
+    }
+
+    this.playerSyncTimeout = window.setTimeout(() => {
+      this.playerSyncTimeout = null;
+      this.syncPlayerPlayback(force);
+    }, Math.max(0, Number(delayMs || 0)));
   }
 
   renderTimer(round, answerClosed, nextVoteAvailable) {
@@ -921,7 +961,7 @@ export class GameController {
             this.playerReady = true;
             this.playerVideoId = videoId;
             this.applyPlayerVolume();
-            this.syncPlayerPlayback(true);
+            this.schedulePlayerSync(true, 250);
           },
           onStateChange: (event) => this.handlePlayerStateChange(event),
         },
@@ -935,13 +975,18 @@ export class GameController {
 
     if (this.playerVideoId !== videoId) {
       this.playerVideoId = videoId;
-      this.safePlayerCall(() => this.player.loadVideoById(videoId));
+      const expectedOffset = Math.max(0, Number(this.getExpectedPlayerOffsetSeconds() ?? 0));
+      this.safePlayerCall(() => this.player.loadVideoById({
+        videoId,
+        startSeconds: expectedOffset,
+      }));
       this.applyPlayerVolume();
+      this.schedulePlayerSync(true, 400);
       return;
     }
 
     this.applyPlayerVolume();
-    this.syncPlayerPlayback(true);
+    this.ensurePlayerIsPlaying();
   }
 
   handlePlayerStateChange(event) {
@@ -950,16 +995,12 @@ export class GameController {
     }
 
     if (event?.data === window.YT.PlayerState.ENDED) {
-      this.syncPlayerPlayback(true);
+      this.schedulePlayerSync(true, 0);
       return;
     }
 
-    if (
-      event?.data === window.YT.PlayerState.PLAYING
-      || event?.data === window.YT.PlayerState.PAUSED
-      || event?.data === window.YT.PlayerState.CUED
-    ) {
-      this.syncPlayerPlayback(event?.data !== window.YT.PlayerState.PLAYING);
+    if (event?.data === window.YT.PlayerState.PAUSED || event?.data === window.YT.PlayerState.CUED) {
+      this.schedulePlayerSync(true, 150);
     }
   }
 
@@ -973,15 +1014,31 @@ export class GameController {
       return;
     }
 
+    const nowMs = Date.now();
     const currentTime = this.safePlayerRead(() => Number(this.player.getCurrentTime()), 0);
     const duration = this.getPlayerDurationSeconds();
     const state = this.safePlayerRead(() => Number(this.player.getPlayerState()), -1);
     const drift = this.computePlaybackDriftSeconds(currentTime, expectedTime, duration);
 
-    if (force || drift > PLAYER_SYNC_DRIFT_SECONDS) {
+    if (
+      (force || drift > PLAYER_SYNC_DRIFT_SECONDS)
+      && (force || (nowMs - this.playerLastSeekAtMs) >= PLAYER_SYNC_COOLDOWN_MS)
+    ) {
       this.safePlayerCall(() => this.player.seekTo(expectedTime, true));
+      this.playerLastSeekAtMs = nowMs;
     }
 
+    if (state !== window.YT.PlayerState.PLAYING && state !== window.YT.PlayerState.BUFFERING) {
+      this.ensurePlayerIsPlaying();
+    }
+  }
+
+  ensurePlayerIsPlaying() {
+    if (!this.player || !this.playerReady || !window.YT?.PlayerState) {
+      return;
+    }
+
+    const state = this.safePlayerRead(() => Number(this.player.getPlayerState()), -1);
     if (state !== window.YT.PlayerState.PLAYING && state !== window.YT.PlayerState.BUFFERING) {
       this.safePlayerCall(() => this.player.playVideo());
     }
@@ -1189,6 +1246,7 @@ export class GameController {
     this.isDestroyed = true;
     this.stopRealtime();
     this.stopHeartbeat();
+    this.stopPlayerSyncLoop();
     this.destroyPlayer();
     document.removeEventListener("visibilitychange", this.visibilityHandler);
     if (this.roundRefreshTimeout) {
