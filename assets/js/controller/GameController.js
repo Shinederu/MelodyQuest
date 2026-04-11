@@ -5,6 +5,7 @@ const PLAYER_VOLUME_STORAGE_KEY = "mq_game_volume";
 const DEFAULT_PLAYER_VOLUME = 70;
 const TIMER_RING_RADIUS = 44;
 const TIMER_RING_CIRCUMFERENCE = 2 * Math.PI * TIMER_RING_RADIUS;
+const PLAYER_SYNC_DRIFT_SECONDS = 0.45;
 
 let youtubeIframeApiPromise = null;
 
@@ -416,6 +417,7 @@ export class GameController {
     this.renderVideo(round?.track, revealVisible);
     this.renderAnswerPhase(round, userAnswer, hasCorrectAnswer, answerClosed);
     this.renderVotePhase(round, answerClosed, nextVoteAvailable);
+    this.syncPlayerPlayback();
 
     if (answerClosed && !this.roundRefreshRequested) {
       this.roundRefreshRequested = true;
@@ -919,7 +921,7 @@ export class GameController {
             this.playerReady = true;
             this.playerVideoId = videoId;
             this.applyPlayerVolume();
-            this.safePlayerCall(() => this.player.playVideo());
+            this.syncPlayerPlayback(true);
           },
           onStateChange: (event) => this.handlePlayerStateChange(event),
         },
@@ -939,7 +941,7 @@ export class GameController {
     }
 
     this.applyPlayerVolume();
-    this.safePlayerCall(() => this.player.playVideo());
+    this.syncPlayerPlayback(true);
   }
 
   handlePlayerStateChange(event) {
@@ -948,11 +950,79 @@ export class GameController {
     }
 
     if (event?.data === window.YT.PlayerState.ENDED) {
-      this.safePlayerCall(() => {
-        this.player.seekTo(0, true);
-        this.player.playVideo();
-      });
+      this.syncPlayerPlayback(true);
+      return;
     }
+
+    if (
+      event?.data === window.YT.PlayerState.PLAYING
+      || event?.data === window.YT.PlayerState.PAUSED
+      || event?.data === window.YT.PlayerState.CUED
+    ) {
+      this.syncPlayerPlayback(event?.data !== window.YT.PlayerState.PLAYING);
+    }
+  }
+
+  syncPlayerPlayback(force = false) {
+    if (!this.player || !this.playerReady || !this.roundState?.round || !window.YT?.PlayerState) {
+      return;
+    }
+
+    const expectedTime = this.getExpectedPlayerOffsetSeconds();
+    if (expectedTime === null) {
+      return;
+    }
+
+    const currentTime = this.safePlayerRead(() => Number(this.player.getCurrentTime()), 0);
+    const duration = this.getPlayerDurationSeconds();
+    const state = this.safePlayerRead(() => Number(this.player.getPlayerState()), -1);
+    const drift = this.computePlaybackDriftSeconds(currentTime, expectedTime, duration);
+
+    if (force || drift > PLAYER_SYNC_DRIFT_SECONDS) {
+      this.safePlayerCall(() => this.player.seekTo(expectedTime, true));
+    }
+
+    if (state !== window.YT.PlayerState.PLAYING && state !== window.YT.PlayerState.BUFFERING) {
+      this.safePlayerCall(() => this.player.playVideo());
+    }
+  }
+
+  getExpectedPlayerOffsetSeconds() {
+    const round = this.roundState?.round;
+    const startedAtUnix = Number(round?.started_at_unix || 0);
+    if (startedAtUnix <= 0) {
+      return null;
+    }
+
+    const elapsedSeconds = Math.max(0, (this.getNowMs() / 1000) - startedAtUnix);
+    const duration = this.getPlayerDurationSeconds();
+    if (duration > 1) {
+      return elapsedSeconds % duration;
+    }
+
+    return elapsedSeconds;
+  }
+
+  getPlayerDurationSeconds() {
+    if (!this.player || !this.playerReady) {
+      return 0;
+    }
+
+    const duration = this.safePlayerRead(() => Number(this.player.getDuration()), 0);
+    return Number.isFinite(duration) && duration > 0 ? duration : 0;
+  }
+
+  computePlaybackDriftSeconds(currentTime, expectedTime, duration) {
+    const rawDrift = Math.abs(Number(currentTime || 0) - Number(expectedTime || 0));
+    if (!(duration > 1)) {
+      return rawDrift;
+    }
+
+    return Math.min(
+      rawDrift,
+      Math.abs((currentTime + duration) - expectedTime),
+      Math.abs(currentTime - (expectedTime + duration))
+    );
   }
 
   applyPlayerVolume() {
@@ -979,6 +1049,18 @@ export class GameController {
       fn();
     } catch {
       // noop
+    }
+  }
+
+  safePlayerRead(fn, fallback = null) {
+    if (!this.player || typeof fn !== "function") {
+      return fallback;
+    }
+
+    try {
+      return fn();
+    } catch {
+      return fallback;
     }
   }
 
