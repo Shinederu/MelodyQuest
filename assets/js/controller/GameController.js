@@ -355,7 +355,7 @@ export class GameController {
       button.classList.toggle("is-masked", this.isLobbyCodeHidden);
     }
     if (label) {
-      label.textContent = this.isLobbyCodeHidden && code ? "•".repeat(code.length) : (code || "------");
+      label.textContent = this.isLobbyCodeHidden && code ? "*".repeat(code.length) : (code || "------");
     }
     if (hint) {
       hint.textContent = this.isLobbyCodeHidden ? "Afficher" : "Masquer";
@@ -656,7 +656,7 @@ export class GameController {
     }
 
     const extra = details.filter((value) => value !== expected).join(" - ");
-    return [expected, extra].filter(Boolean).join(" · ");
+    return [expected, extra].filter(Boolean).join(" - ");
   }
 
   getCurrentUserAnswer() {
@@ -911,6 +911,7 @@ export class GameController {
     this.playerRequestedVideoId = videoId;
     this.playerVisible = Boolean(showVideo);
     this.updateVolumeUi();
+    const previewStartOffset = this.getTrackStartOffsetSeconds();
 
     let host = document.getElementById(this.playerHostId);
     if (!host) {
@@ -953,6 +954,7 @@ export class GameController {
           fs: 0,
           iv_load_policy: 3,
           modestbranding: 1,
+          start: previewStartOffset,
           playsinline: 1,
           rel: 0,
         },
@@ -975,10 +977,9 @@ export class GameController {
 
     if (this.playerVideoId !== videoId) {
       this.playerVideoId = videoId;
-      const expectedOffset = Math.max(0, Number(this.getExpectedPlayerOffsetSeconds() ?? 0));
       this.safePlayerCall(() => this.player.loadVideoById({
         videoId,
-        startSeconds: expectedOffset,
+        startSeconds: previewStartOffset,
       }));
       this.applyPlayerVolume();
       this.schedulePlayerSync(true, 400);
@@ -1051,13 +1052,15 @@ export class GameController {
       return null;
     }
 
-    const elapsedSeconds = Math.max(0, (this.getNowMs() / 1000) - startedAtUnix);
     const duration = this.getPlayerDurationSeconds();
-    if (duration > 1) {
-      return elapsedSeconds % duration;
+    const startOffset = this.getTrackStartOffsetSeconds(round?.track, duration);
+    const elapsedSeconds = Math.max(0, (this.getNowMs() / 1000) - startedAtUnix);
+    const playableDuration = duration - startOffset;
+    if (playableDuration > 1) {
+      return startOffset + (elapsedSeconds % playableDuration);
     }
 
-    return elapsedSeconds;
+    return startOffset + elapsedSeconds;
   }
 
   getPlayerDurationSeconds() {
@@ -1067,6 +1070,15 @@ export class GameController {
 
     const duration = this.safePlayerRead(() => Number(this.player.getDuration()), 0);
     return Number.isFinite(duration) && duration > 0 ? duration : 0;
+  }
+
+  getTrackStartOffsetSeconds(track = this.roundState?.round?.track, duration = 0) {
+    const offset = Math.max(0, Number(track?.start_offset_seconds || 0));
+    if (duration > 1 && offset >= duration) {
+      return Math.max(0, duration - 0.5);
+    }
+
+    return offset;
   }
 
   computePlaybackDriftSeconds(currentTime, expectedTime, duration) {
