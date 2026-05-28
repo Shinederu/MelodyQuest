@@ -38,10 +38,24 @@ function toBool(value) {
   return ["1", "true", "yes", "on", "admin"].includes(v);
 }
 
+function hasProjectPermission(user, project, permission) {
+  const projectPermissions = user?.project_access?.permissions?.[project];
+  if (!projectPermissions || typeof projectPermissions !== "object") {
+    return false;
+  }
+
+  return toBool(projectPermissions[permission]);
+}
+
 function normalizeUser(rawUser) {
   const user = { ...(rawUser || {}) };
   user.role = String(user.role ?? "").toLowerCase();
-  user.is_admin = toBool(user.is_admin) || user.role === "admin";
+  user.is_admin = (
+    toBool(user.is_admin) ||
+    user.role === "admin" ||
+    toBool(user.project_access?.is_global_admin) ||
+    hasProjectPermission(user, "melodyquest", "catalog_manage")
+  );
   return user;
 }
 
