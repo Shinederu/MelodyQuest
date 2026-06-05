@@ -61,10 +61,17 @@ Les flux `login/register/logout/me` passent par ce client auth partage.
 - Vue `main`: menu principal (1 bouton rejoindre, 1 bouton creer)
 - Vue `lobby-list`: lobbies publics en cours + rejoindre par code
 - Vue `lobby`: page lobby (gestion owner + gameplay)
+- Vue `game`: partie en cours avec lecteur YouTube synchronise a gauche sur desktop, reponse/classement/code lobby en colonne droite, puis empilement responsive sur mobile
 - Vue `management`: hub management global
 - Vue `management-categories`: gestion categories
 - Vue `management-families`: gestion familles
 - Vue `management-tracks`: gestion musiques
+
+## Interface
+
+- Theme sombre responsive applique globalement au frontend.
+- Layout desktop de la page jeu concu pour tenir sur un ecran PC courant: scene video a gauche, actions et classement a droite.
+- Layout mobile empile les sections et conserve le lecteur en ratio 16:9.
 
 ## Lancer en local
 

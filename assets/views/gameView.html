@@ -1,71 +1,93 @@
-<section class="mq-page">
-  <section class="mq-card mq-card--soft mq-game-stage">
-    <div class="mq-game-stage__head">
-      <div class="mq-card-heading">
-        <div class="mq-kicker">Session en cours</div>
-        <h1 id="game-title">Partie en cours</h1>
-      </div>
-      <div class="mq-actions">
-        <button id="btn-game-leave" type="button" class="mq-danger">Quitter le lobby</button>
-      </div>
-    </div>
-    <p id="game-status" class="status"></p>
-
-    <div class="mq-card-heading mq-card-heading--compact">
-      <div class="mq-kicker">Lecture</div>
-    </div>
-    <div id="game-video" class="mq-video-shell">
-      <div id="game-video-player" class="mq-video-player"></div>
-      <div id="game-video-guard" class="mq-video-guard" hidden></div>
-      <div id="game-video-overlay" class="mq-video-overlay">
-        <div class="mq-video-overlay__content">
-          <div class="mq-video-overlay__timer">
-            <svg class="mq-timer-ring" viewBox="0 0 120 120" aria-hidden="true">
-              <circle class="mq-timer-ring__track" cx="60" cy="60" r="44"></circle>
-              <circle id="game-video-ring-progress" class="mq-timer-ring__progress" cx="60" cy="60" r="44"></circle>
-            </svg>
-            <div class="mq-video-overlay__timer-copy">
-              <strong id="game-video-overlay-title">Video cachee</strong>
-              <p id="game-video-overlay-copy">Reponds dans -- secondes.</p>
-            </div>
-          </div>
-          <p id="game-video-overlay-hint" class="mq-video-overlay__hint">Ecoute l'extrait et trouve la bonne reponse pour reveler la video.</p>
+<section class="mq-page mq-game-page">
+  <section class="mq-game-shell">
+    <section class="mq-card mq-card--soft mq-game-stage">
+      <div class="mq-game-stage__head">
+        <div class="mq-card-heading">
+          <div class="mq-kicker">Session en cours</div>
+          <h1 id="game-title">Partie en cours</h1>
         </div>
-      </div>
-    </div>
-    <div class="mq-video-toolbar">
-      <label class="mq-volume-control" for="game-volume">
-        <span>Volume</span>
-        <input id="game-volume" type="range" min="0" max="100" step="1" value="70" />
-      </label>
-      <span id="game-volume-value" class="mq-chip">70%</span>
-    </div>
-    <p id="game-solution" class="status"></p>
-  </section>
-
-  <div class="mq-two-cols">
-    <section class="mq-card">
-      <div class="mq-card-heading">
-        <div class="mq-kicker">A toi de jouer</div>
-        <h2>Ta reponse</h2>
-        <p class="mq-card-copy">Trouve le morceau avant la fin du chrono. Une bonne reponse debloque la video pour toi immediatement.</p>
-      </div>
-
-      <div id="game-answer-shell" class="mq-form-stack">
-        <label for="game-answer">Reponse</label>
-        <input id="game-answer" type="text" placeholder="Nom du morceau" autocomplete="off" />
-        <p id="game-answer-feedback" class="status"></p>
         <div class="mq-actions">
-          <button id="btn-game-submit" type="button">Envoyer la reponse</button>
+          <button id="btn-game-leave" type="button" class="mq-danger">Quitter le lobby</button>
+        </div>
+      </div>
+      <p id="game-status" class="status"></p>
+
+      <div id="game-video" class="mq-video-shell">
+        <div id="game-video-player" class="mq-video-player"></div>
+        <div id="game-video-guard" class="mq-video-guard" hidden></div>
+        <div id="game-video-overlay" class="mq-video-overlay">
+          <div class="mq-video-overlay__content">
+            <div class="mq-video-overlay__timer">
+              <svg class="mq-timer-ring" viewBox="0 0 120 120" aria-hidden="true">
+                <circle class="mq-timer-ring__track" cx="60" cy="60" r="44"></circle>
+                <circle id="game-video-ring-progress" class="mq-timer-ring__progress" cx="60" cy="60" r="44"></circle>
+              </svg>
+              <div class="mq-video-overlay__timer-copy">
+                <strong id="game-video-overlay-title">Video cachee</strong>
+                <p id="game-video-overlay-copy">Reponds dans -- secondes.</p>
+              </div>
+            </div>
+            <p id="game-video-overlay-hint" class="mq-video-overlay__hint">Ecoute l'extrait et trouve la bonne reponse pour reveler la video.</p>
+          </div>
         </div>
       </div>
 
-      <div id="game-answer-locked" class="mq-game-note" hidden>
-        <strong id="game-answer-locked-title">Solution</strong>
-        <p id="game-answer-locked-copy" class="mq-muted"></p>
+      <div class="mq-video-toolbar">
+        <label class="mq-volume-control" for="game-volume">
+          <span>Volume</span>
+          <input id="game-volume" type="range" min="0" max="100" step="1" value="70" />
+        </label>
+        <span id="game-volume-value" class="mq-chip">70%</span>
       </div>
+      <p id="game-solution" class="status"></p>
+    </section>
 
-      <div id="game-next-panel" class="mq-game-vote-panel" hidden>
+    <aside class="mq-game-side">
+      <section class="mq-card mq-game-answer-card">
+        <div class="mq-card-heading">
+          <div class="mq-kicker">A toi de jouer</div>
+          <h2>Ta reponse</h2>
+          <p class="mq-card-copy">Trouve le morceau avant la fin du chrono.</p>
+        </div>
+
+        <div id="game-answer-shell" class="mq-form-stack">
+          <label for="game-answer">Reponse</label>
+          <input id="game-answer" type="text" placeholder="Nom du morceau" autocomplete="off" />
+          <p id="game-answer-feedback" class="status"></p>
+          <div class="mq-actions">
+            <button id="btn-game-submit" type="button">Envoyer la reponse</button>
+          </div>
+        </div>
+
+        <div id="game-answer-locked" class="mq-game-note" hidden>
+          <strong id="game-answer-locked-title">Solution</strong>
+          <p id="game-answer-locked-copy" class="mq-muted"></p>
+        </div>
+      </section>
+
+      <section class="mq-card mq-card--accent mq-game-info-card">
+        <div class="mq-game-info-grid">
+          <article class="mq-game-fact">
+            <span>Manche</span>
+            <strong id="game-progress">-- / --</strong>
+          </article>
+          <article class="mq-game-fact">
+            <span>Code du lobby</span>
+            <button id="btn-game-toggle-code" type="button" class="mq-game-code" aria-pressed="false">
+              <span id="game-lobby-code">------</span>
+              <small id="game-lobby-code-hint">Masquer</small>
+            </button>
+          </article>
+        </div>
+
+        <div class="mq-card-heading mq-card-heading--compact">
+          <div class="mq-kicker">Classement</div>
+          <h3>Classement</h3>
+        </div>
+        <ul id="game-scoreboard" class="mq-clean-list"></ul>
+      </section>
+
+      <section id="game-next-panel" class="mq-card mq-game-vote-panel" hidden>
         <div>
           <p class="mq-section-label">Passer au suivant</p>
           <p id="game-next-info" class="mq-muted">Le vote sera disponible apres quelques secondes de solution.</p>
@@ -78,35 +100,7 @@
         <div class="mq-actions">
           <button id="btn-game-next" type="button">Passer au suivant</button>
         </div>
-      </div>
-    </section>
-
-    <section class="mq-card mq-card--accent">
-      <div class="mq-card-heading">
-        <div class="mq-kicker">Information de la partie</div>
-        <h2>Informations</h2>
-        <p class="mq-card-copy">Classement en direct, manche en cours et code de salon masquable.</p>
-      </div>
-
-      <div class="mq-game-info-grid">
-        <article class="mq-game-fact">
-          <span>Manche</span>
-          <strong id="game-progress">-- / --</strong>
-        </article>
-        <article class="mq-game-fact">
-          <span>Code du lobby</span>
-          <button id="btn-game-toggle-code" type="button" class="mq-game-code" aria-pressed="false">
-            <span id="game-lobby-code">------</span>
-            <small id="game-lobby-code-hint">Masquer</small>
-          </button>
-        </article>
-      </div>
-
-      <div class="mq-card-heading mq-card-heading--compact">
-        <div class="mq-kicker">Classement</div>
-        <h3>Classement</h3>
-      </div>
-      <ul id="game-scoreboard" class="mq-clean-list"></ul>
-    </section>
-  </div>
+      </section>
+    </aside>
+  </section>
 </section>
