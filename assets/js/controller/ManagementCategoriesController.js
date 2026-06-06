@@ -24,8 +24,10 @@ export class ManagementCategoriesController {
 
   async refresh() {
     const res = await window.httpClient.listCategories();
-    this.setStatus(res.success ? "Categories chargees" : (res.error || "Erreur"), res.success);
-    if (!res.success) return;
+    if (!res.success) {
+      this.setStatus(res.error || "Erreur", false);
+      return;
+    }
 
     this.items = res.data?.items ?? [];
     this.renderCounters();
@@ -60,7 +62,6 @@ export class ManagementCategoriesController {
       <button type="button" class="mq-admin-item ${Number(item.id) === Number(this.selectedId) ? "is-selected" : ""}" data-id="${Number(item.id)}">
         <strong>${this.escapeHtml(item.name)}</strong>
         <div class="mq-admin-item__meta">
-          <span class="mq-admin-badge">${this.escapeHtml(item.slug)}</span>
           <span class="mq-admin-submeta">${this.escapeHtml(this.formatCategoryCounts(item))}</span>
         </div>
       </button>
@@ -101,8 +102,8 @@ export class ManagementCategoriesController {
     if (title) title.textContent = this.selectedId ? "Modifier la categorie" : "Nouvelle categorie";
     if (helper) {
       helper.textContent = this.selectedId
-        ? "Mode modification actif. Utilise le reset pour repartir sur une nouvelle categorie."
-        : "Mode creation actif. Le slug sera calcule automatiquement a partir du nom.";
+        ? "Modifie le nom, puis enregistre ou supprime la categorie."
+        : "Donne un nom clair a la nouvelle categorie.";
     }
     if (createBtn) createBtn.disabled = !!this.selectedId;
     if (updateBtn) updateBtn.disabled = !this.selectedId;

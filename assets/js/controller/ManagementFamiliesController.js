@@ -39,8 +39,10 @@ export class ManagementFamiliesController {
       window.httpClient.listCategories(),
     ]);
 
-    this.setStatus(famRes.success ? "Oeuvres chargees" : (famRes.error || "Erreur"), famRes.success);
-    if (!famRes.success) return;
+    if (!famRes.success) {
+      this.setStatus(famRes.error || "Erreur", false);
+      return;
+    }
 
     this.items = famRes.data?.items ?? [];
     this.categories = catRes.success ? (catRes.data?.items ?? []) : [];
@@ -179,8 +181,8 @@ export class ManagementFamiliesController {
     if (title) title.textContent = this.selectedId ? "Modifier l'oeuvre" : "Nouvelle oeuvre";
     if (helper) {
       helper.textContent = this.selectedId
-        ? "Mode modification actif. Mets a jour le nom principal et les alias acceptes sans quitter l'ecran."
-        : "Mode creation actif. Choisis d'abord une categorie, puis saisis l'oeuvre attendue et ses alias si besoin.";
+        ? "Mets a jour le nom principal et les alias acceptes."
+        : "Choisis une categorie, puis renseigne l'oeuvre attendue et ses alias si besoin.";
     }
     if (createBtn) createBtn.disabled = !!this.selectedId;
     if (updateBtn) updateBtn.disabled = !this.selectedId;

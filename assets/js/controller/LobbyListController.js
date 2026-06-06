@@ -71,7 +71,6 @@ export class LobbyListController {
     const reopened = this.hasRealtimeOpened;
     this.hasRealtimeOpened = true;
     this.realtimeConnected = true;
-    this.setStatus("Salons mis a jour automatiquement", true);
 
     if (reopened) {
       this.refresh(true);
@@ -81,14 +80,7 @@ export class LobbyListController {
   handleMercureError() {
     if (this.isDestroyed || !this.stream) return;
 
-    const wasConnected = this.realtimeConnected;
     this.realtimeConnected = false;
-    this.setStatus(
-      wasConnected
-        ? "Mise a jour interrompue, nouvelle tentative..."
-        : "Mise a jour en attente...",
-      false
-    );
   }
 
   shouldApplyRealtimePayload(payload) {
@@ -125,7 +117,6 @@ export class LobbyListController {
 
       this.realtimeConfig = res.data?.realtime ?? null;
       this.renderList(res.data?.items ?? [], silent);
-      if (!silent) this.setStatus("Salons mis a jour", true);
     } finally {
       this.isRefreshing = false;
     }

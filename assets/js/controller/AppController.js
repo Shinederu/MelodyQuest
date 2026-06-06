@@ -1,18 +1,18 @@
 import { HttpService } from "../utils/HttpService.js?v=20260606-validation-edit";
 import { HeaderModel } from "../model/HeaderModel.js";
 import { PublicController } from "./PublicController.js?v=20260606-public-auth-switch";
-import { MainController } from "./MainController.js?v=20260606-player-flow";
-import { LobbyController } from "./LobbyController.js?v=20260606-player-flow";
-import { LobbyListController } from "./LobbyListController.js?v=20260606-player-flow";
-import { GameController } from "./GameController.js?v=20260606-player-flow";
+import { MainController } from "./MainController.js?v=20260606-clean-status";
+import { LobbyController } from "./LobbyController.js?v=20260606-clean-status";
+import { LobbyListController } from "./LobbyListController.js?v=20260606-clean-status";
+import { GameController } from "./GameController.js?v=20260606-clean-status";
 import { ResultController } from "./ResultController.js?v=20260606-player-flow";
 import { ManagementController } from "./ManagementController.js";
-import { ManagementCategoriesController } from "./ManagementCategoriesController.js?v=20260606-category-counts";
-import { ManagementFamiliesController } from "./ManagementFamiliesController.js?v=20260606-family-filters";
-import { ManagementTracksController } from "./ManagementTracksController.js?v=20260606-track-filters";
-import { ManagementValidationController } from "./ManagementValidationController.js?v=20260606-validation-edit";
+import { ManagementCategoriesController } from "./ManagementCategoriesController.js?v=20260606-clean-status";
+import { ManagementFamiliesController } from "./ManagementFamiliesController.js?v=20260606-clean-status";
+import { ManagementTracksController } from "./ManagementTracksController.js?v=20260606-clean-status";
+import { ManagementValidationController } from "./ManagementValidationController.js?v=20260606-clean-status";
 
-const ASSET_VERSION = "20260606-compact-headers";
+const ASSET_VERSION = "20260606-clean-status";
 
 let currentUser = null;
 let headerManager = null;

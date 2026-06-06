@@ -266,7 +266,6 @@ export class GameController {
     const reopened = this.hasRealtimeOpened;
     this.hasRealtimeOpened = true;
     this.realtimeConnected = true;
-    this.setStatus("Partie synchronisee", true);
 
     if (reopened) {
       this.refreshGameState();
@@ -276,14 +275,7 @@ export class GameController {
   handleMercureError() {
     if (this.isDestroyed || !this.stream) return;
 
-    const wasConnected = this.realtimeConnected;
     this.realtimeConnected = false;
-    this.setStatus(
-      wasConnected
-        ? "Mise a jour interrompue, nouvelle tentative..."
-        : "Mise a jour en attente...",
-      false
-    );
   }
 
   shouldApplyRealtimePayload(payload) {

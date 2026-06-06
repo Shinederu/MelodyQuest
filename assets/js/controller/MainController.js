@@ -132,14 +132,7 @@ export class MainController {
   handleMercureError() {
     if (this.isDestroyed || !this.stream) return;
 
-    const wasConnected = this.realtimeConnected;
     this.realtimeConnected = false;
-    if (!wasConnected) return;
-
-    this.setStatus(
-      "Mise a jour interrompue, nouvelle tentative...",
-      false
-    );
   }
 
   shouldApplyRealtimePayload(payload) {

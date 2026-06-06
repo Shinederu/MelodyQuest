@@ -118,7 +118,6 @@ export class LobbyController {
     const reopened = this.hasRealtimeOpened;
     this.hasRealtimeOpened = true;
     this.realtimeConnected = true;
-    this.setStatus("Salon mis a jour automatiquement", true);
 
     if (reopened) {
       this.refreshNow();
@@ -128,14 +127,7 @@ export class LobbyController {
   handleMercureError() {
     if (this.isDestroyed || !this.stream) return;
 
-    const wasConnected = this.realtimeConnected;
     this.realtimeConnected = false;
-    this.setStatus(
-      wasConnected
-        ? "Mise a jour interrompue, nouvelle tentative..."
-        : "Mise a jour en attente...",
-      false
-    );
   }
 
   shouldApplyRealtimePayload(payload) {

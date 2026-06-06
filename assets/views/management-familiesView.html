@@ -15,7 +15,6 @@
       <div class="mq-admin-toolbar__meta">
         <div class="mq-admin-toolbar__cluster">
           <span id="fam-count" class="mq-chip">0 oeuvres</span>
-          <span class="mq-chip">Reponse attendue</span>
         </div>
         <p id="fam-status" class="status">Choisis une oeuvre existante ou prepare une nouvelle entree.</p>
       </div>
@@ -52,7 +51,7 @@
       <div class="mq-card-heading">
         <div class="mq-kicker">Edition</div>
         <h2 id="fam-form-title">Nouvelle oeuvre</h2>
-        <p id="fam-form-helper" class="mq-admin-helper">Mode creation actif. Associe d'abord l'oeuvre a une categorie, puis renseigne le nom de la reponse attendue.</p>
+        <p id="fam-form-helper" class="mq-admin-helper">Choisis une categorie, puis renseigne l'oeuvre attendue et ses alias si besoin.</p>
       </div>
       <div id="fam-form" class="mq-admin-form-grid">
         <div class="mq-admin-form-split">
@@ -69,7 +68,7 @@
 
         <div class="mq-field">
           <label for="fam-description">Description</label>
-          <input id="fam-description" type="text" placeholder="Infos internes optionnelles" />
+          <input id="fam-description" type="text" placeholder="Note optionnelle" />
         </div>
 
         <div class="mq-field">
@@ -83,7 +82,7 @@
           </div>
         </div>
 
-        <p class="mq-muted">Le slug technique est genere automatiquement a partir du nom. Ajoute ensuite les formulations alternatives de la meme oeuvre une par une.</p>
+        <p class="mq-muted">Ajoute les formulations alternatives acceptables pour la meme oeuvre une par une.</p>
       </div>
       <div class="mq-admin-form-actions">
         <button id="btn-fam-create" type="button">Ajouter</button>

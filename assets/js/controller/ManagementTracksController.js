@@ -43,8 +43,10 @@ export class ManagementTracksController {
       window.httpClient.listCategories(),
     ]);
 
-    this.setStatus(trackRes.success ? "Musiques chargees" : (trackRes.error || "Erreur"), trackRes.success);
-    if (!trackRes.success) return;
+    if (!trackRes.success) {
+      this.setStatus(trackRes.error || "Erreur", false);
+      return;
+    }
 
     this.items = trackRes.data?.items ?? [];
     this.families = famRes.success ? (famRes.data?.items ?? []) : [];

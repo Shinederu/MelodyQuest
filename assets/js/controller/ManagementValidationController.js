@@ -25,8 +25,10 @@ export class ManagementValidationController {
       window.httpClient.listFamilies(),
     ]);
 
-    this.setStatus(pendingRes.success ? "Musiques en attente chargees" : (pendingRes.error || "Erreur"), pendingRes.success);
-    if (!pendingRes.success) return;
+    if (!pendingRes.success) {
+      this.setStatus(pendingRes.error || "Erreur", false);
+      return;
+    }
 
     this.items = pendingRes.data?.items ?? [];
     this.categories = catRes.success ? (catRes.data?.items ?? []) : [];
@@ -143,7 +145,7 @@ export class ManagementValidationController {
     if (!item) {
       if (title) title.textContent = "Aucune musique selectionnee";
       if (helper) helper.textContent = "Choisis une piste en attente pour verifier sa video YouTube et la valider.";
-      if (meta) meta.innerHTML = `<span class="mq-muted">La file d'attente se remplira automatiquement a chaque ajout ou modification de musique.</span>`;
+      if (meta) meta.innerHTML = `<span class="mq-muted">Aucune piste n'est selectionnee pour le moment.</span>`;
       if (created) created.textContent = "Date d'ajout indisponible";
       if (approve) approve.disabled = true;
       this.clearForm();
