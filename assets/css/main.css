@@ -1154,8 +1154,13 @@ input[type="range"] {
   color: var(--mq-text);
   text-align: center;
   background:
-    linear-gradient(180deg, rgba(4, 7, 12, 0.82), rgba(4, 7, 12, 0.96)),
-    linear-gradient(135deg, rgba(120, 183, 255, 0.1), rgba(233, 130, 189, 0.06));
+    linear-gradient(180deg, rgba(4, 7, 12, 0.98), rgba(4, 7, 12, 1)),
+    linear-gradient(135deg, rgba(120, 183, 255, 0.12), rgba(233, 130, 189, 0.08)),
+    #04070c;
+}
+
+.mq-video-shell.is-concealed .mq-video-player {
+  opacity: 0;
 }
 
 .mq-video-overlay__content {
