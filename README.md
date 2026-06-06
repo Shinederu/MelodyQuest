@@ -72,6 +72,7 @@ Les flux `login/register/logout/me` passent par ce client auth partage.
 
 - Systeme visuel sombre unifie applique globalement au frontend, sans ancien theme clair residuel.
 - Les pages joueur privilegient les actions utiles: creer un salon, rejoindre par code, choisir un salon public, inviter les joueurs, regler rapidement la partie et relancer depuis les resultats.
+- Les en-tetes de pages restent compacts par defaut afin de garder les actions principales visibles sans defilement inutile.
 - Layout desktop de la page jeu concu pour tenir sur un ecran PC courant: scene video a gauche, actions et classement a droite.
 - Layout mobile empile les sections et conserve le lecteur en ratio 16:9.
 

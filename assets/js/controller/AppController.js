@@ -12,7 +12,7 @@ import { ManagementFamiliesController } from "./ManagementFamiliesController.js?
 import { ManagementTracksController } from "./ManagementTracksController.js?v=20260606-track-filters";
 import { ManagementValidationController } from "./ManagementValidationController.js?v=20260606-validation-edit";
 
-const ASSET_VERSION = "20260606-player-flow";
+const ASSET_VERSION = "20260606-compact-headers";
 
 let currentUser = null;
 let headerManager = null;
