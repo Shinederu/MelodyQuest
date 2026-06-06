@@ -1,4 +1,4 @@
-import { HttpService } from "../utils/HttpService.js";
+import { HttpService } from "../utils/HttpService.js?v=20260606-validation-edit";
 import { HeaderModel } from "../model/HeaderModel.js";
 import { PublicController } from "./PublicController.js?v=20260606-public-auth-switch";
 import { MainController } from "./MainController.js";
@@ -10,9 +10,9 @@ import { ManagementController } from "./ManagementController.js";
 import { ManagementCategoriesController } from "./ManagementCategoriesController.js?v=20260606-category-counts";
 import { ManagementFamiliesController } from "./ManagementFamiliesController.js?v=20260606-family-filters";
 import { ManagementTracksController } from "./ManagementTracksController.js?v=20260606-track-filters";
-import { ManagementValidationController } from "./ManagementValidationController.js";
+import { ManagementValidationController } from "./ManagementValidationController.js?v=20260606-validation-edit";
 
-const ASSET_VERSION = "20260606-track-filters";
+const ASSET_VERSION = "20260606-validation-edit";
 
 let currentUser = null;
 let headerManager = null;

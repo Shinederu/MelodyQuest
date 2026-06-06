@@ -48,6 +48,38 @@
           <span class="mq-muted">La file d'attente se remplira automatiquement a chaque ajout ou modification de musique.</span>
         </div>
 
+        <div id="validation-edit-form" class="mq-admin-form-grid">
+          <div class="mq-admin-form-split">
+            <div class="mq-field">
+              <label for="validation-category">Categorie</label>
+              <select id="validation-category" disabled></select>
+            </div>
+
+            <div class="mq-field">
+              <label for="validation-family-name">Oeuvre / reponse attendue</label>
+              <input id="validation-family-name" type="text" list="validation-family-options" placeholder="Ex: Pokemon" disabled />
+              <datalist id="validation-family-options"></datalist>
+            </div>
+          </div>
+
+          <div class="mq-admin-form-split">
+            <div class="mq-field">
+              <label for="validation-track-title">Libelle de la piste</label>
+              <input id="validation-track-title" type="text" placeholder="Ex: Ending S1" disabled />
+            </div>
+
+            <div class="mq-field">
+              <label for="validation-track-artist">Artiste / licence</label>
+              <input id="validation-track-artist" type="text" placeholder="Ex: Pokemon" disabled />
+            </div>
+          </div>
+
+          <div class="mq-field">
+            <label for="validation-youtube-url">ID ou URL YouTube</label>
+            <input id="validation-youtube-url" type="text" placeholder="Ex: dQw4w9WgXcQ ou https://www.youtube.com/watch?v=..." disabled />
+          </div>
+        </div>
+
         <div class="mq-validation-video-shell">
           <div id="validation-preview-empty" class="mq-video-placeholder">
             <p class="mq-muted">Aucune preview disponible pour le moment.</p>

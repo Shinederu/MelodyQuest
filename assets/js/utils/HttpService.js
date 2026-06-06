@@ -268,10 +268,16 @@ export class HttpService {
     return this.request(MELODY_BASE_URL, "POST", "createTrack", data);
   }
 
-  async validateTrack(trackId) {
-    return this.request(MELODY_BASE_URL, "POST", "validateTrack", {
-      track_id: trackId,
-    });
+  async validateTrack(track) {
+    const payload = typeof track === "object" && track !== null
+      ? { ...track }
+      : { track_id: track };
+
+    if (!payload.track_id && payload.id) {
+      payload.track_id = payload.id;
+    }
+
+    return this.request(MELODY_BASE_URL, "POST", "validateTrack", payload);
   }
 
   async unvalidateTrack(trackId) {

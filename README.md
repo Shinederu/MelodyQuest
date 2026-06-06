@@ -66,6 +66,7 @@ Les flux `login/register/logout/me` passent par ce client auth partage.
 - Vue `management-categories`: gestion categories
 - Vue `management-families`: gestion familles
 - Vue `management-tracks`: gestion musiques
+- Vue `management-validation`: validation des musiques en attente, avec correction editable de la categorie, de l'oeuvre, du libelle, de l'artiste/licence et de l'ID ou URL YouTube avant validation
 
 ## Interface
 
