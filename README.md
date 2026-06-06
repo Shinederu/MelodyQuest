@@ -69,7 +69,7 @@ Les flux `login/register/logout/me` passent par ce client auth partage.
 
 ## Interface
 
-- Theme sombre responsive applique globalement au frontend.
+- Systeme visuel sombre unifie applique globalement au frontend, sans ancien theme clair residuel.
 - Layout desktop de la page jeu concu pour tenir sur un ecran PC courant: scene video a gauche, actions et classement a droite.
 - Layout mobile empile les sections et conserve le lecteur en ratio 16:9.
 
