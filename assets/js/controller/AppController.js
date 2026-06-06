@@ -12,6 +12,8 @@ import { ManagementFamiliesController } from "./ManagementFamiliesController.js"
 import { ManagementTracksController } from "./ManagementTracksController.js";
 import { ManagementValidationController } from "./ManagementValidationController.js";
 
+const ASSET_VERSION = "20260606-main-status-cleanup";
+
 let currentUser = null;
 let headerManager = null;
 
@@ -154,7 +156,7 @@ export class AppController {
     const app = document.getElementById("app");
     if (!app) return;
 
-    const res = await fetch(`assets/views/${view}View.html`);
+    const res = await fetch(`assets/views/${view}View.html?v=${ASSET_VERSION}`, { cache: "no-cache" });
     app.innerHTML = await res.text();
 
     const head = document.getElementById("header");
