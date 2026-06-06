@@ -228,9 +228,7 @@ export class GameController {
 
   startRealtime() {
     this.stopRealtime();
-    if (!this.startMercureRealtime()) {
-      this.setStatus("Temps reel Mercure indisponible", false);
-    }
+    this.startMercureRealtime();
   }
 
   startMercureRealtime() {
@@ -268,7 +266,7 @@ export class GameController {
     const reopened = this.hasRealtimeOpened;
     this.hasRealtimeOpened = true;
     this.realtimeConnected = true;
-    this.setStatus("Synchronise via Mercure", true);
+    this.setStatus("Partie synchronisee", true);
 
     if (reopened) {
       this.refreshGameState();
@@ -282,8 +280,8 @@ export class GameController {
     this.realtimeConnected = false;
     this.setStatus(
       wasConnected
-        ? "Connexion Mercure interrompue, tentative de reconnexion..."
-        : "Connexion Mercure en attente...",
+        ? "Mise a jour interrompue, nouvelle tentative..."
+        : "Mise a jour en attente...",
       false
     );
   }

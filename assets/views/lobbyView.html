@@ -1,74 +1,70 @@
 <section class="mq-page">
-  <header class="mq-page-header mq-page-header--hero">
-    <div class="mq-kicker">Salon de partie</div>
-    <div class="mq-hero-grid">
-      <div>
-        <h1 id="lobby-title">Lobby</h1>
-        <p>Preparation de partie, participants et configuration du salon.</p>
-      </div>
+  <header class="mq-page-header mq-player-hero mq-lobby-header">
+    <div>
+      <div class="mq-kicker">Salon d'attente</div>
+      <h1 id="lobby-title">Salon</h1>
+      <p id="lobby-meta">Chargement du salon...</p>
+    </div>
 
-      <aside class="mq-hero-panel">
-        <p id="lobby-meta" class="mq-hero-note">Chargement du lobby...</p>
-        <div class="mq-stat-grid">
-          <article class="mq-stat">
-            <span>Progression</span>
-            <strong id="lobby-rounds">--</strong>
-          </article>
-          <article class="mq-stat">
-            <span>Timer</span>
-            <strong id="lobby-timer">--</strong>
-          </article>
-        </div>
-      </aside>
+    <div class="mq-lobby-summary">
+      <span id="lobby-rounds" class="mq-chip">--</span>
+      <span id="lobby-timer" class="mq-chip">--</span>
     </div>
   </header>
 
-  <section class="mq-card mq-card--soft">
+  <section class="mq-card mq-card--soft mq-lobby-action-bar">
+    <div class="mq-card-heading mq-card-heading--compact">
+      <div class="mq-kicker">Avant de lancer</div>
+      <h2>Invite tes joueurs, puis demarre</h2>
+      <p class="mq-card-copy">Le createur regle les manches et les categories. Les autres peuvent patienter ici.</p>
+    </div>
     <div class="mq-actions">
-      <button id="btn-lobby-leave" type="button" class="mq-danger">Quitter</button>
+      <button id="btn-lobby-leave" type="button" class="mq-danger">Quitter le salon</button>
     </div>
     <p id="lobby-status" class="status"></p>
   </section>
 
-  <section class="mq-card">
-    <div class="mq-card-heading">
-      <div class="mq-kicker">Equipe</div>
-      <h2>Participants</h2>
-    </div>
-    <ul id="lobby-players" class="mq-clean-list"></ul>
-  </section>
-
-  <section class="mq-card mq-card--soft">
-    <div class="mq-card-heading">
-      <div class="mq-kicker">Configuration partagee</div>
-      <h2>Configuration du lobby</h2>
-      <p class="mq-card-copy">Tous les joueurs voient ces reglages. Seul le createur peut les modifier avant le lancement.</p>
-    </div>
-    <div class="mq-grid">
-      <div class="mq-field">
-        <label for="lobby-config-name">Nom du lobby</label>
-        <input id="lobby-config-name" type="text" maxlength="120" placeholder="Ex: Blindtest du vendredi" />
+  <div class="mq-two-cols--balanced">
+    <section class="mq-card">
+      <div class="mq-card-heading">
+        <div class="mq-kicker">Joueurs</div>
+        <h2>Dans le salon</h2>
       </div>
-      <div class="mq-field">
-        <label for="lobby-config-rounds">Nombre de manches</label>
-        <input id="lobby-config-rounds" type="number" min="1" max="1000" />
+      <ul id="lobby-players" class="mq-clean-list"></ul>
+    </section>
+
+    <section class="mq-card mq-card--soft">
+      <div class="mq-card-heading">
+        <div class="mq-kicker">Reglages</div>
+        <h2>Partie</h2>
+        <p class="mq-card-copy">Ces options sont sauvegardees automatiquement avant le lancement.</p>
       </div>
-      <div class="mq-field">
-        <label for="lobby-config-timer">Temps avant reponse</label>
-        <input id="lobby-config-timer" type="number" min="1" max="600" />
+      <div class="mq-grid">
+        <div class="mq-field">
+          <label for="lobby-config-name">Nom du salon</label>
+          <input id="lobby-config-name" type="text" maxlength="120" placeholder="Blindtest du vendredi" />
+        </div>
+        <div class="mq-field">
+          <label for="lobby-config-rounds">Manches</label>
+          <input id="lobby-config-rounds" type="number" min="1" max="1000" />
+        </div>
+        <div class="mq-field">
+          <label for="lobby-config-timer">Secondes par reponse</label>
+          <input id="lobby-config-timer" type="number" min="1" max="600" />
+        </div>
       </div>
-    </div>
 
-    <div>
-      <p class="mq-section-label">Choix des categories</p>
-      <div id="lobby-config-categories" class="mq-check-grid"></div>
-    </div>
+      <div>
+        <p class="mq-section-label">Categories jouees</p>
+        <div id="lobby-config-categories" class="mq-check-grid"></div>
+      </div>
 
-    <p id="lobby-config-help" class="mq-muted">Chargement de la configuration...</p>
+      <p id="lobby-config-help" class="mq-muted">Chargement des reglages...</p>
 
-    <div class="mq-actions owner-only" style="display:none;">
-      <button id="btn-lobby-start" type="button">Commencer</button>
-      <button id="btn-lobby-delete" type="button" class="mq-danger">Supprimer le lobby</button>
-    </div>
-  </section>
+      <div class="mq-actions owner-only" style="display:none;">
+        <button id="btn-lobby-start" type="button">Lancer la partie</button>
+        <button id="btn-lobby-delete" type="button" class="mq-danger">Supprimer le salon</button>
+      </div>
+    </section>
+  </div>
 </section>

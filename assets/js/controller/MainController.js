@@ -18,6 +18,7 @@ export class MainController {
 
     document.getElementById("btn-main-create")?.addEventListener("click", () => this.createLobby());
     document.getElementById("btn-main-join-code")?.addEventListener("click", () => this.joinLobbyByCode());
+    document.getElementById("btn-main-browse")?.addEventListener("click", () => window.appCtrl.changeView("lobby-list"));
     document.getElementById("btn-main-management")?.addEventListener("click", () => window.appCtrl.changeView("management"));
     document.addEventListener("visibilitychange", this.visibilityHandler);
 
@@ -33,7 +34,7 @@ export class MainController {
   async createLobby() {
     const lobbyName = this.normalizeLobbyName(
       document.getElementById("main-lobby-name")?.value,
-      "Nouveau lobby"
+      "Nouveau salon"
     );
 
     const res = await window.httpClient.createLobby({
@@ -45,7 +46,7 @@ export class MainController {
       guess_mode: "title",
     });
 
-    this.setStatus(res.success ? "Lobby cree" : (res.error || "Erreur"), res.success);
+    this.setStatus(res.success ? "Salon cree" : (res.error || "Erreur"), res.success);
 
     if (res.success && res.data?.lobby) {
       setCurrentLobby(res.data.lobby);
@@ -57,12 +58,12 @@ export class MainController {
     const input = document.getElementById("main-lobby-code");
     const code = String(input?.value || "").trim().toUpperCase();
     if (!code) {
-      this.setStatus("Code de lobby requis", false);
+      this.setStatus("Code de salon requis", false);
       return;
     }
 
     const res = await window.httpClient.joinLobby(code);
-    this.setStatus(res.success ? "Lobby rejoint" : (res.error || "Erreur"), res.success);
+    this.setStatus(res.success ? "Salon rejoint" : (res.error || "Erreur"), res.success);
 
     if (res.success && res.data?.lobby) {
       setCurrentLobby(res.data.lobby);
@@ -74,23 +75,18 @@ export class MainController {
     const res = await window.httpClient.listPublicLobbies();
     if (!res.success) {
       if (!silent) {
-        this.setStatus(res.error || "Impossible de charger les lobbies", false);
+        this.setStatus(res.error || "Impossible de charger les salons", false);
       }
       return;
     }
 
     this.realtimeConfig = res.data?.realtime ?? null;
     this.renderLobbyList(res.data?.items ?? []);
-    if (!silent && !this.hasRealtimeOpened) {
-      this.setStatus("Lobbies charges", true);
-    }
   }
 
   startRealtime() {
     this.stopRealtime();
-    if (!this.startMercureRealtime()) {
-      this.setStatus("Temps reel Mercure indisponible", false);
-    }
+    this.startMercureRealtime();
   }
 
   startMercureRealtime() {
@@ -127,7 +123,6 @@ export class MainController {
     const reopened = this.hasRealtimeOpened;
     this.hasRealtimeOpened = true;
     this.realtimeConnected = true;
-    this.setStatus("Liste synchronisee via Mercure", true);
 
     if (reopened) {
       this.refreshLobbies(true);
@@ -139,10 +134,10 @@ export class MainController {
 
     const wasConnected = this.realtimeConnected;
     this.realtimeConnected = false;
+    if (!wasConnected) return;
+
     this.setStatus(
-      wasConnected
-        ? "Connexion Mercure interrompue, tentative de reconnexion..."
-        : "Connexion Mercure en attente...",
+      "Mise a jour interrompue, nouvelle tentative...",
       false
     );
   }
@@ -189,11 +184,11 @@ export class MainController {
     list.innerHTML = items.map((lobby) => `
       <article class="mq-list-card">
         <div>
-          <strong>${this.escapeHtml(lobby.name || "Lobby")}</strong>
-          <p class="mq-muted">${this.escapeHtml(lobby.lobby_code || "")} · ${Number(lobby.players_count || 0)}/${Number(lobby.max_players || 0)} joueurs · ${this.escapeHtml(lobby.status || "waiting")}</p>
-          <p class="mq-muted">Createur: ${this.escapeHtml(lobby.owner_username || "inconnu")}</p>
+          <strong>${this.escapeHtml(lobby.name || "Salon")}</strong>
+          <p class="mq-muted">${Number(lobby.players_count || 0)}/${Number(lobby.max_players || 0)} joueurs - Code ${this.escapeHtml(lobby.lobby_code || "")}</p>
+          <p class="mq-muted">${lobby.owner_username ? `Cree par ${this.escapeHtml(lobby.owner_username)}` : "En attente de joueurs"}</p>
         </div>
-        <button type="button" data-join-code="${this.escapeAttr(lobby.lobby_code || "")}">Rejoindre</button>
+        <button type="button" data-join-code="${this.escapeAttr(lobby.lobby_code || "")}">Entrer</button>
       </article>
     `).join("");
 
@@ -205,7 +200,7 @@ export class MainController {
   async joinFromButton(code) {
     if (!code) return;
     const res = await window.httpClient.joinLobby(code);
-    this.setStatus(res.success ? "Lobby rejoint" : (res.error || "Erreur"), res.success);
+    this.setStatus(res.success ? "Salon rejoint" : (res.error || "Erreur"), res.success);
 
     if (res.success && res.data?.lobby) {
       setCurrentLobby(res.data.lobby);
@@ -231,7 +226,7 @@ export class MainController {
     return this.escapeHtml(value).replaceAll('"', "&quot;");
   }
 
-  normalizeLobbyName(value, fallback = "Nouveau lobby") {
+  normalizeLobbyName(value, fallback = "Nouveau salon") {
     const normalized = String(value || "").trim().replace(/\s+/g, " ").slice(0, 120);
     return normalized || fallback;
   }

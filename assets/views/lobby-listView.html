@@ -1,23 +1,46 @@
 <section class="mq-page">
-  <header class="mq-page-header">
-    <div class="mq-kicker">Exploration</div>
-    <h1>Lobby List</h1>
-    <p>Rejoins un lobby public en cours ou entre un code direct.</p>
+  <header class="mq-page-header mq-player-hero">
+    <div class="mq-kicker">Rejoindre</div>
+    <h1>Trouver une partie</h1>
+    <p>Entre un code si tes potes t'en ont donne un, ou choisis un salon public deja ouvert.</p>
   </header>
 
-  <section class="mq-card mq-card--soft">
-    <div class="mq-row">
-      <button id="btn-lobbylist-back" type="button" class="mq-secondary">Retour Main</button>
-      <button id="btn-lobbylist-refresh" type="button">Rafraichir</button>
-      <span id="lobbylist-count" class="mq-chip">0 lobby actif</span>
-    </div>
+  <div class="mq-two-cols">
+    <section class="mq-card mq-card--accent">
+      <div class="mq-card-heading">
+        <div class="mq-kicker">Code invite</div>
+        <h2>Entrer avec un code</h2>
+        <p class="mq-card-copy">Pratique pour un salon prive partage sur Discord, vocal ou message.</p>
+      </div>
 
-    <div class="mq-row">
-      <input id="lobbylist-code" type="text" maxlength="8" placeholder="CODE LOBBY" />
-      <button id="btn-lobbylist-join" type="button">Rejoindre par code</button>
-    </div>
+      <div class="mq-form-stack">
+        <div class="mq-field">
+          <label for="lobbylist-code">Code du salon</label>
+          <input id="lobbylist-code" type="text" maxlength="8" placeholder="ABC123" />
+        </div>
+        <button id="btn-lobbylist-join" type="button">Rejoindre</button>
+      </div>
 
-    <p id="lobbylist-status" class="status"></p>
-    <ul id="lobbylist-items" class="mq-clean-list"></ul>
-  </section>
+      <p id="lobbylist-status" class="status"></p>
+
+      <div class="mq-actions mq-actions--full">
+        <button id="btn-lobbylist-back" type="button" class="mq-secondary mq-button-block">Retour accueil</button>
+      </div>
+    </section>
+
+    <section class="mq-card mq-card--soft">
+      <div class="mq-card-heading">
+        <div class="mq-kicker">Public</div>
+        <h2>Salons ouverts</h2>
+        <p class="mq-card-copy">La liste se met a jour pendant que tu regardes.</p>
+      </div>
+
+      <div class="mq-row">
+        <span id="lobbylist-count" class="mq-chip">0 salon actif</span>
+        <button id="btn-lobbylist-refresh" type="button" class="mq-secondary">Rafraichir</button>
+      </div>
+
+      <ul id="lobbylist-items" class="mq-clean-list"></ul>
+    </section>
+  </div>
 </section>

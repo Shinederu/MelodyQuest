@@ -1,71 +1,55 @@
 <section class="mq-page">
-  <header class="mq-page-header mq-page-header--hero">
-    <div class="mq-kicker">Espace de jeu</div>
-    <div class="mq-hero-grid">
-      <div>
-        <h1>Menu principal</h1>
-        <p>Rejoins un lobby existant, cree ta propre partie ou ouvre les outils d'administration dans une interface plus legere et plus accueillante.</p>
-        <div class="mq-chip-row">
-          <span class="mq-chip">Liste publique mise a jour en direct</span>
-          <span class="mq-chip">Creation instantanee</span>
-          <span class="mq-chip">Rejoindre par code</span>
-        </div>
-      </div>
-
-      <aside class="mq-hero-panel">
-        <div class="mq-kicker">En pratique</div>
-        <div class="mq-stat-grid">
-          <article class="mq-stat">
-            <span>Public</span>
-            <strong>Vois les salons ouverts sans changer d'ecran</strong>
-          </article>
-          <article class="mq-stat">
-            <span>Rapide</span>
-            <strong>Un code suffit pour entrer dans une partie</strong>
-          </article>
-        </div>
-      </aside>
-    </div>
+  <header class="mq-page-header mq-player-hero">
+    <div class="mq-kicker">Blindtest entre amis</div>
+    <h1>Jouer maintenant</h1>
+    <p>Creer un salon, partager le code, lancer la musique. Le reste peut attendre.</p>
   </header>
 
-  <div class="mq-two-cols">
-    <section class="mq-card mq-card--soft">
+  <div class="mq-player-dashboard">
+    <section class="mq-card mq-card--accent mq-play-card">
       <div class="mq-card-heading">
-        <div class="mq-kicker">En direct</div>
-        <h2>Lobbies existants</h2>
-        <p class="mq-card-copy">Les parties publiques apparaissent ici automatiquement pour simplifier l'entree en jeu.</p>
+        <div class="mq-kicker">Depart rapide</div>
+        <h2>Creer ou rejoindre</h2>
+        <p class="mq-card-copy">Si tu organises la partie, cree un salon. Si quelqu'un t'a donne un code, colle-le ici.</p>
       </div>
-      <p id="main-lobby-empty" class="mq-muted">Aucun lobby public disponible pour le moment.</p>
-      <div id="main-lobby-list" class="mq-list"></div>
-    </section>
 
-    <section class="mq-card mq-card--accent">
-      <div class="mq-card-heading">
-        <div class="mq-kicker">Lancer une partie</div>
-        <h2>Actions rapides</h2>
-        <p class="mq-card-copy">Entre un code si tu as deja un salon ou choisis un nom avant de creer ton propre lobby.</p>
-      </div>
       <div class="mq-main-action-stack">
         <div class="mq-main-action-block">
-          <p class="mq-section-label">Creer un lobby</p>
+          <p class="mq-section-label">Je lance la partie</p>
           <div class="mq-field">
-            <label for="main-lobby-name">Nom du lobby</label>
-            <input id="main-lobby-name" type="text" maxlength="120" placeholder="Ex: Blindtest du vendredi" />
+            <label for="main-lobby-name">Nom du salon</label>
+            <input id="main-lobby-name" type="text" maxlength="120" placeholder="Blindtest du vendredi" />
           </div>
-          <button id="btn-main-create" type="button">Creer un lobby</button>
+          <button id="btn-main-create" type="button">Creer le salon</button>
         </div>
 
         <div class="mq-main-action-block">
-          <p class="mq-section-label">Rejoindre via un code</p>
+          <p class="mq-section-label">J'ai un code</p>
           <div class="mq-field">
-            <label for="main-lobby-code">Code du lobby</label>
-            <input id="main-lobby-code" type="text" maxlength="16" placeholder="Ex: ABC123" />
+            <label for="main-lobby-code">Code du salon</label>
+            <input id="main-lobby-code" type="text" maxlength="16" placeholder="ABC123" />
           </div>
-          <button id="btn-main-join-code" type="button">Rejoindre le lobby</button>
+          <button id="btn-main-join-code" type="button">Entrer dans le salon</button>
         </div>
       </div>
+
+      <p id="main-status" class="status"></p>
+
       <div id="main-admin-actions" class="mq-actions mq-actions--full">
-        <button id="btn-main-management" type="button" class="mq-secondary mq-button-block">Interface d'administration</button>
+        <button id="btn-main-management" type="button" class="mq-secondary mq-button-block">Gestion du catalogue</button>
+      </div>
+    </section>
+
+    <section class="mq-card mq-card--soft">
+      <div class="mq-card-heading">
+        <div class="mq-kicker">Salons ouverts</div>
+        <h2>Parties disponibles</h2>
+        <p class="mq-card-copy">Rejoins directement une partie publique, ou passe par le code si le salon est prive.</p>
+      </div>
+      <p id="main-lobby-empty" class="mq-muted">Aucun salon public pour le moment.</p>
+      <div id="main-lobby-list" class="mq-list"></div>
+      <div class="mq-actions mq-actions--full">
+        <button id="btn-main-browse" type="button" class="mq-secondary mq-button-block">Voir tous les salons</button>
       </div>
     </section>
   </div>

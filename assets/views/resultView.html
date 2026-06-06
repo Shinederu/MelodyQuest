@@ -1,20 +1,27 @@
 <section class="mq-page">
-  <header class="mq-page-header">
+  <header class="mq-page-header mq-player-hero">
     <div class="mq-kicker">Fin de partie</div>
-    <h1 id="result-title">Resultats</h1>
-    <p>Classement final du lobby une fois toutes les manches terminees.</p>
+    <h1 id="result-title">Partie terminee</h1>
+    <p>Les scores sont poses. Le salon se prepare automatiquement pour une revanche.</p>
   </header>
 
-  <section class="mq-card mq-card--soft">
-    <div class="mq-card-heading">
-      <div class="mq-kicker">Classement</div>
-      <h2>Scores</h2>
-    </div>
-    <ul id="result-scoreboard" class="mq-clean-list"></ul>
-  </section>
+  <div class="mq-two-cols">
+    <section class="mq-card mq-card--soft">
+      <div class="mq-card-heading">
+        <div class="mq-kicker">Classement final</div>
+        <h2>Podium</h2>
+      </div>
+      <ul id="result-scoreboard" class="mq-clean-list"></ul>
+    </section>
 
-  <section class="mq-card mq-card--accent">
-    <p id="result-countdown" class="mq-section-label">Retour automatique au lobby dans 15s</p>
-    <p id="result-status" class="status"></p>
-  </section>
+    <section class="mq-card mq-card--accent">
+      <div class="mq-card-heading">
+        <div class="mq-kicker">Suite</div>
+        <h2>Rejouer</h2>
+        <p id="result-countdown" class="mq-card-copy">Retour automatique au salon dans 15s</p>
+      </div>
+      <button id="btn-result-return" type="button">Retourner au salon</button>
+      <p id="result-status" class="status"></p>
+    </section>
+  </div>
 </section>

@@ -10,12 +10,13 @@ export class ResultController {
     this.isDestroyed = false;
     this.returnInFlight = false;
     this.countdownRemaining = AUTO_RETURN_DELAY_SECONDS;
+    document.getElementById("btn-result-return")?.addEventListener("click", () => this.returnToLobby());
     this.bootstrap();
   }
 
   async bootstrap() {
     const title = document.getElementById("result-title");
-    if (title) title.textContent = this.currentLobby?.name || "Resultats";
+    if (title) title.textContent = this.currentLobby?.name || "Partie terminee";
 
     let scoreboard = [];
     try {
@@ -64,7 +65,7 @@ export class ResultController {
 
     this.returnInFlight = true;
     this.stopAutoReturnCountdown();
-    this.setStatus("Reinitialisation du lobby...", null);
+    this.setStatus("Preparation du salon...", null);
 
     const res = await window.httpClient.resetLobbyForReplay(lobbyId);
     this.returnInFlight = false;
@@ -76,14 +77,14 @@ export class ResultController {
       }
 
       this.startAutoReturnCountdown();
-      this.setStatus(res.error || "Impossible de reinitialiser le lobby", false);
+      this.setStatus(res.error || "Impossible de preparer le salon", false);
       return;
     }
 
     this.currentLobby = res.data.lobby;
     setCurrentLobby(res.data.lobby);
     localStorage.removeItem("mq_last_scoreboard");
-    this.setStatus("Lobby reinitialise", true);
+    this.setStatus("Salon pret", true);
     window.appCtrl.changeView("lobby");
   }
 
@@ -116,7 +117,7 @@ export class ResultController {
   renderCountdown() {
     const el = document.getElementById("result-countdown");
     if (!el) return;
-    el.textContent = `Retour automatique au lobby dans ${this.countdownRemaining}s`;
+    el.textContent = `Retour automatique au salon dans ${this.countdownRemaining}s`;
   }
 
   startHeartbeat() {

@@ -326,6 +326,28 @@ input[type="range"] {
   align-items: end;
 }
 
+.mq-player-hero {
+  min-height: 0;
+  align-items: start;
+  gap: 10px;
+  padding: clamp(18px, 2.4vw, 30px);
+}
+
+.mq-player-hero h1 {
+  max-width: none;
+  font-size: clamp(2rem, 3.2vw, 3.4rem);
+  line-height: 1;
+}
+
+.mq-player-hero > p {
+  max-width: 680px;
+  margin-top: 8px;
+}
+
+.mq-player-hero .mq-hero-grid {
+  align-items: center;
+}
+
 .mq-card {
   padding: clamp(18px, 2vw, 26px);
 }
@@ -492,6 +514,39 @@ input[type="range"] {
 
 .mq-two-cols--balanced {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.mq-player-dashboard {
+  display: grid;
+  grid-template-columns: minmax(320px, 0.82fr) minmax(0, 1.18fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.mq-lobby-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.mq-lobby-summary {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mq-lobby-action-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+}
+
+.mq-lobby-action-bar .status {
+  grid-column: 1 / -1;
 }
 
 .mq-three-cols,
@@ -664,11 +719,20 @@ input[type="range"] {
   align-content: start;
   gap: 12px;
   min-height: 100%;
-  padding: 16px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.014)),
-    rgba(10, 16, 26, 0.76);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   box-shadow: none;
+}
+
+.mq-main-action-block + .mq-main-action-block {
+  padding-top: 14px;
+  border-top: 1px solid var(--mq-line);
+}
+
+.mq-play-card .mq-main-action-stack {
+  grid-template-columns: 1fr;
 }
 
 .mq-field {
@@ -1402,6 +1466,7 @@ input[type="range"] {
   .mq-auth-layout,
   .mq-two-cols,
   .mq-two-cols--balanced,
+  .mq-player-dashboard,
   .mq-admin-workspace,
   .mq-game-shell {
     grid-template-columns: 1fr;
@@ -1443,6 +1508,8 @@ input[type="range"] {
   .mq-topbar,
   .mq-game-stage__head,
   .mq-admin-pane__header,
+  .mq-lobby-header,
+  .mq-lobby-action-bar,
   .mq-admin-toolbar {
     align-items: stretch;
     flex-direction: column;
@@ -1451,6 +1518,7 @@ input[type="range"] {
   .mq-topbar__actions,
   .mq-actions,
   .mq-row,
+  .mq-lobby-summary,
   .mq-admin-form-actions,
   .mq-validation-meta {
     align-items: stretch;
@@ -1481,6 +1549,7 @@ input[type="range"] {
   .mq-grid,
   .mq-stat-grid,
   .mq-main-action-stack,
+  .mq-lobby-action-bar,
   .mq-admin-filter-bar,
   .mq-admin-form-split,
   .mq-game-info-grid,

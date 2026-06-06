@@ -31,9 +31,7 @@ export class LobbyListController {
 
   startRealtime() {
     this.stopStream();
-    if (!this.startMercureRealtime()) {
-      this.setStatus("Temps reel Mercure indisponible", false);
-    }
+    this.startMercureRealtime();
   }
 
   startMercureRealtime() {
@@ -73,7 +71,7 @@ export class LobbyListController {
     const reopened = this.hasRealtimeOpened;
     this.hasRealtimeOpened = true;
     this.realtimeConnected = true;
-    this.setStatus("Liste synchronisee via Mercure", true);
+    this.setStatus("Salons mis a jour automatiquement", true);
 
     if (reopened) {
       this.refresh(true);
@@ -87,8 +85,8 @@ export class LobbyListController {
     this.realtimeConnected = false;
     this.setStatus(
       wasConnected
-        ? "Connexion Mercure interrompue, tentative de reconnexion..."
-        : "Connexion Mercure en attente...",
+        ? "Mise a jour interrompue, nouvelle tentative..."
+        : "Mise a jour en attente...",
       false
     );
   }
@@ -121,13 +119,13 @@ export class LobbyListController {
     try {
       const res = await window.httpClient.listPublicLobbies();
       if (!res.success) {
-        this.setStatus(res.error || "Erreur chargement lobbies", false);
+        this.setStatus(res.error || "Impossible de charger les salons", false);
         return;
       }
 
       this.realtimeConfig = res.data?.realtime ?? null;
       this.renderList(res.data?.items ?? [], silent);
-      if (!silent) this.setStatus("Lobbies charges", true);
+      if (!silent) this.setStatus("Salons mis a jour", true);
     } finally {
       this.isRefreshing = false;
     }
@@ -139,20 +137,33 @@ export class LobbyListController {
     if (!list) return;
 
     if (count) {
-      count.textContent = `${items.length} lobby${items.length > 1 ? "s" : ""} actif${items.length > 1 ? "s" : ""}`;
+      count.textContent = `${items.length} salon${items.length > 1 ? "s" : ""} actif${items.length > 1 ? "s" : ""}`;
     }
 
     if (!items.length) {
-      list.innerHTML = "<li>Aucun lobby public en cours.</li>";
-      if (!silent) this.setStatus("Aucun lobby public disponible", true);
+      list.innerHTML = `
+        <li class="mq-list-row">
+          <div>
+            <strong>Aucun salon public</strong>
+            <span class="mq-muted">Cree ton salon depuis l'accueil ou utilise un code prive.</span>
+          </div>
+        </li>
+      `;
+      if (!silent) this.setStatus("Aucun salon public disponible", true);
       return;
     }
 
-    list.innerHTML = items
-      .map((x) => `<li><button type="button" data-code="${x.lobby_code}" class="btn-join-public">${x.name} (${x.lobby_code}) - ${x.players_count}/${x.max_players}</button></li>`)
-      .join("");
+    list.innerHTML = items.map((lobby) => `
+      <li class="mq-list-row">
+        <div>
+          <strong>${this.escapeHtml(lobby.name || "Salon")}</strong>
+          <span class="mq-muted">${Number(lobby.players_count || 0)}/${Number(lobby.max_players || 0)} joueurs - Code ${this.escapeHtml(lobby.lobby_code || "")}</span>
+        </div>
+        <button type="button" data-code="${this.escapeAttr(lobby.lobby_code || "")}">Entrer</button>
+      </li>
+    `).join("");
 
-    list.querySelectorAll(".btn-join-public").forEach((btn) => {
+    list.querySelectorAll("[data-code]").forEach((btn) => {
       btn.addEventListener("click", async () => {
         const code = btn.getAttribute("data-code") || "";
         await this.join(code);
@@ -172,12 +183,12 @@ export class LobbyListController {
   async join(code) {
     const joinRes = await window.httpClient.joinLobby(code);
     if (!joinRes.success || !joinRes.data?.lobby) {
-      this.setStatus(joinRes.error || "Echec join", false);
+      this.setStatus(joinRes.error || "Impossible de rejoindre ce salon", false);
       return;
     }
 
     setCurrentLobby(joinRes.data.lobby);
-    this.setStatus("Lobby rejoint", true);
+    this.setStatus("Salon rejoint", true);
     window.appCtrl.changeView("lobby");
   }
 
@@ -186,6 +197,17 @@ export class LobbyListController {
     if (!status) return;
     status.textContent = text;
     status.className = ok ? "status success" : "status error";
+  }
+
+  escapeHtml(value) {
+    return String(value)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;");
+  }
+
+  escapeAttr(value) {
+    return this.escapeHtml(value).replaceAll('"', "&quot;");
   }
 
   destroy() {

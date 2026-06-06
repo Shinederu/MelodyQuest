@@ -78,9 +78,7 @@ export class LobbyController {
 
   startRealtime() {
     this.stopStream();
-    if (!this.startMercureRealtime()) {
-      this.setStatus("Temps reel Mercure indisponible", false);
-    }
+    this.startMercureRealtime();
   }
 
   startMercureRealtime() {
@@ -120,7 +118,7 @@ export class LobbyController {
     const reopened = this.hasRealtimeOpened;
     this.hasRealtimeOpened = true;
     this.realtimeConnected = true;
-    this.setStatus("Synchronise via Mercure", true);
+    this.setStatus("Salon mis a jour automatiquement", true);
 
     if (reopened) {
       this.refreshNow();
@@ -134,8 +132,8 @@ export class LobbyController {
     this.realtimeConnected = false;
     this.setStatus(
       wasConnected
-        ? "Connexion Mercure interrompue, tentative de reconnexion..."
-        : "Connexion Mercure en attente...",
+        ? "Mise a jour interrompue, nouvelle tentative..."
+        : "Mise a jour en attente...",
       false
     );
   }
@@ -220,10 +218,10 @@ export class LobbyController {
     const timer = document.getElementById("lobby-timer");
     const displayConfig = this.configDirty ? this.getDraftConfig(lobby) : this.getServerConfig(lobby);
 
-    if (header) header.textContent = displayConfig.name || lobby?.name || "Lobby";
-    if (meta) meta.textContent = `Code ${lobby?.lobby_code || ""} · ${players.length}/${lobby?.max_players || 0} joueurs`;
-    if (rounds) rounds.textContent = `${Number(lobby?.rounds_finished || 0)} / ${Number(lobby?.total_rounds || 0)} manches jouees`;
-    if (timer) timer.textContent = `${Number(lobby?.round_duration_seconds || 0)} secondes par manche`;
+    if (header) header.textContent = displayConfig.name || lobby?.name || "Salon";
+    if (meta) meta.textContent = `Code ${lobby?.lobby_code || ""} - ${players.length}/${lobby?.max_players || 0} joueurs`;
+    if (rounds) rounds.textContent = `${Number(lobby?.rounds_finished || 0)} / ${Number(lobby?.total_rounds || 0)} manches`;
+    if (timer) timer.textContent = `${Number(lobby?.round_duration_seconds || 0)}s par reponse`;
 
     if (playersHost) {
       playersHost.innerHTML = players.map((player) => {
@@ -232,7 +230,7 @@ export class LobbyController {
           <li class="mq-list-row">
             <div>
               <strong>${this.escapeHtml(player.username || "joueur")}</strong>
-              <span class="mq-muted">${this.escapeHtml(player.role || "player")} · ${Number(player.score || 0)} pt</span>
+              <span class="mq-muted">${this.escapeHtml(player.role || "player")} - ${Number(player.score || 0)} pt</span>
             </div>
             ${canKick ? `<button type="button" class="mq-danger mq-inline-btn" data-kick-user="${Number(player.user_id || 0)}">Exclure</button>` : ""}
           </li>
@@ -322,7 +320,7 @@ export class LobbyController {
 
   getServerConfig(lobby) {
     return {
-      name: this.normalizeLobbyName(lobby?.name, "Nouveau lobby"),
+      name: this.normalizeLobbyName(lobby?.name, "Nouveau salon"),
       total_rounds: Number.parseInt(lobby?.total_rounds ?? 5, 10),
       round_duration_seconds: Number.parseInt(lobby?.round_duration_seconds ?? 30, 10),
       selected_category_ids: (Array.isArray(lobby?.selected_category_ids) ? lobby.selected_category_ids : []).map(Number),
@@ -361,7 +359,7 @@ export class LobbyController {
     if (!lobbyId) return;
 
     const res = await window.httpClient.leaveLobby(lobbyId);
-    this.setStatus(res.success ? "Lobby quitte" : (res.error || "Erreur"), res.success);
+    this.setStatus(res.success ? "Salon quitte" : (res.error || "Erreur"), res.success);
     if (res.success) {
       clearCurrentLobby();
       window.appCtrl.changeView("main");
@@ -397,7 +395,7 @@ export class LobbyController {
 
     this.configSaveInFlight = true;
     this.pendingConfigSave = false;
-    this.setStatus("Configuration en cours d'application...", true);
+    this.setStatus("Reglages en cours d'application...", true);
 
     const res = await window.httpClient.updateLobbyConfig({
       lobby_id: lobbyId,
@@ -417,7 +415,7 @@ export class LobbyController {
       this.currentLobby = res.data.lobby;
       setCurrentLobby(this.currentLobby);
       this.renderLobby(res.data);
-      this.setStatus("Configuration synchronisee", true);
+      this.setStatus("Reglages sauvegardes", true);
     } else {
       this.updateConfigUiState(draft, true, validation);
       this.setStatus(res.error || "Erreur", false);
@@ -454,7 +452,7 @@ export class LobbyController {
     }
 
     const res = await window.httpClient.startRound(lobbyId);
-    this.setStatus(res.success ? "Partie demarree" : (res.error || "Erreur"), res.success);
+    this.setStatus(res.success ? "Partie lancee" : (res.error || "Erreur"), res.success);
     if (res.success) {
       localStorage.removeItem("mq_last_scoreboard");
       window.appCtrl.changeView("game");
@@ -466,7 +464,7 @@ export class LobbyController {
     if (!lobbyId) return;
 
     const res = await window.httpClient.deleteLobby(lobbyId);
-    this.setStatus(res.success ? "Lobby supprime" : (res.error || "Erreur"), res.success);
+    this.setStatus(res.success ? "Salon supprime" : (res.error || "Erreur"), res.success);
     if (res.success) {
       clearCurrentLobby();
       window.appCtrl.changeView("main");
@@ -478,7 +476,7 @@ export class LobbyController {
     if (!lobbyId || targetUserId <= 0) return;
 
     const res = await window.httpClient.kickPlayer(lobbyId, targetUserId);
-    this.setStatus(res.success ? "Utilisateur exclu" : (res.error || "Erreur"), res.success);
+    this.setStatus(res.success ? "Joueur retire du salon" : (res.error || "Erreur"), res.success);
     if (res.success && res.data?.lobby) {
       this.currentLobby = res.data.lobby;
       setCurrentLobby(this.currentLobby);
@@ -491,7 +489,7 @@ export class LobbyController {
     if (!lobbyId) return;
     const res = await window.httpClient.getRoundState(lobbyId);
     if (!silent || !res.success) {
-      this.setStatus(res.success ? "Lobby charge" : (res.error || "Erreur"), res.success);
+      this.setStatus(res.success ? "Salon pret" : (res.error || "Erreur"), res.success);
     }
     if (res.success && res.data?.round) {
       const status = String(res.data.round.status || "").toLowerCase();
@@ -558,14 +556,14 @@ export class LobbyController {
   serializeConfig(config) {
     if (!config || typeof config !== "object") return "";
     return JSON.stringify({
-      name: this.normalizeLobbyName(config.name, "Nouveau lobby"),
+      name: this.normalizeLobbyName(config.name, "Nouveau salon"),
       total_rounds: Number.parseInt(config.total_rounds ?? 0, 10),
       round_duration_seconds: Number.parseInt(config.round_duration_seconds ?? 0, 10),
       selected_category_ids: Array.isArray(config.selected_category_ids) ? config.selected_category_ids.map(Number) : [],
     });
   }
 
-  normalizeLobbyName(value, fallback = "Nouveau lobby") {
+  normalizeLobbyName(value, fallback = "Nouveau salon") {
     const normalized = String(value || "").trim().replace(/\s+/g, " ").slice(0, 120);
     return normalized || fallback;
   }
@@ -625,19 +623,19 @@ export class LobbyController {
 
     if (helper) {
       if (!editable) {
-        helper.textContent = `Configuration en lecture seule · ${review.selectedCount} categorie(s) selectionnee(s) · ${review.availableTracks} musique(s) disponible(s).`;
+        helper.textContent = `${review.selectedCount} categorie(s) selectionnee(s) - ${review.availableTracks} musique(s) disponible(s).`;
         helper.className = "mq-muted";
       } else if (review.issues.length) {
         helper.textContent = review.issues[0];
         helper.className = "status error";
       } else if (this.configSaveInFlight) {
-        helper.textContent = "Configuration en cours d'application...";
+        helper.textContent = "Reglages en cours d'application...";
         helper.className = "status";
       } else if (this.configDirty) {
-        helper.textContent = `${review.selectedCount} categorie(s) selectionnee(s) · ${review.availableTracks} musique(s) disponibles.`;
+        helper.textContent = `${review.selectedCount} categorie(s) selectionnee(s) - ${review.availableTracks} musique(s) disponibles.`;
         helper.className = "status success";
       } else {
-        helper.textContent = `Configuration synchronisee · ${review.selectedCount} categorie(s) · ${review.availableTracks} musique(s) disponibles.`;
+        helper.textContent = `Reglages sauvegardes - ${review.selectedCount} categorie(s) - ${review.availableTracks} musique(s) disponibles.`;
         helper.className = "mq-muted";
       }
     }
