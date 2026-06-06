@@ -1,6 +1,6 @@
 import { HttpService } from "../utils/HttpService.js";
 import { HeaderModel } from "../model/HeaderModel.js";
-import { PublicController } from "./PublicController.js";
+import { PublicController } from "./PublicController.js?v=20260606-public-auth-switch";
 import { MainController } from "./MainController.js";
 import { LobbyController } from "./LobbyController.js";
 import { LobbyListController } from "./LobbyListController.js";
@@ -12,7 +12,7 @@ import { ManagementFamiliesController } from "./ManagementFamiliesController.js"
 import { ManagementTracksController } from "./ManagementTracksController.js";
 import { ManagementValidationController } from "./ManagementValidationController.js";
 
-const ASSET_VERSION = "20260606-main-status-cleanup";
+const ASSET_VERSION = "20260606-public-auth-switch";
 
 let currentUser = null;
 let headerManager = null;

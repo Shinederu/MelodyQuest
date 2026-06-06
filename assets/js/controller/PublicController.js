@@ -3,15 +3,18 @@
 export class PublicController {
   constructor() {
     this.userModel = new UserModel();
-    this.registerVisible = false;
+    this.authMode = "login";
 
     const loginForm = document.getElementById("login-form");
     const registerForm = document.getElementById("register-form");
-    const toggleRegister = document.getElementById("btn-toggle-register");
+    const loginTab = document.getElementById("btn-auth-login-tab");
+    const registerTab = document.getElementById("btn-auth-register-tab");
 
     loginForm?.addEventListener("submit", () => this.submitLogin());
     registerForm?.addEventListener("submit", () => this.submitRegister());
-    toggleRegister?.addEventListener("click", () => this.toggleRegisterForm());
+    loginTab?.addEventListener("click", () => this.setAuthMode("login"));
+    registerTab?.addEventListener("click", () => this.setAuthMode("register"));
+    this.setAuthMode(this.authMode);
 
     console.log("PublicController initialized");
   }
@@ -30,11 +33,21 @@ export class PublicController {
     this.userModel.submitRegister(username, email, password, confirmPassword);
   }
 
-  toggleRegisterForm() {
-    this.registerVisible = !this.registerVisible;
-    const form = document.getElementById("register-form");
-    const button = document.getElementById("btn-toggle-register");
-    if (form) form.hidden = !this.registerVisible;
-    if (button) button.textContent = this.registerVisible ? "Masquer" : "Afficher";
+  setAuthMode(mode) {
+    this.authMode = mode === "register" ? "register" : "login";
+
+    const loginForm = document.getElementById("login-form");
+    const registerForm = document.getElementById("register-form");
+    const loginTab = document.getElementById("btn-auth-login-tab");
+    const registerTab = document.getElementById("btn-auth-register-tab");
+    const isLogin = this.authMode === "login";
+
+    if (loginForm) loginForm.hidden = !isLogin;
+    if (registerForm) registerForm.hidden = isLogin;
+
+    loginTab?.classList.toggle("is-active", isLogin);
+    registerTab?.classList.toggle("is-active", !isLogin);
+    loginTab?.setAttribute("aria-selected", String(isLogin));
+    registerTab?.setAttribute("aria-selected", String(!isLogin));
   }
 }
