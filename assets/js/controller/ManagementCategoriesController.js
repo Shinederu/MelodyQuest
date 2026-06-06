@@ -61,6 +61,7 @@ export class ManagementCategoriesController {
         <strong>${this.escapeHtml(item.name)}</strong>
         <div class="mq-admin-item__meta">
           <span class="mq-admin-badge">${this.escapeHtml(item.slug)}</span>
+          <span class="mq-admin-submeta">${this.escapeHtml(this.formatCategoryCounts(item))}</span>
         </div>
       </button>
     `).join("");
@@ -152,6 +153,12 @@ export class ManagementCategoriesController {
       const el = document.getElementById(id);
       if (el) el.textContent = text;
     });
+  }
+
+  formatCategoryCounts(item) {
+    const familyCount = Math.max(0, Number(item?.family_count || 0));
+    const trackCount = Math.max(0, Number(item?.total_track_count ?? item?.track_count ?? 0));
+    return `${familyCount} ${familyCount > 1 ? "familles" : "famille"} · ${trackCount} ${trackCount > 1 ? "musiques" : "musique"}`;
   }
 
   escapeHtml(value) {

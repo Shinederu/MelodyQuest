@@ -7,12 +7,12 @@ import { LobbyListController } from "./LobbyListController.js";
 import { GameController } from "./GameController.js";
 import { ResultController } from "./ResultController.js";
 import { ManagementController } from "./ManagementController.js";
-import { ManagementCategoriesController } from "./ManagementCategoriesController.js";
+import { ManagementCategoriesController } from "./ManagementCategoriesController.js?v=20260606-category-counts";
 import { ManagementFamiliesController } from "./ManagementFamiliesController.js";
 import { ManagementTracksController } from "./ManagementTracksController.js";
 import { ManagementValidationController } from "./ManagementValidationController.js";
 
-const ASSET_VERSION = "20260606-public-auth-switch";
+const ASSET_VERSION = "20260606-category-counts";
 
 let currentUser = null;
 let headerManager = null;

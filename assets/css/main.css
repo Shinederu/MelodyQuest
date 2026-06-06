@@ -900,6 +900,12 @@ input[type="range"] {
   background: rgba(111, 212, 246, 0.08);
 }
 
+.mq-admin-submeta {
+  color: var(--mq-text-faint);
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
 .mq-admin-helper {
   color: var(--mq-text-soft);
 }
