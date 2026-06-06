@@ -10,9 +10,9 @@ import { ManagementController } from "./ManagementController.js";
 import { ManagementCategoriesController } from "./ManagementCategoriesController.js?v=20260606-clean-status";
 import { ManagementFamiliesController } from "./ManagementFamiliesController.js?v=20260606-clean-status";
 import { ManagementTracksController } from "./ManagementTracksController.js?v=20260606-clean-status";
-import { ManagementValidationController } from "./ManagementValidationController.js?v=20260606-clean-status";
+import { ManagementValidationController } from "./ManagementValidationController.js?v=20260606-validation-reject";
 
-const ASSET_VERSION = "20260606-clean-status";
+const ASSET_VERSION = "20260606-validation-reject";
 
 let currentUser = null;
 let headerManager = null;

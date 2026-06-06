@@ -10,6 +10,7 @@ export class ManagementValidationController {
     document.getElementById("btn-validation-back")?.addEventListener("click", () => window.appCtrl.changeView("management"));
     document.getElementById("btn-validation-refresh")?.addEventListener("click", () => this.refresh());
     document.getElementById("btn-validation-approve")?.addEventListener("click", () => this.validateSelected());
+    document.getElementById("btn-validation-reject")?.addEventListener("click", () => this.rejectSelected());
     document.getElementById("btn-validation-open-youtube")?.addEventListener("click", () => this.openSelectedTrackOnYouTube());
     document.getElementById("validation-category")?.addEventListener("change", () => this.renderFamilyOptions());
     document.getElementById("validation-youtube-url")?.addEventListener("input", () => this.updatePreviewFromForm());
@@ -140,6 +141,7 @@ export class ManagementValidationController {
     const meta = document.getElementById("validation-detail-meta");
     const created = document.getElementById("validation-track-created");
     const approve = document.getElementById("btn-validation-approve");
+    const reject = document.getElementById("btn-validation-reject");
 
     const item = this.getSelectedItem();
     if (!item) {
@@ -148,6 +150,7 @@ export class ManagementValidationController {
       if (meta) meta.innerHTML = `<span class="mq-muted">Aucune piste n'est selectionnee pour le moment.</span>`;
       if (created) created.textContent = "Date d'ajout indisponible";
       if (approve) approve.disabled = true;
+      if (reject) reject.disabled = true;
       this.clearForm();
       this.updatePreviewFromForm();
       return;
@@ -169,6 +172,7 @@ export class ManagementValidationController {
       created.textContent = `Ajoutee le ${this.formatDate(item.created_at)}`;
     }
     if (approve) approve.disabled = false;
+    if (reject) reject.disabled = false;
 
     this.updateTitleFromForm();
     this.updatePreviewFromForm();
@@ -275,6 +279,22 @@ export class ManagementValidationController {
     const res = await window.httpClient.validateTrack(payload);
     this.setStatus(res.success ? "Musique validee avec corrections appliquees" : (res.error || "Erreur"), res.success);
     if (res.success) {
+      await this.refresh();
+    }
+  }
+
+  async rejectSelected() {
+    const item = this.getSelectedItem();
+    if (!item) return;
+
+    const title = String(item.title || "cette musique").trim();
+    const confirmed = window.confirm(`Refuser et supprimer "${title}" de la file de validation ?`);
+    if (!confirmed) return;
+
+    const res = await window.httpClient.deleteTrack(Number(item.id));
+    this.setStatus(res.success ? "Musique refusee et supprimee" : (res.error || "Erreur"), res.success);
+    if (res.success) {
+      this.selectedId = null;
       await this.refresh();
     }
   }
