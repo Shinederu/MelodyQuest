@@ -834,6 +834,22 @@ input[type="range"] {
   padding-right: 4px;
 }
 
+.mq-admin-filter-bar {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.8fr) minmax(220px, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+  margin-bottom: 14px;
+  padding: 12px;
+  border: 1px solid var(--mq-line);
+  border-radius: var(--mq-radius);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.mq-admin-filter-bar button {
+  min-height: 44px;
+}
+
 .mq-admin-empty {
   padding: 16px;
   border: 1px dashed var(--mq-line-strong);
@@ -1465,6 +1481,7 @@ input[type="range"] {
   .mq-grid,
   .mq-stat-grid,
   .mq-main-action-stack,
+  .mq-admin-filter-bar,
   .mq-admin-form-split,
   .mq-game-info-grid,
   .mq-admin-step-grid {

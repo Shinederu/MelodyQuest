@@ -8,11 +8,11 @@ import { GameController } from "./GameController.js";
 import { ResultController } from "./ResultController.js";
 import { ManagementController } from "./ManagementController.js";
 import { ManagementCategoriesController } from "./ManagementCategoriesController.js?v=20260606-category-counts";
-import { ManagementFamiliesController } from "./ManagementFamiliesController.js";
+import { ManagementFamiliesController } from "./ManagementFamiliesController.js?v=20260606-family-filters";
 import { ManagementTracksController } from "./ManagementTracksController.js";
 import { ManagementValidationController } from "./ManagementValidationController.js";
 
-const ASSET_VERSION = "20260606-category-counts";
+const ASSET_VERSION = "20260606-family-filters";
 
 let currentUser = null;
 let headerManager = null;

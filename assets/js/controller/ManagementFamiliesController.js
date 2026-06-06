@@ -14,6 +14,8 @@ export class ManagementFamiliesController {
     this.aliases = [];
     this.selectedId = null;
     this.formVisible = true;
+    this.filterCategoryId = "";
+    this.filterQuery = "";
 
     document.getElementById("btn-fam-back")?.addEventListener("click", () => window.appCtrl.changeView("management"));
     document.getElementById("btn-fam-refresh")?.addEventListener("click", () => this.refresh());
@@ -24,6 +26,9 @@ export class ManagementFamiliesController {
     document.getElementById("btn-fam-add")?.addEventListener("click", () => this.openCreateForm());
     document.getElementById("btn-fam-add-alias")?.addEventListener("click", () => this.addAliasFromInput());
     document.getElementById("fam-alias-input")?.addEventListener("keydown", (event) => this.handleAliasInputKeydown(event));
+    document.getElementById("fam-filter-category")?.addEventListener("change", (event) => this.updateCategoryFilter(event.target.value));
+    document.getElementById("fam-filter-query")?.addEventListener("input", (event) => this.updateTextFilter(event.target.value));
+    document.getElementById("btn-fam-clear-filters")?.addEventListener("click", () => this.clearFilters());
 
     this.refresh();
   }
@@ -39,9 +44,9 @@ export class ManagementFamiliesController {
 
     this.items = famRes.data?.items ?? [];
     this.categories = catRes.success ? (catRes.data?.items ?? []) : [];
-    this.renderCounters();
     this.renderCategoryOptions();
     this.renderList();
+    this.renderCounters();
 
     if (this.selectedId) {
       const selected = this.items.find((item) => Number(item.id) === Number(this.selectedId));
@@ -56,17 +61,29 @@ export class ManagementFamiliesController {
 
   renderCategoryOptions() {
     const select = document.getElementById("fam-category");
-    if (!select) return;
+    const filterSelect = document.getElementById("fam-filter-category");
+    const formValue = select?.value || "";
+    const filterValue = filterSelect?.value || this.filterCategoryId;
+    const options = this.categories.map((item) => `<option value="${Number(item.id)}">${this.escapeHtml(item.name)}</option>`).join("");
 
-    select.innerHTML = `
-      <option value="">Choisir une categorie</option>
-      ${this.categories.map((item) => `<option value="${Number(item.id)}">${this.escapeHtml(item.name)}</option>`).join("")}
-    `;
+    if (select) {
+      select.innerHTML = `<option value="">Choisir une categorie</option>${options}`;
+      if (formValue && this.categories.some((item) => Number(item.id) === Number(formValue))) {
+        select.value = formValue;
+      }
+    }
+
+    if (filterSelect) {
+      filterSelect.innerHTML = `<option value="">Toutes les categories</option>${options}`;
+      this.filterCategoryId = this.categories.some((item) => Number(item.id) === Number(filterValue)) ? String(filterValue) : "";
+      filterSelect.value = this.filterCategoryId;
+    }
   }
 
   renderList() {
     const list = document.getElementById("fam-list");
     if (!list) return;
+    const items = this.getFilteredItems();
 
     if (!this.items.length) {
       list.innerHTML = `
@@ -78,11 +95,22 @@ export class ManagementFamiliesController {
       return;
     }
 
-    list.innerHTML = this.items.map((item) => `
+    if (!items.length) {
+      list.innerHTML = `
+        <div class="mq-admin-empty">
+          <strong>Aucune oeuvre trouvee</strong>
+          <p class="mq-muted">Ajuste la categorie ou le texte de recherche pour elargir la liste.</p>
+        </div>
+      `;
+      return;
+    }
+
+    list.innerHTML = items.map((item) => `
       <button type="button" class="mq-admin-item ${Number(item.id) === Number(this.selectedId) ? "is-selected" : ""}" data-id="${Number(item.id)}">
         <strong>${this.escapeHtml(item.name)}</strong>
         <div class="mq-admin-item__meta">
           <span class="mq-admin-badge">${this.escapeHtml(item.category_name || "Sans categorie")}</span>
+          <span class="mq-admin-submeta">${this.escapeHtml(this.formatFamilyCounts(item))}</span>
           ${Number(item.alias_count || 0) > 0 ? `<span class="mq-admin-badge">${Number(item.alias_count)} alias</span>` : ""}
           ${item.description ? `<span class="mq-muted">${this.escapeHtml(item.description)}</span>` : ""}
           ${this.renderAliasPreview(item.aliases)}
@@ -204,7 +232,11 @@ export class ManagementFamiliesController {
   }
 
   renderCounters() {
-    const text = `${this.items.length} ${this.items.length > 1 ? "oeuvres" : "oeuvre"}`;
+    const count = this.getFilteredItems().length;
+    const total = this.items.length;
+    const text = this.hasActiveFilters()
+      ? `${count}/${total} ${total > 1 ? "oeuvres" : "oeuvre"}`
+      : `${total} ${total > 1 ? "oeuvres" : "oeuvre"}`;
     ["fam-count", "fam-count-inline"].forEach((id) => {
       const el = document.getElementById(id);
       if (el) el.textContent = text;
@@ -303,6 +335,71 @@ export class ManagementFamiliesController {
     const preview = aliases.slice(0, 3).map((alias) => this.escapeHtml(alias)).join(" · ");
     const suffix = aliases.length > 3 ? " ..." : "";
     return `<span class="mq-muted">Alias: ${preview}${suffix}</span>`;
+  }
+
+  updateCategoryFilter(value) {
+    this.filterCategoryId = String(value || "");
+    this.renderList();
+    this.renderCounters();
+  }
+
+  updateTextFilter(value) {
+    this.filterQuery = String(value || "");
+    this.renderList();
+    this.renderCounters();
+  }
+
+  clearFilters() {
+    this.filterCategoryId = "";
+    this.filterQuery = "";
+
+    const category = document.getElementById("fam-filter-category");
+    const query = document.getElementById("fam-filter-query");
+    if (category) category.value = "";
+    if (query) query.value = "";
+
+    this.renderList();
+    this.renderCounters();
+  }
+
+  getFilteredItems() {
+    const query = this.normalizeSearch(this.filterQuery);
+    const categoryId = Number(this.filterCategoryId || 0);
+
+    return this.items.filter((item) => {
+      if (categoryId > 0 && Number(item.category_id || 0) !== categoryId) {
+        return false;
+      }
+
+      if (!query) {
+        return true;
+      }
+
+      const aliases = Array.isArray(item.aliases) ? item.aliases.join(" ") : "";
+      const haystack = this.normalizeSearch(`${item.name || ""} ${item.slug || ""} ${aliases}`);
+      return haystack.includes(query);
+    });
+  }
+
+  hasActiveFilters() {
+    return Boolean(this.filterCategoryId || String(this.filterQuery || "").trim());
+  }
+
+  formatFamilyCounts(item) {
+    const trackCount = Math.max(0, Number(item?.track_count || 0));
+    const playableCount = Math.max(0, Number(item?.playable_track_count || 0));
+    const base = `${trackCount} ${trackCount > 1 ? "musiques" : "musique"}`;
+    return playableCount === trackCount
+      ? base
+      : `${base} (${playableCount} jouable${playableCount > 1 ? "s" : ""})`;
+  }
+
+  normalizeSearch(value) {
+    return String(value || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .trim();
   }
 
   escapeHtml(value) {
