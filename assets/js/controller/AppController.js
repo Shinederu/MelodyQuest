@@ -9,10 +9,10 @@ import { ResultController } from "./ResultController.js";
 import { ManagementController } from "./ManagementController.js";
 import { ManagementCategoriesController } from "./ManagementCategoriesController.js?v=20260606-category-counts";
 import { ManagementFamiliesController } from "./ManagementFamiliesController.js?v=20260606-family-filters";
-import { ManagementTracksController } from "./ManagementTracksController.js";
+import { ManagementTracksController } from "./ManagementTracksController.js?v=20260606-track-filters";
 import { ManagementValidationController } from "./ManagementValidationController.js";
 
-const ASSET_VERSION = "20260606-family-filters";
+const ASSET_VERSION = "20260606-track-filters";
 
 let currentUser = null;
 let headerManager = null;

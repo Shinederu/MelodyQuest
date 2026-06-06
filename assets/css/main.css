@@ -836,7 +836,7 @@ input[type="range"] {
 
 .mq-admin-filter-bar {
   display: grid;
-  grid-template-columns: minmax(180px, 0.8fr) minmax(220px, 1fr) auto;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 10px;
   align-items: end;
   margin-bottom: 14px;

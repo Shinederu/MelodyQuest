@@ -11,6 +11,9 @@ export class ManagementTracksController {
     this.familySuggestions = [];
     this.activeFamilySuggestionIndex = -1;
     this.isFamilySuggestionOpen = false;
+    this.filterCategoryId = "";
+    this.filterFamilyQuery = "";
+    this.filterTrackQuery = "";
 
     document.getElementById("btn-track-back")?.addEventListener("click", () => window.appCtrl.changeView("management"));
     document.getElementById("btn-track-refresh")?.addEventListener("click", () => this.refresh());
@@ -25,6 +28,10 @@ export class ManagementTracksController {
     document.getElementById("track-family-name")?.addEventListener("focus", () => this.openFamilySuggestions());
     document.getElementById("track-family-name")?.addEventListener("keydown", (event) => this.handleFamilyKeydown(event));
     document.getElementById("track-family-name")?.addEventListener("blur", () => this.handleFamilyBlur());
+    document.getElementById("track-filter-category")?.addEventListener("change", (event) => this.updateCategoryFilter(event.target.value));
+    document.getElementById("track-filter-family")?.addEventListener("input", (event) => this.updateFamilyFilter(event.target.value));
+    document.getElementById("track-filter-query")?.addEventListener("input", (event) => this.updateTrackFilter(event.target.value));
+    document.getElementById("btn-track-clear-filters")?.addEventListener("click", () => this.clearFilters());
 
     this.refresh();
   }
@@ -42,9 +49,9 @@ export class ManagementTracksController {
     this.items = trackRes.data?.items ?? [];
     this.families = famRes.success ? (famRes.data?.items ?? []) : [];
     this.categories = catRes.success ? (catRes.data?.items ?? []) : [];
-    this.renderCounters();
     this.renderCategoryOptions();
     this.renderList();
+    this.renderCounters();
 
     if (this.selectedId) {
       const selected = this.items.find((item) => Number(item.id) === Number(this.selectedId));
@@ -59,20 +66,27 @@ export class ManagementTracksController {
 
   renderCategoryOptions() {
     const select = document.getElementById("track-category");
-    if (!select) return;
+    const filterSelect = document.getElementById("track-filter-category");
 
-    const currentValue = Number(select.value || 0);
+    const currentValue = Number(select?.value || 0);
     const selectedValue = currentValue > 0
       ? currentValue
       : Number(this.draftCategoryId || 0);
+    const filterValue = filterSelect?.value || this.filterCategoryId;
+    const options = this.categories.map((item) => `<option value="${Number(item.id)}">${this.escapeHtml(item.name)}</option>`).join("");
 
-    select.innerHTML = `
-      <option value="">Choisir une categorie</option>
-      ${this.categories.map((item) => `<option value="${Number(item.id)}">${this.escapeHtml(item.name)}</option>`).join("")}
-    `;
+    if (select) {
+      select.innerHTML = `<option value="">Choisir une categorie</option>${options}`;
 
-    if (selectedValue > 0 && this.categories.some((item) => Number(item.id) === selectedValue)) {
-      select.value = String(selectedValue);
+      if (selectedValue > 0 && this.categories.some((item) => Number(item.id) === selectedValue)) {
+        select.value = String(selectedValue);
+      }
+    }
+
+    if (filterSelect) {
+      filterSelect.innerHTML = `<option value="">Toutes les categories</option>${options}`;
+      this.filterCategoryId = this.categories.some((item) => Number(item.id) === Number(filterValue)) ? String(filterValue) : "";
+      filterSelect.value = this.filterCategoryId;
     }
   }
 
@@ -294,6 +308,7 @@ export class ManagementTracksController {
   renderList() {
     const list = document.getElementById("track-list");
     if (!list) return;
+    const items = this.getFilteredItems();
 
     if (!this.items.length) {
       list.innerHTML = `
@@ -305,7 +320,17 @@ export class ManagementTracksController {
       return;
     }
 
-    list.innerHTML = this.items.map((item) => `
+    if (!items.length) {
+      list.innerHTML = `
+        <div class="mq-admin-empty">
+          <strong>Aucune musique trouvee</strong>
+          <p class="mq-muted">Ajuste la categorie, l'oeuvre ou le texte de track pour elargir la liste.</p>
+        </div>
+      `;
+      return;
+    }
+
+    list.innerHTML = items.map((item) => `
       <button type="button" class="mq-admin-item ${Number(item.id) === Number(this.selectedId) ? "is-selected" : ""}" data-id="${Number(item.id)}">
         <strong>${this.escapeHtml(item.title)}</strong>
         <div class="mq-admin-item__meta">
@@ -532,11 +557,85 @@ export class ManagementTracksController {
   }
 
   renderCounters() {
-    const text = `${this.items.length} ${this.items.length > 1 ? "musiques" : "musique"}`;
+    const count = this.getFilteredItems().length;
+    const total = this.items.length;
+    const text = this.hasActiveFilters()
+      ? `${count}/${total} ${total > 1 ? "musiques" : "musique"}`
+      : `${total} ${total > 1 ? "musiques" : "musique"}`;
     ["track-count", "track-count-inline"].forEach((id) => {
       const el = document.getElementById(id);
       if (el) el.textContent = text;
     });
+  }
+
+  updateCategoryFilter(value) {
+    this.filterCategoryId = String(value || "");
+    this.renderList();
+    this.renderCounters();
+  }
+
+  updateFamilyFilter(value) {
+    this.filterFamilyQuery = String(value || "");
+    this.renderList();
+    this.renderCounters();
+  }
+
+  updateTrackFilter(value) {
+    this.filterTrackQuery = String(value || "");
+    this.renderList();
+    this.renderCounters();
+  }
+
+  clearFilters() {
+    this.filterCategoryId = "";
+    this.filterFamilyQuery = "";
+    this.filterTrackQuery = "";
+
+    const category = document.getElementById("track-filter-category");
+    const family = document.getElementById("track-filter-family");
+    const track = document.getElementById("track-filter-query");
+    if (category) category.value = "";
+    if (family) family.value = "";
+    if (track) track.value = "";
+
+    this.renderList();
+    this.renderCounters();
+  }
+
+  getFilteredItems() {
+    const categoryId = Number(this.filterCategoryId || 0);
+    const familyQuery = this.normalizeSearch(this.filterFamilyQuery);
+    const trackQuery = this.normalizeSearch(this.filterTrackQuery);
+
+    return this.items.filter((item) => {
+      if (categoryId > 0 && Number(item.category_id || 0) !== categoryId) {
+        return false;
+      }
+
+      if (familyQuery) {
+        const familyHaystack = this.normalizeSearch(`${item.family_name || ""} ${item.category_name || ""}`);
+        if (!familyHaystack.includes(familyQuery)) {
+          return false;
+        }
+      }
+
+      if (trackQuery) {
+        const trackHaystack = this.normalizeSearch(`${item.title || ""} ${item.artist || ""} ${item.youtube_video_id || ""} ${item.youtube_url || ""}`);
+        if (!trackHaystack.includes(trackQuery)) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }
+
+  hasActiveFilters() {
+    return Boolean(
+      this.filterCategoryId
+      || String(this.filterFamilyQuery || "").trim()
+      || String(this.filterTrackQuery || "").trim()
+    );
   }
 
   normalizeSearch(value) {

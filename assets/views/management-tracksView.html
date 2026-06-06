@@ -33,6 +33,21 @@
         </div>
         <span id="track-count-inline" class="mq-chip">0 musiques</span>
       </div>
+      <div class="mq-admin-filter-bar">
+        <div class="mq-field">
+          <label for="track-filter-category">Filtrer par categorie</label>
+          <select id="track-filter-category"></select>
+        </div>
+        <div class="mq-field">
+          <label for="track-filter-family">Rechercher une oeuvre</label>
+          <input id="track-filter-family" type="text" placeholder="Ex: Pokemon" autocomplete="off" />
+        </div>
+        <div class="mq-field">
+          <label for="track-filter-query">Rechercher une track</label>
+          <input id="track-filter-query" type="text" placeholder="Ex: Ending S1" autocomplete="off" />
+        </div>
+        <button id="btn-track-clear-filters" type="button" class="mq-secondary">Effacer</button>
+      </div>
       <div class="mq-admin-list-shell">
         <div id="track-list" class="mq-admin-list"></div>
       </div>
