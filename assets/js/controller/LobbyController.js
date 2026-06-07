@@ -53,18 +53,32 @@ export class LobbyController {
       return;
     }
 
-    const [categoriesRes, detail] = await Promise.all([
-      window.httpClient.listCategories(),
-      window.httpClient.getLobbyByCode(code),
-    ]);
+    this.startHeartbeat();
 
-    if (categoriesRes.success) {
-      this.categories = categoriesRes.data?.items ?? [];
+    let categoriesRes;
+    let detail;
+    try {
+      [categoriesRes, detail] = await Promise.all([
+        window.httpClient.listCategories(),
+        window.httpClient.getLobbyByCode(code),
+      ]);
+    } catch {
+      this.setStatus("Impossible de charger le salon. Réessaie dans quelques secondes.", false);
+      return;
     }
+
+    this.categories = categoriesRes?.success ? (categoriesRes.data?.items ?? []) : [];
 
     if (!detail.success || !detail.data?.lobby) {
       this.setStatus(detail.error || "Lobby introuvable", false);
+      if (this.shouldExitLobby(detail.error)) {
+        this.stopHeartbeat();
+      }
       return;
+    }
+
+    if (!categoriesRes?.success) {
+      this.setStatus(categoriesRes?.error || "Impossible de charger les catégories", false);
     }
 
     this.currentLobby = detail.data.lobby;
@@ -73,7 +87,6 @@ export class LobbyController {
     this.renderLobby(detail.data);
     await this.refreshRoundState(true);
     this.startRealtime();
-    this.startHeartbeat();
   }
 
   startRealtime() {
@@ -155,7 +168,14 @@ export class LobbyController {
     const code = this.getLobbyCode();
     if (!code) return;
 
-    const detail = await window.httpClient.getLobbyByCode(code);
+    let detail;
+    try {
+      detail = await window.httpClient.getLobbyByCode(code);
+    } catch {
+      this.setStatus("Connexion au salon interrompue temporairement.", false);
+      return;
+    }
+
     if (detail.success && detail.data?.lobby) {
       this.currentLobby = detail.data.lobby;
       this.realtimeConfig = detail.data?.realtime ?? this.realtimeConfig;
@@ -165,7 +185,12 @@ export class LobbyController {
       return;
     }
 
-    this.exitLobbyIfActive();
+    if (this.shouldExitLobby(detail.error)) {
+      this.exitLobbyIfActive();
+      return;
+    }
+
+    this.setStatus(detail.error || "Impossible de rafraîchir le salon", false);
   }
 
   applyRealtimeSnapshot(snapshot) {
