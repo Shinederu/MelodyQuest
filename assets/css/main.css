@@ -732,6 +732,32 @@ input[type="range"] {
   max-width: 12ch;
 }
 
+.mq-public-info {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.mq-public-info__item {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid rgba(120, 183, 255, 0.15);
+  border-radius: var(--mq-radius);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.mq-public-info__item strong {
+  color: var(--mq-text);
+  font-size: 0.95rem;
+}
+
+.mq-public-info__item span {
+  color: var(--mq-text-soft);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
 .mq-auth-panel-shell {
   display: grid;
   gap: 14px;

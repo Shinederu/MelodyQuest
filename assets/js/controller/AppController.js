@@ -12,7 +12,7 @@ import { ManagementFamiliesController } from "./ManagementFamiliesController.js?
 import { ManagementTracksController } from "./ManagementTracksController.js?v=20260606-clean-status";
 import { ManagementValidationController } from "./ManagementValidationController.js?v=20260606-validation-reject";
 
-const ASSET_VERSION = "20260607-main-public-lobbies";
+const ASSET_VERSION = "20260607-public-explainer";
 
 let currentUser = null;
 let headerManager = null;
