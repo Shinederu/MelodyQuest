@@ -18,7 +18,7 @@ export class MainController {
 
     document.getElementById("btn-main-create")?.addEventListener("click", () => this.createLobby());
     document.getElementById("btn-main-join-code")?.addEventListener("click", () => this.joinLobbyByCode());
-    document.getElementById("btn-main-browse")?.addEventListener("click", () => window.appCtrl.changeView("lobby-list"));
+    document.getElementById("btn-main-refresh")?.addEventListener("click", () => this.refreshLobbies());
     document.getElementById("btn-main-management")?.addEventListener("click", () => window.appCtrl.changeView("management"));
     document.addEventListener("visibilitychange", this.visibilityHandler);
 
@@ -164,25 +164,34 @@ export class MainController {
 
   renderLobbyList(items) {
     const list = document.getElementById("main-lobby-list");
-    const empty = document.getElementById("main-lobby-empty");
-    if (!list || !empty) return;
+    const count = document.getElementById("main-lobby-count");
+    if (!list) return;
+
+    if (count) {
+      count.textContent = `${items.length} salon${items.length > 1 ? "s" : ""} actif${items.length > 1 ? "s" : ""}`;
+    }
 
     if (!items.length) {
-      list.innerHTML = "";
-      empty.style.display = "";
+      list.innerHTML = `
+        <li class="mq-list-row">
+          <div>
+            <strong>Aucun salon public</strong>
+            <span class="mq-muted">Cree ton salon depuis le depart rapide ou utilise un code prive.</span>
+          </div>
+        </li>
+      `;
       return;
     }
 
-    empty.style.display = "none";
     list.innerHTML = items.map((lobby) => `
-      <article class="mq-list-card">
+      <li class="mq-list-row">
         <div>
           <strong>${this.escapeHtml(lobby.name || "Salon")}</strong>
-          <p class="mq-muted">${Number(lobby.players_count || 0)}/${Number(lobby.max_players || 0)} joueurs - Code ${this.escapeHtml(lobby.lobby_code || "")}</p>
-          <p class="mq-muted">${lobby.owner_username ? `Cree par ${this.escapeHtml(lobby.owner_username)}` : "En attente de joueurs"}</p>
+          <span class="mq-muted">${Number(lobby.players_count || 0)}/${Number(lobby.max_players || 0)} joueurs - Code ${this.escapeHtml(lobby.lobby_code || "")}</span>
+          ${lobby.owner_username ? `<span class="mq-muted">Cree par ${this.escapeHtml(lobby.owner_username)}</span>` : ""}
         </div>
         <button type="button" data-join-code="${this.escapeAttr(lobby.lobby_code || "")}">Entrer</button>
-      </article>
+      </li>
     `).join("");
 
     list.querySelectorAll("[data-join-code]").forEach((button) => {

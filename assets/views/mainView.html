@@ -36,15 +36,17 @@
 
     <section class="mq-card mq-card--soft">
       <div class="mq-card-heading">
-        <div class="mq-kicker">Salons ouverts</div>
-        <h2>Parties disponibles</h2>
-        <p class="mq-card-copy">Rejoins directement une partie publique, ou passe par le code si le salon est prive.</p>
+        <div class="mq-kicker">Public</div>
+        <h2>Salons ouverts</h2>
+        <p class="mq-card-copy">La liste se met a jour pendant que tu regardes.</p>
       </div>
-      <p id="main-lobby-empty" class="mq-muted">Aucun salon public pour le moment.</p>
-      <div id="main-lobby-list" class="mq-list"></div>
-      <div class="mq-actions mq-actions--full">
-        <button id="btn-main-browse" type="button" class="mq-secondary mq-button-block">Voir tous les salons</button>
+
+      <div class="mq-row">
+        <span id="main-lobby-count" class="mq-chip">0 salon actif</span>
+        <button id="btn-main-refresh" type="button" class="mq-secondary">Rafraichir</button>
       </div>
+
+      <ul id="main-lobby-list" class="mq-clean-list"></ul>
     </section>
   </div>
 </section>
