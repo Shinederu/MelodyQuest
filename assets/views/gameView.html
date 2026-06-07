@@ -1,16 +1,12 @@
 <section class="mq-page mq-game-page">
   <section class="mq-game-shell">
     <section class="mq-card mq-card--soft mq-game-stage">
-      <div class="mq-game-stage__head">
-        <div class="mq-card-heading">
-          <div class="mq-kicker">Session en cours</div>
-          <h1 id="game-title">Partie en cours</h1>
-        </div>
+      <div class="mq-game-stage__head mq-game-stage__head--compact">
+        <p id="game-status" class="status"></p>
         <div class="mq-actions">
           <button id="btn-game-leave" type="button" class="mq-danger">Quitter le salon</button>
         </div>
       </div>
-      <p id="game-status" class="status"></p>
 
       <div id="game-video" class="mq-video-shell">
         <div id="game-video-player" class="mq-video-player"></div>

@@ -1,5 +1,5 @@
 import { HttpService } from "../utils/HttpService.js?v=20260606-validation-edit";
-import { HeaderModel } from "../model/HeaderModel.js";
+import { HeaderModel } from "../model/HeaderModel.js?v=20260607-header-pages";
 import { PublicController } from "./PublicController.js?v=20260606-public-auth-switch";
 import { MainController } from "./MainController.js?v=20260606-clean-status";
 import { LobbyController } from "./LobbyController.js?v=20260606-clean-status";
@@ -12,7 +12,7 @@ import { ManagementFamiliesController } from "./ManagementFamiliesController.js?
 import { ManagementTracksController } from "./ManagementTracksController.js?v=20260606-clean-status";
 import { ManagementValidationController } from "./ManagementValidationController.js?v=20260606-validation-reject";
 
-const ASSET_VERSION = "20260606-validation-reject";
+const ASSET_VERSION = "20260607-header-pages";
 
 let currentUser = null;
 let headerManager = null;

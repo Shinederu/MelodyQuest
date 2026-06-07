@@ -14,6 +14,8 @@ export class HeaderModel {
     const roleLabel = isAdmin ? "admin" : (role || "user");
     const safeUsername = this.escapeHtml(username || "joueur");
     const safeRole = this.escapeHtml(roleLabel);
+    const page = this.getPageMeta(view);
+    const pageHtml = page ? this.renderPageMeta(page) : "";
 
     const headerHtml = `
       <div class="mq-topbar">
@@ -21,6 +23,7 @@ export class HeaderModel {
           <div class="mq-topbar__eyebrow">MelodyQuest</div>
           <div class="mq-topbar__user">Bonjour ${safeUsername}</div>
         </div>
+        ${pageHtml}
         <div class="mq-topbar__actions">
           <span class="mq-topbar__role">${safeRole}</span>
           ${buttonHtml}
@@ -42,6 +45,96 @@ export class HeaderModel {
         }
       });
     }
+  }
+
+  getPageMeta(view) {
+    const pages = {
+      main: {
+        eyebrow: "Blindtest entre amis",
+        title: "Jouer maintenant",
+        description: "Creer un salon, partager le code, lancer la musique.",
+      },
+      "lobby-list": {
+        eyebrow: "Rejoindre",
+        title: "Trouver une partie",
+        description: "Entre un code ou choisis un salon public.",
+      },
+      lobby: {
+        eyebrow: "Salon d'attente",
+        title: "Salon",
+        titleId: "lobby-title",
+        description: "Chargement du salon...",
+        descriptionId: "lobby-meta",
+        chips: [
+          { id: "lobby-rounds", text: "--" },
+          { id: "lobby-timer", text: "--" },
+        ],
+      },
+      game: {
+        eyebrow: "Session en cours",
+        title: "Partie en cours",
+        titleId: "game-title",
+      },
+      result: {
+        eyebrow: "Fin de partie",
+        title: "Partie terminee",
+        titleId: "result-title",
+        description: "Les scores sont poses. Le salon se prepare pour une revanche.",
+      },
+      management: {
+        eyebrow: "Administration",
+        title: "Management",
+        description: "Gestion du catalogue MelodyQuest.",
+      },
+      "management-categories": {
+        eyebrow: "Catalogue",
+        title: "Gestion des categories",
+        description: "Selectionne une categorie ou cree-en une nouvelle.",
+      },
+      "management-families": {
+        eyebrow: "Catalogue",
+        title: "Gestion des oeuvres",
+        description: "Regroupe les musiques par reponse attendue.",
+      },
+      "management-tracks": {
+        eyebrow: "Catalogue",
+        title: "Gestion des musiques",
+        description: "Ajoute et corrige les pistes jouables.",
+      },
+      "management-validation": {
+        eyebrow: "Administration",
+        title: "Verification / validation",
+        description: "Controle les nouvelles musiques avant de les rendre jouables.",
+      },
+    };
+
+    return pages[view] || null;
+  }
+
+  renderPageMeta(page) {
+    const titleAttr = page.titleId ? ` id="${page.titleId}"` : "";
+    const descriptionAttr = page.descriptionId ? ` id="${page.descriptionId}"` : "";
+    const description = page.description
+      ? `<p${descriptionAttr} class="mq-topbar__page-copy">${this.escapeHtml(page.description)}</p>`
+      : "";
+    const chips = Array.isArray(page.chips) && page.chips.length
+      ? `
+        <div class="mq-topbar__page-chips">
+          ${page.chips.map((chip) => `<span id="${chip.id}" class="mq-chip">${this.escapeHtml(chip.text)}</span>`).join("")}
+        </div>
+      `
+      : "";
+
+    return `
+      <div class="mq-topbar__page" aria-label="Page active">
+        <div class="mq-topbar__page-eyebrow">${this.escapeHtml(page.eyebrow || "Page")}</div>
+        <div class="mq-topbar__page-title">
+          <strong${titleAttr}>${this.escapeHtml(page.title || "")}</strong>
+          ${chips}
+        </div>
+        ${description}
+      </div>
+    `;
   }
 
   escapeHtml(value) {

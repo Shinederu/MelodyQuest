@@ -439,6 +439,7 @@ input[type="range"] {
 .mq-topbar__brand {
   display: grid;
   gap: 2px;
+  flex: 0 0 170px;
   min-width: 0;
 }
 
@@ -457,6 +458,63 @@ input[type="range"] {
   font-weight: 760;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.mq-topbar__page {
+  display: grid;
+  gap: 3px;
+  flex: 1 1 auto;
+  min-width: 180px;
+  padding: 0 12px;
+}
+
+.mq-topbar__page-eyebrow {
+  overflow: hidden;
+  color: var(--mq-text-faint);
+  font-size: 0.68rem;
+  font-weight: 820;
+  letter-spacing: 0.1em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.mq-topbar__page-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.mq-topbar__page-title strong {
+  overflow: hidden;
+  color: var(--mq-text);
+  font-size: clamp(1rem, 1.5vw, 1.28rem);
+  line-height: 1.05;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mq-topbar__page-copy {
+  overflow: hidden;
+  color: var(--mq-text-soft);
+  font-size: 0.82rem;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mq-topbar__page-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.mq-topbar__page-chips .mq-chip {
+  min-height: 26px;
+  padding: 3px 8px;
 }
 
 .mq-topbar__actions {
@@ -1387,6 +1445,10 @@ input[type="range"] {
     padding: 8px 10px 8px 14px;
   }
 
+  body:has(.mq-game-page) .mq-topbar__page-copy {
+    display: none;
+  }
+
   body:has(.mq-game-page) .mq-topbar__actions button,
   body:has(.mq-game-page) .mq-topbar__role {
     min-height: 34px;
@@ -1527,6 +1589,18 @@ input[type="range"] {
   .mq-admin-toolbar {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .mq-topbar__brand,
+  .mq-topbar__page {
+    width: 100%;
+    flex-basis: auto;
+    padding: 0;
+  }
+
+  .mq-topbar__page-title strong,
+  .mq-topbar__page-copy {
+    white-space: normal;
   }
 
   .mq-topbar__actions,
