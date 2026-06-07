@@ -19,14 +19,16 @@
                 <circle id="game-video-ring-progress" class="mq-timer-ring__progress" cx="60" cy="60" r="44"></circle>
               </svg>
               <div class="mq-video-overlay__timer-copy">
-                <strong id="game-video-overlay-title">Video cachee</strong>
-                <p id="game-video-overlay-copy">Reponds dans -- secondes.</p>
+                <strong id="game-video-overlay-title">Vidéo cachée</strong>
+                <p id="game-video-overlay-copy">Réponds dans -- secondes.</p>
               </div>
             </div>
-            <p id="game-video-overlay-hint" class="mq-video-overlay__hint">Ecoute l'extrait et trouve la bonne reponse pour reveler la video.</p>
+            <p id="game-video-overlay-hint" class="mq-video-overlay__hint">Écoute l'extrait et trouve la bonne réponse pour révéler la vidéo.</p>
           </div>
         </div>
       </div>
+
+      <div id="game-round-category" class="mq-game-category" hidden></div>
 
       <div class="mq-video-toolbar">
         <label class="mq-volume-control" for="game-volume">
@@ -35,29 +37,43 @@
         </label>
         <span id="game-volume-value" class="mq-chip">70%</span>
       </div>
-      <p id="game-solution" class="status"></p>
+
+      <div id="game-solution" class="mq-game-solution" hidden>
+        <span id="game-solution-category" class="mq-chip" hidden></span>
+        <strong id="game-solution-family"></strong>
+        <span id="game-solution-track"></span>
+      </div>
     </section>
 
     <aside class="mq-game-side">
       <section class="mq-card mq-game-answer-card">
         <div class="mq-card-heading">
           <div class="mq-kicker">A toi de jouer</div>
-          <h2>Ta reponse</h2>
+          <h2>Ta réponse</h2>
           <p class="mq-card-copy">Trouve le morceau avant la fin du chrono.</p>
         </div>
 
         <div id="game-answer-shell" class="mq-form-stack">
-          <label for="game-answer">Reponse</label>
+          <label for="game-answer">Réponse</label>
           <input id="game-answer" type="text" placeholder="Nom du morceau" autocomplete="off" />
           <p id="game-answer-feedback" class="status"></p>
           <div class="mq-actions">
-            <button id="btn-game-submit" type="button">Envoyer la reponse</button>
+            <button id="btn-game-submit" type="button">Envoyer la réponse</button>
           </div>
         </div>
 
         <div id="game-answer-locked" class="mq-game-note" hidden>
           <strong id="game-answer-locked-title">Solution</strong>
           <p id="game-answer-locked-copy" class="mq-muted"></p>
+        </div>
+
+        <div id="game-reveal-vote" class="mq-game-note mq-game-reveal-vote" hidden>
+          <strong>Personne ne trouve ?</strong>
+          <p id="game-reveal-vote-info" class="mq-muted"></p>
+          <p id="game-reveal-vote-summary" class="mq-muted"></p>
+          <div class="mq-actions">
+            <button id="btn-game-reveal" type="button" class="mq-secondary">Révéler la réponse</button>
+          </div>
         </div>
       </section>
 
@@ -86,7 +102,7 @@
       <section id="game-next-panel" class="mq-card mq-game-vote-panel" hidden>
         <div>
           <p class="mq-section-label">Passer au suivant</p>
-          <p id="game-next-info" class="mq-muted">Le vote sera disponible apres quelques secondes de solution.</p>
+          <p id="game-next-info" class="mq-muted">Le vote sera disponible après quelques secondes de solution.</p>
           <p id="game-next-summary" class="mq-muted"></p>
         </div>
         <label class="mq-check">

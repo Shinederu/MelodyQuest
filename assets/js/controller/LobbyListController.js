@@ -136,7 +136,7 @@ export class LobbyListController {
         <li class="mq-list-row">
           <div>
             <strong>Aucun salon public</strong>
-            <span class="mq-muted">Cree ton salon depuis l'accueil ou utilise un code prive.</span>
+            <span class="mq-muted">Crée ton salon depuis l'accueil ou utilise un code privé.</span>
           </div>
         </li>
       `;

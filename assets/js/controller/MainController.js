@@ -36,17 +36,20 @@ export class MainController {
       document.getElementById("main-lobby-name")?.value,
       "Nouveau salon"
     );
+    const isPublic = document.getElementById("main-lobby-public")?.checked !== false;
 
     const res = await window.httpClient.createLobby({
       name: lobbyName,
-      visibility: "public",
+      visibility: isPublic ? "public" : "private",
       max_players: 8,
       round_duration_seconds: 30,
       total_rounds: 5,
       guess_mode: "title",
+      show_track_category: false,
+      allow_early_reveal_vote: true,
     });
 
-    this.setStatus(res.success ? "Salon cree" : (res.error || "Erreur"), res.success);
+    this.setStatus(res.success ? "Salon créé" : (res.error || "Erreur"), res.success);
 
     if (res.success && res.data?.lobby) {
       setCurrentLobby(res.data.lobby);
@@ -176,7 +179,7 @@ export class MainController {
         <li class="mq-list-row">
           <div>
             <strong>Aucun salon public</strong>
-            <span class="mq-muted">Cree ton salon depuis le depart rapide ou utilise un code prive.</span>
+            <span class="mq-muted">Crée ton salon depuis le départ rapide ou utilise un code privé.</span>
           </div>
         </li>
       `;
@@ -188,7 +191,7 @@ export class MainController {
         <div>
           <strong>${this.escapeHtml(lobby.name || "Salon")}</strong>
           <span class="mq-muted">${Number(lobby.players_count || 0)}/${Number(lobby.max_players || 0)} joueurs - Code ${this.escapeHtml(lobby.lobby_code || "")}</span>
-          ${lobby.owner_username ? `<span class="mq-muted">Cree par ${this.escapeHtml(lobby.owner_username)}</span>` : ""}
+          ${lobby.owner_username ? `<span class="mq-muted">Créé par ${this.escapeHtml(lobby.owner_username)}</span>` : ""}
         </div>
         <button type="button" data-join-code="${this.escapeAttr(lobby.lobby_code || "")}">Entrer</button>
       </li>

@@ -828,6 +828,13 @@ input[type="range"] {
   grid-template-columns: 1fr;
 }
 
+.mq-lobby-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 14px 0;
+}
+
 .mq-field {
   display: grid;
   gap: 7px;
@@ -849,6 +856,11 @@ input[type="range"] {
   border-radius: var(--mq-radius);
   color: var(--mq-text-soft);
   background: rgba(255, 255, 255, 0.045);
+}
+
+.mq-check--compact {
+  min-height: 40px;
+  padding: 9px 10px;
 }
 
 .mq-chip {
@@ -892,6 +904,40 @@ input[type="range"] {
 
 .mq-list-row {
   box-shadow: none;
+}
+
+.mq-player-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.mq-player-line > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.mq-avatar {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  border: 1px solid rgba(120, 183, 255, 0.24);
+  border-radius: 999px;
+  object-fit: cover;
+  color: var(--mq-text);
+  font-size: 0.78rem;
+  font-weight: 820;
+  background:
+    linear-gradient(135deg, rgba(120, 183, 255, 0.32), rgba(233, 130, 189, 0.2)),
+    rgba(255, 255, 255, 0.07);
+}
+
+.mq-avatar--fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .mq-list-row strong,
@@ -1315,6 +1361,49 @@ input[type="range"] {
   width: min(260px, 48vw);
 }
 
+.mq-game-category {
+  justify-self: center;
+  width: fit-content;
+  max-width: 100%;
+  padding: 7px 12px;
+  border: 1px solid rgba(120, 183, 255, 0.22);
+  border-radius: var(--mq-radius);
+  color: var(--mq-primary-strong);
+  font-size: 0.86rem;
+  font-weight: 760;
+  text-align: center;
+  background: rgba(120, 183, 255, 0.09);
+}
+
+.mq-game-solution {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 14px 16px;
+  border: 1px solid rgba(120, 183, 255, 0.22);
+  border-radius: var(--mq-radius);
+  text-align: center;
+  background:
+    linear-gradient(135deg, rgba(120, 183, 255, 0.12), rgba(233, 130, 189, 0.08)),
+    rgba(255, 255, 255, 0.045);
+}
+
+.mq-game-solution[hidden],
+.mq-game-category[hidden] {
+  display: none;
+}
+
+.mq-game-solution strong {
+  color: var(--mq-text);
+  font-size: clamp(1.8rem, 3vw, 3.2rem);
+  line-height: 1.05;
+}
+
+.mq-game-solution span:not(.mq-chip) {
+  color: var(--mq-text-soft);
+  font-size: clamp(1rem, 1.35vw, 1.25rem);
+}
+
 .mq-game-page {
   gap: 0;
 }
@@ -1427,8 +1516,18 @@ input[type="range"] {
   padding: 10px 11px;
 }
 
+#game-scoreboard .mq-avatar {
+  width: 34px;
+  height: 34px;
+  flex-basis: 34px;
+}
+
 #game-scoreboard .mq-chip {
   min-height: 26px;
+}
+
+.mq-game-reveal-vote {
+  margin-top: 12px;
 }
 
 #game-answer.is-invalid {
@@ -1580,6 +1679,10 @@ input[type="range"] {
 
   .mq-auth-intro {
     position: static;
+  }
+
+  .mq-lobby-options {
+    grid-template-columns: 1fr;
   }
 
   .mq-game-side {

@@ -30,12 +30,15 @@ L'API `auth` utilise aussi ce meme schema partage avec ses variables (`DB_*`).
 - Frontend: JS/CSS/HTML (sans framework)
 - Connexion centralisee/partagee sur le domaine et sous-domaines
 - Utilisateur connecte: creer/rejoindre un lobby
-- Lobby configurable uniquement par son createur
+- Lobby configurable uniquement par son createur, avec visibilite public/prive modifiable depuis le lobby
 - Musiques organisees en categories (films, dessins animes, series, animes, Disney, etc.)
 - Musiques organisees en familles (ex: plusieurs themes d'une meme oeuvre)
 - Aucune piste audio stockee en DB: uniquement des identifiants video YouTube
 - Lecture via player YouTube avec video cachee
+- Option de lobby pour afficher la categorie de la musique pendant la manche
+- Option de lobby pour autoriser un vote de revelation anticipee si personne n'a trouve la reponse
 - Lecture synchronisee entre tous les joueurs d'un lobby
+- Images de profil issues de `users.avatar_url` affichees dans les listes de joueurs et le classement
 - Administrateurs de catalogue definis par le droit central `melodyquest.catalog.manage` (`core_*`) ou par le super-admin global
 - Administrateurs: gestion du catalogue (categories, familles, musiques)
 
@@ -58,10 +61,10 @@ Les flux `login/register/logout/me` passent par ce client auth partage.
 ## Etat client actuel
 
 - Vue `public`: login/register
-- Vue `main`: menu principal (1 bouton rejoindre, 1 bouton creer)
+- Vue `main`: menu principal (creer un salon public/prive, rejoindre par code, salons publics)
 - Vue `lobby-list`: lobbies publics en cours + rejoindre par code
-- Vue `lobby`: page lobby (gestion owner + gameplay)
-- Vue `game`: partie en cours avec lecteur YouTube synchronise a gauche sur desktop, reponse/classement/code lobby en colonne droite, puis empilement responsive sur mobile
+- Vue `lobby`: page lobby (joueurs avec avatars, reglages owner, visibilite public/prive, categorie visible, vote de revelation)
+- Vue `game`: partie en cours avec lecteur YouTube synchronise a gauche sur desktop, reponse/classement/code lobby en colonne droite, solution lisible sous la video, vote de revelation anticipee, puis empilement responsive sur mobile
 - Vue `management`: hub management global
 - Vue `management-categories`: gestion categories
 - Vue `management-families`: gestion familles
@@ -75,6 +78,7 @@ Les flux `login/register/logout/me` passent par ce client auth partage.
 - Les en-tetes de pages restent compacts par defaut afin de garder les actions principales visibles sans defilement inutile.
 - Layout desktop de la page jeu concu pour tenir sur un ecran PC courant: scene video a gauche, actions et classement a droite.
 - Layout mobile empile les sections et conserve le lecteur en ratio 16:9.
+- La solution affiche l'oeuvre en grand sous la video, puis les infos de musique/artiste en plus petit; la categorie apparait uniquement si l'option du lobby est activee.
 
 ## Lancer en local
 

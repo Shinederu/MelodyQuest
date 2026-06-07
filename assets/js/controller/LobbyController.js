@@ -49,7 +49,7 @@ export class LobbyController {
   async bootstrap() {
     const code = this.getLobbyCode();
     if (!code) {
-      this.setStatus("Aucun lobby selectionne", false);
+      this.setStatus("Aucun lobby sélectionné", false);
       return;
     }
 
@@ -211,18 +211,24 @@ export class LobbyController {
     const displayConfig = this.configDirty ? this.getDraftConfig(lobby) : this.getServerConfig(lobby);
 
     if (header) header.textContent = displayConfig.name || lobby?.name || "Salon";
-    if (meta) meta.textContent = `Code ${lobby?.lobby_code || ""} - ${players.length}/${lobby?.max_players || 0} joueurs`;
+    if (meta) {
+      const visibilityLabel = displayConfig.visibility === "private" ? "privé" : "public";
+      meta.textContent = `Code ${lobby?.lobby_code || ""} - ${players.length}/${lobby?.max_players || 0} joueurs - Salon ${visibilityLabel}`;
+    }
     if (rounds) rounds.textContent = `${Number(lobby?.rounds_finished || 0)} / ${Number(lobby?.total_rounds || 0)} manches`;
-    if (timer) timer.textContent = `${Number(lobby?.round_duration_seconds || 0)}s par reponse`;
+    if (timer) timer.textContent = `${Number(lobby?.round_duration_seconds || 0)}s par réponse`;
 
     if (playersHost) {
       playersHost.innerHTML = players.map((player) => {
         const canKick = this.isOwner() && Number(player.user_id || 0) !== Number(this.user?.id || 0);
         return `
           <li class="mq-list-row">
-            <div>
-              <strong>${this.escapeHtml(player.username || "joueur")}</strong>
-              <span class="mq-muted">${this.escapeHtml(player.role || "player")} - ${Number(player.score || 0)} pt</span>
+            <div class="mq-player-line">
+              ${this.renderAvatar(player)}
+              <div>
+                <strong>${this.escapeHtml(player.username || "joueur")}</strong>
+                <span class="mq-muted">${this.escapeHtml(this.formatPlayerRole(player.role))} - ${Number(player.score || 0)} pt</span>
+              </div>
             </div>
             ${canKick ? `<button type="button" class="mq-danger mq-inline-btn" data-kick-user="${Number(player.user_id || 0)}">Exclure</button>` : ""}
           </li>
@@ -247,6 +253,9 @@ export class LobbyController {
     const categoriesForm = document.getElementById("lobby-config-categories");
     const roundsInput = document.getElementById("lobby-config-rounds");
     const timerInput = document.getElementById("lobby-config-timer");
+    const publicInput = document.getElementById("lobby-config-public");
+    const showCategoryInput = document.getElementById("lobby-config-show-category");
+    const earlyRevealInput = document.getElementById("lobby-config-early-reveal");
     if (!categoriesForm) return;
 
     const editable = this.isOwner();
@@ -263,12 +272,24 @@ export class LobbyController {
       timerInput.value = Number.isFinite(source.round_duration_seconds) ? String(source.round_duration_seconds) : "";
       timerInput.disabled = !editable;
     }
+    if (publicInput) {
+      publicInput.checked = source.visibility !== "private";
+      publicInput.disabled = !editable;
+    }
+    if (showCategoryInput) {
+      showCategoryInput.checked = Boolean(source.show_track_category);
+      showCategoryInput.disabled = !editable;
+    }
+    if (earlyRevealInput) {
+      earlyRevealInput.checked = Boolean(source.allow_early_reveal_vote);
+      earlyRevealInput.disabled = !editable;
+    }
 
     const selected = new Set((source.selected_category_ids || []).map((id) => Number(id)));
     categoriesForm.innerHTML = this.categories.map((category) => `
       <label class="mq-check">
         <input type="checkbox" value="${Number(category.id || 0)}" ${selected.has(Number(category.id || 0)) ? "checked" : ""} ${editable ? "" : "disabled"} />
-        <span>${this.escapeHtml(category.name || "Categorie")} (${this.getCategoryTrackCount(category)})</span>
+        <span>${this.escapeHtml(category.name || "Catégorie")} (${this.getCategoryTrackCount(category)})</span>
       </label>
     `).join("");
 
@@ -280,6 +301,9 @@ export class LobbyController {
     const nameInput = document.getElementById("lobby-config-name");
     const roundsInput = document.getElementById("lobby-config-rounds");
     const timerInput = document.getElementById("lobby-config-timer");
+    const publicInput = document.getElementById("lobby-config-public");
+    const showCategoryInput = document.getElementById("lobby-config-show-category");
+    const earlyRevealInput = document.getElementById("lobby-config-early-reveal");
     const categoryInputs = document.querySelectorAll("#lobby-config-categories input");
     const handleInput = () => this.handleConfigInput(lobby);
     const handleCategoryChange = () => this.handleConfigInput(lobby, true);
@@ -287,6 +311,9 @@ export class LobbyController {
     if (nameInput) nameInput.oninput = handleInput;
     if (roundsInput) roundsInput.oninput = handleInput;
     if (timerInput) timerInput.oninput = handleInput;
+    if (publicInput) publicInput.onchange = handleCategoryChange;
+    if (showCategoryInput) showCategoryInput.onchange = handleCategoryChange;
+    if (earlyRevealInput) earlyRevealInput.onchange = handleCategoryChange;
     categoryInputs.forEach((input) => {
       input.onchange = handleCategoryChange;
     });
@@ -313,8 +340,11 @@ export class LobbyController {
   getServerConfig(lobby) {
     return {
       name: this.normalizeLobbyName(lobby?.name, "Nouveau salon"),
+      visibility: String(lobby?.visibility || "private").toLowerCase() === "private" ? "private" : "public",
       total_rounds: Number.parseInt(lobby?.total_rounds ?? 5, 10),
       round_duration_seconds: Number.parseInt(lobby?.round_duration_seconds ?? 30, 10),
+      show_track_category: this.toBool(lobby?.show_track_category),
+      allow_early_reveal_vote: this.toBool(lobby?.allow_early_reveal_vote ?? true),
       selected_category_ids: (Array.isArray(lobby?.selected_category_ids) ? lobby.selected_category_ids : []).map(Number),
     };
   }
@@ -331,8 +361,11 @@ export class LobbyController {
         document.getElementById("lobby-config-name")?.value,
         this.getServerConfig(lobby).name
       ),
+      visibility: document.getElementById("lobby-config-public")?.checked ? "public" : "private",
       total_rounds: this.parseIntegerInput(document.getElementById("lobby-config-rounds")?.value),
       round_duration_seconds: this.parseIntegerInput(document.getElementById("lobby-config-timer")?.value),
+      show_track_category: document.getElementById("lobby-config-show-category")?.checked === true,
+      allow_early_reveal_vote: document.getElementById("lobby-config-early-reveal")?.checked === true,
       selected_category_ids: Array.from(document.querySelectorAll("#lobby-config-categories input:checked"))
         .map((input) => Number(input.value))
         .filter((value) => value > 0),
@@ -351,7 +384,7 @@ export class LobbyController {
     if (!lobbyId) return;
 
     const res = await window.httpClient.leaveLobby(lobbyId);
-    this.setStatus(res.success ? "Salon quitte" : (res.error || "Erreur"), res.success);
+    this.setStatus(res.success ? "Salon quitté" : (res.error || "Erreur"), res.success);
     if (res.success) {
       clearCurrentLobby();
       window.appCtrl.changeView("main");
@@ -387,13 +420,16 @@ export class LobbyController {
 
     this.configSaveInFlight = true;
     this.pendingConfigSave = false;
-    this.setStatus("Reglages en cours d'application...", true);
+    this.setStatus("Réglages en cours d'application...", true);
 
     const res = await window.httpClient.updateLobbyConfig({
       lobby_id: lobbyId,
       name: draft.name,
+      visibility: draft.visibility === "private" ? "private" : "public",
       total_rounds: Number(draft.total_rounds || 5),
       round_duration_seconds: Number(draft.round_duration_seconds || 30),
+      show_track_category: Boolean(draft.show_track_category),
+      allow_early_reveal_vote: Boolean(draft.allow_early_reveal_vote),
       selected_category_ids: Array.isArray(draft.selected_category_ids) ? draft.selected_category_ids : [],
     });
 
@@ -407,7 +443,7 @@ export class LobbyController {
       this.currentLobby = res.data.lobby;
       setCurrentLobby(this.currentLobby);
       this.renderLobby(res.data);
-      this.setStatus("Reglages sauvegardes", true);
+      this.setStatus("Réglages sauvegardés", true);
     } else {
       this.updateConfigUiState(draft, true, validation);
       this.setStatus(res.error || "Erreur", false);
@@ -444,7 +480,7 @@ export class LobbyController {
     }
 
     const res = await window.httpClient.startRound(lobbyId);
-    this.setStatus(res.success ? "Partie lancee" : (res.error || "Erreur"), res.success);
+    this.setStatus(res.success ? "Partie lancée" : (res.error || "Erreur"), res.success);
     if (res.success) {
       localStorage.removeItem("mq_last_scoreboard");
       window.appCtrl.changeView("game");
@@ -456,7 +492,7 @@ export class LobbyController {
     if (!lobbyId) return;
 
     const res = await window.httpClient.deleteLobby(lobbyId);
-    this.setStatus(res.success ? "Salon supprime" : (res.error || "Erreur"), res.success);
+    this.setStatus(res.success ? "Salon supprimé" : (res.error || "Erreur"), res.success);
     if (res.success) {
       clearCurrentLobby();
       window.appCtrl.changeView("main");
@@ -468,7 +504,7 @@ export class LobbyController {
     if (!lobbyId || targetUserId <= 0) return;
 
     const res = await window.httpClient.kickPlayer(lobbyId, targetUserId);
-    this.setStatus(res.success ? "Joueur retire du salon" : (res.error || "Erreur"), res.success);
+    this.setStatus(res.success ? "Joueur retiré du salon" : (res.error || "Erreur"), res.success);
     if (res.success && res.data?.lobby) {
       this.currentLobby = res.data.lobby;
       setCurrentLobby(this.currentLobby);
@@ -481,7 +517,7 @@ export class LobbyController {
     if (!lobbyId) return;
     const res = await window.httpClient.getRoundState(lobbyId);
     if (!silent || !res.success) {
-      this.setStatus(res.success ? "Salon pret" : (res.error || "Erreur"), res.success);
+      this.setStatus(res.success ? "Salon prêt" : (res.error || "Erreur"), res.success);
     }
     if (res.success && res.data?.round) {
       const status = String(res.data.round.status || "").toLowerCase();
@@ -516,7 +552,7 @@ export class LobbyController {
     const res = await window.httpClient.touchLobby(lobbyId);
     if (res.success) return;
 
-    if (/lobby introuvable/i.test(String(res.error || "")) || /utilisateur non present/i.test(String(res.error || ""))) {
+    if (/lobby introuvable/i.test(String(res.error || "")) || /utilisateur non pr[eé]sent/i.test(String(res.error || ""))) {
       this.exitLobbyIfActive();
     }
   }
@@ -529,6 +565,35 @@ export class LobbyController {
 
   isOwner() {
     return Number(this.currentLobby?.owner_user_id || 0) === Number(this.user?.id || 0);
+  }
+
+  renderAvatar(player) {
+    const username = String(player?.username || "joueur");
+    const avatarUrl = String(player?.avatar_url || "").trim();
+    if (avatarUrl) {
+      return `<img class="mq-avatar" src="${this.escapeAttr(avatarUrl)}" alt="" loading="lazy" />`;
+    }
+
+    return `<span class="mq-avatar mq-avatar--fallback" aria-hidden="true">${this.escapeHtml(this.getInitials(username))}</span>`;
+  }
+
+  getInitials(username) {
+    const parts = String(username || "joueur").trim().split(/\s+/).filter(Boolean);
+    const letters = parts.length > 1
+      ? `${parts[0][0] || ""}${parts[1][0] || ""}`
+      : String(parts[0] || "j").slice(0, 2);
+
+    return letters.toUpperCase();
+  }
+
+  formatPlayerRole(role) {
+    return String(role || "").toLowerCase() === "owner" ? "créateur" : "joueur";
+  }
+
+  toBool(value) {
+    if (typeof value === "boolean") return value;
+    if (typeof value === "number") return value === 1;
+    return ["1", "true", "yes", "on"].includes(String(value ?? "").trim().toLowerCase());
   }
 
   escapeHtml(value) {
@@ -549,8 +614,11 @@ export class LobbyController {
     if (!config || typeof config !== "object") return "";
     return JSON.stringify({
       name: this.normalizeLobbyName(config.name, "Nouveau salon"),
+      visibility: config.visibility === "private" ? "private" : "public",
       total_rounds: Number.parseInt(config.total_rounds ?? 0, 10),
       round_duration_seconds: Number.parseInt(config.round_duration_seconds ?? 0, 10),
+      show_track_category: Boolean(config.show_track_category),
+      allow_early_reveal_vote: Boolean(config.allow_early_reveal_vote),
       selected_category_ids: Array.isArray(config.selected_category_ids) ? config.selected_category_ids.map(Number) : [],
     });
   }
@@ -587,7 +655,7 @@ export class LobbyController {
     const issues = [];
 
     if (selectedCategoryIds.length === 0) {
-      issues.push("Selectionne au moins une categorie.");
+      issues.push("Sélectionne au moins une catégorie.");
     }
     if (!Number.isInteger(totalRounds) || totalRounds < MIN_TOTAL_ROUNDS || totalRounds > MAX_TOTAL_ROUNDS) {
       issues.push(`Le nombre de manches doit etre compris entre ${MIN_TOTAL_ROUNDS} et ${MAX_TOTAL_ROUNDS}.`);
@@ -615,19 +683,19 @@ export class LobbyController {
 
     if (helper) {
       if (!editable) {
-        helper.textContent = `${review.selectedCount} categorie(s) selectionnee(s) - ${review.availableTracks} musique(s) disponible(s).`;
+        helper.textContent = `${review.selectedCount} catégorie(s) sélectionnée(s) - ${review.availableTracks} musique(s) disponible(s).`;
         helper.className = "mq-muted";
       } else if (review.issues.length) {
         helper.textContent = review.issues[0];
         helper.className = "status error";
       } else if (this.configSaveInFlight) {
-        helper.textContent = "Reglages en cours d'application...";
+        helper.textContent = "Réglages en cours d'application...";
         helper.className = "status";
       } else if (this.configDirty) {
-        helper.textContent = `${review.selectedCount} categorie(s) selectionnee(s) - ${review.availableTracks} musique(s) disponibles.`;
+        helper.textContent = `${review.selectedCount} catégorie(s) sélectionnée(s) - ${review.availableTracks} musique(s) disponibles.`;
         helper.className = "status success";
       } else {
-        helper.textContent = `Reglages sauvegardes - ${review.selectedCount} categorie(s) - ${review.availableTracks} musique(s) disponibles.`;
+        helper.textContent = `Réglages sauvegardés - ${review.selectedCount} catégorie(s) - ${review.availableTracks} musique(s) disponibles.`;
         helper.className = "mq-muted";
       }
     }

@@ -66,11 +66,13 @@ export class GameController {
     this.correctUnlockedRoundId = 0;
     this.correctUnlockedScore = 0;
     this.localNextVoteRoundId = 0;
+    this.localRevealVoteRoundId = 0;
     this.roundRefreshRequested = false;
     this.roundRefreshTimeout = null;
     this.advanceRefreshTimeout = null;
     this.roundRefreshInFlight = false;
     this.nextVoteRequestInFlight = false;
+    this.revealVoteRequestInFlight = false;
     this.videoRenderKey = "";
     this.autoNextEnabled = localStorage.getItem(AUTO_NEXT_STORAGE_KEY) === "1";
     this.resultNavigationTriggered = false;
@@ -92,6 +94,7 @@ export class GameController {
 
     document.getElementById("btn-game-submit")?.addEventListener("click", () => this.submitAnswer());
     document.getElementById("btn-game-next")?.addEventListener("click", () => this.voteNextRound(false));
+    document.getElementById("btn-game-reveal")?.addEventListener("click", () => this.voteRevealRound());
     document.getElementById("btn-game-leave")?.addEventListener("click", () => this.leaveLobby());
     document.getElementById("btn-game-toggle-code")?.addEventListener("click", () => this.toggleLobbyCodeVisibility());
     document.getElementById("game-answer")?.addEventListener("keydown", (event) => {
@@ -127,7 +130,7 @@ export class GameController {
   async bootstrap() {
     const code = String(this.currentLobby?.lobby_code || "");
     if (!code) {
-      this.setStatus("Aucun lobby selectionne", false);
+      this.setStatus("Aucun lobby sélectionné", false);
       return;
     }
 
@@ -198,8 +201,10 @@ export class GameController {
     this.correctUnlockedRoundId = 0;
     this.correctUnlockedScore = 0;
     this.localNextVoteRoundId = 0;
+    this.localRevealVoteRoundId = 0;
     this.roundRefreshRequested = false;
     this.nextVoteRequestInFlight = false;
+    this.revealVoteRequestInFlight = false;
     this.videoRenderKey = "";
     this.resultNavigationTriggered = false;
 
@@ -364,6 +369,8 @@ export class GameController {
     const fallbackEntries = this.players.map((player, index) => ({
       user_id: Number(player.user_id || 0),
       username: String(player.username || "joueur"),
+      avatar_url: String(player.avatar_url || ""),
+      role: String(player.role || "player"),
       score: Number(player.score || 0),
       _order: index,
     }));
@@ -371,6 +378,8 @@ export class GameController {
       .map((entry, index) => ({
         user_id: Number(entry.user_id || 0),
         username: String(entry.username || "joueur"),
+        avatar_url: String(entry.avatar_url || ""),
+        role: String(entry.role || "player"),
         score: Number(entry.score || 0),
         _order: index,
       }))
@@ -381,8 +390,12 @@ export class GameController {
 
     list.innerHTML = source.map((entry, index) => `
       <li class="mq-list-row">
-        <div>
-          <strong>${this.formatRank(index + 1)} ${this.escapeHtml(entry.username)}</strong>
+        <div class="mq-player-line">
+          ${this.renderAvatar(entry)}
+          <div>
+            <strong>${this.formatRank(index + 1)} ${this.escapeHtml(entry.username)}</strong>
+            <span class="mq-muted">${this.escapeHtml(this.formatPlayerRole(entry.role))}</span>
+          </div>
         </div>
         <span class="mq-chip">${Number(entry.score || 0)} pt</span>
       </li>
@@ -412,10 +425,12 @@ export class GameController {
     const answerClosed = this.isAnswerWindowClosed(round);
     const revealVisible = hasCorrectAnswer || answerClosed || Boolean(round?.is_reveal_visible);
     const nextVoteAvailable = this.isNextVoteAvailable(round);
+    const earlyRevealAvailable = this.isEarlyRevealVoteAvailable(round, answerClosed);
 
     this.renderTimer(round, answerClosed, nextVoteAvailable);
     this.renderVideo(round?.track, revealVisible);
     this.renderAnswerPhase(round, userAnswer, hasCorrectAnswer, answerClosed);
+    this.renderRevealVotePhase(round, earlyRevealAvailable);
     this.renderVotePhase(round, answerClosed, nextVoteAvailable);
 
     if (answerClosed && !this.roundRefreshRequested) {
@@ -492,9 +507,9 @@ export class GameController {
       const totalMs = Math.max(1000, Number(this.currentLobby?.round_duration_seconds || 30) * 1000);
       const remainingMs = Math.max(0, this.getAnswerDeadlineMs(round) - this.getNowMs());
       const remaining = Math.max(0, Math.ceil(remainingMs / 1000));
-      title.textContent = "Video cachee";
-      copy.textContent = `Reponds dans ${remaining}s.`;
-      hint.textContent = "Ecoute l'extrait et trouve la bonne reponse pour reveler la video.";
+      title.textContent = "Vidéo cachée";
+      copy.textContent = `Réponds dans ${remaining}s.`;
+      hint.textContent = "Écoute l'extrait et trouve la bonne réponse pour révéler la vidéo.";
       this.renderTimerRing(ring, 1 - (remainingMs / totalMs));
       return;
     }
@@ -503,15 +518,15 @@ export class GameController {
       const revealDelayMs = Math.max(1000, this.getRevealDelaySeconds(round) * 1000);
       const remainingMs = Math.max(0, this.getNextVoteAvailableMs(round) - this.getNowMs());
       const remaining = Math.max(0, Math.ceil(remainingMs / 1000));
-      title.textContent = "Solution revelee";
+      title.textContent = "Solution révélée";
       copy.textContent = `Passage au vote dans ${remaining}s.`;
-      hint.textContent = "Observe la reponse et prepare le passage a la manche suivante.";
+      hint.textContent = "Observe la réponse et prépare le passage à la manche suivante.";
       this.renderTimerRing(ring, 1 - (remainingMs / revealDelayMs));
       return;
     }
 
     title.textContent = "Vote disponible";
-    copy.textContent = "Le passage a la manche suivante est ouvert.";
+    copy.textContent = "Le passage à la manche suivante est ouvert.";
     hint.textContent = "Attends le reste du lobby ou active le suivant automatique.";
     this.renderTimerRing(ring, 1);
   }
@@ -551,15 +566,42 @@ export class GameController {
 
     if (hasCorrectAnswer && !answerClosed) {
       const awardedScore = Number(userAnswer?.score_awarded || this.correctUnlockedScore || 0);
-      lockedTitle.textContent = "Bonne reponse";
+      lockedTitle.textContent = "Bonne réponse";
       lockedCopy.textContent = awardedScore > 0
-        ? `+${awardedScore} pt. La video est desormais disponible pour toi.`
-        : "La video est desormais disponible pour toi.";
+        ? `+${awardedScore} pt. La vidéo est désormais disponible pour toi.`
+        : "La vidéo est désormais disponible pour toi.";
       return;
     }
 
     lockedTitle.textContent = "Solution";
-    lockedCopy.textContent = solutionText || "Le chrono est termine pour cette manche.";
+    lockedCopy.textContent = solutionText || "Le chrono est terminé pour cette manche.";
+  }
+
+  renderRevealVotePhase(round, isAvailable) {
+    const panel = document.getElementById("game-reveal-vote");
+    const info = document.getElementById("game-reveal-vote-info");
+    const summary = document.getElementById("game-reveal-vote-summary");
+    const button = document.getElementById("btn-game-reveal");
+    if (!panel || !info || !summary || !button) return;
+
+    if (!isAvailable) {
+      panel.hidden = true;
+      return;
+    }
+
+    panel.hidden = false;
+
+    const playersCount = Math.max(1, this.players.length);
+    const requiredCount = Math.max(1, Math.ceil(playersCount * 0.5));
+    const voteCount = this.getEarlyRevealVoteCount(round);
+    const hasVoted = this.hasCurrentUserVotedReveal(round);
+
+    info.textContent = hasVoted
+      ? "Ton vote est enregistré. Si assez de joueurs votent, la réponse sera révélée."
+      : "Vote pour révéler la réponse maintenant si le groupe est bloqué.";
+    summary.textContent = `${voteCount} / ${requiredCount} votes pour révéler la réponse`;
+    button.disabled = hasVoted || this.revealVoteRequestInFlight;
+    button.textContent = hasVoted ? "Vote enregistré" : "Révéler la réponse";
   }
 
   renderVotePhase(round, answerClosed, nextVoteAvailable) {
@@ -587,7 +629,7 @@ export class GameController {
       + (!serverHasCurrentVote && this.localNextVoteRoundId === Number(round?.id || 0) ? 1 : 0);
     const hasVoted = this.hasCurrentUserVoted(round);
 
-    summary.textContent = `${readyCount} / ${requiredCount} votes pour passer a la manche suivante`;
+    summary.textContent = `${readyCount} / ${requiredCount} votes pour passer à la manche suivante`;
 
     if (!nextVoteAvailable) {
       const remaining = Math.max(0, Math.ceil((this.getNextVoteAvailableMs(round) - this.getNowMs()) / 1000));
@@ -597,20 +639,19 @@ export class GameController {
     }
 
     info.textContent = hasVoted
-      ? "Ton vote est enregistre. En attente du reste du lobby."
+      ? "Ton vote est enregistré. En attente du reste du lobby."
       : "Au moins 50% des joueurs doivent valider pour lancer la suite.";
     button.hidden = false;
     button.disabled = hasVoted || this.nextVoteRequestInFlight;
-    button.textContent = hasVoted ? "Vote enregistre" : "Passer au suivant";
+    button.textContent = hasVoted ? "Vote enregistré" : "Passer au suivant";
   }
 
   renderVideo(track, showVideo) {
     const host = document.getElementById("game-video");
     const guard = document.getElementById("game-video-guard");
-    const solution = document.getElementById("game-solution");
     const overlay = document.getElementById("game-video-overlay");
     const overlayHint = document.getElementById("game-video-overlay-hint");
-    if (!host || !solution || !overlay || !overlayHint) return;
+    if (!host || !overlay || !overlayHint) return;
 
     const videoId = String(track?.youtube_video_id || "");
     const renderKey = `${videoId}:${showVideo ? "visible" : "hidden"}`;
@@ -621,32 +662,72 @@ export class GameController {
         guard.hidden = !showVideo;
       }
       if (!videoId) {
-        overlayHint.textContent = "Aucune video exploitable n est disponible pour cette manche.";
+        overlayHint.textContent = "Aucune vidéo exploitable n'est disponible pour cette manche.";
       }
       this.videoRenderKey = renderKey;
     }
 
+    this.renderRoundCategory(track);
+    this.renderSolution(track, showVideo);
     this.ensurePlayer(videoId, showVideo);
+  }
 
-    if (showVideo) {
-      solution.textContent = this.buildSolutionText(track);
-      solution.className = "status success";
+  renderRoundCategory(track) {
+    const host = document.getElementById("game-round-category");
+    if (!host) return;
+
+    const category = String(track?.category_name || "").trim();
+    const shouldShow = Boolean(category) && this.toBool(this.currentLobby?.show_track_category);
+    host.hidden = !shouldShow;
+    host.textContent = shouldShow ? `Catégorie : ${category}` : "";
+  }
+
+  renderSolution(track, showVideo) {
+    const box = document.getElementById("game-solution");
+    const category = document.getElementById("game-solution-category");
+    const family = document.getElementById("game-solution-family");
+    const details = document.getElementById("game-solution-track");
+    if (!box || !category || !family || !details) return;
+
+    if (!showVideo || !track) {
+      box.hidden = true;
+      category.hidden = true;
+      category.textContent = "";
+      family.textContent = "";
+      details.textContent = "";
       return;
     }
 
-    solution.textContent = "";
-    solution.className = "status";
+    const parts = this.buildSolutionParts(track);
+    box.hidden = false;
+    family.textContent = parts.family || "Réponse inconnue";
+    details.textContent = parts.details || "";
+
+    if (parts.category && this.toBool(this.currentLobby?.show_track_category)) {
+      category.hidden = false;
+      category.textContent = parts.category;
+    } else {
+      category.hidden = true;
+      category.textContent = "";
+    }
   }
 
   buildSolutionText(track) {
-    const expected = String(track?.family_name || track?.title || "").trim();
-    const details = [String(track?.title || "").trim(), String(track?.artist || "").trim()].filter(Boolean);
-    if (!expected) {
-      return details.join(" - ");
-    }
+    const parts = this.buildSolutionParts(track);
+    return [parts.family, parts.details].filter(Boolean).join(" - ");
+  }
 
-    const extra = details.filter((value) => value !== expected).join(" - ");
-    return [expected, extra].filter(Boolean).join(" - ");
+  buildSolutionParts(track) {
+    const family = String(track?.family_name || track?.title || "").trim();
+    const title = String(track?.title || "").trim();
+    const artist = String(track?.artist || "").trim();
+    const category = String(track?.category_name || "").trim();
+    const details = [
+      title && title !== family ? title : "",
+      artist,
+    ].filter(Boolean).join(" - ");
+
+    return { family, details, category };
   }
 
   getCurrentUserAnswer() {
@@ -672,6 +753,41 @@ export class GameController {
 
     const currentUserId = Number(this.user?.id || 0);
     return this.players.some((player) => Number(player.user_id || 0) === currentUserId && Number(player.is_ready || 0) === 1);
+  }
+
+  hasCurrentUserVotedReveal(round) {
+    const roundId = Number(round?.id || 0);
+    if (roundId > 0 && this.localRevealVoteRoundId === roundId) {
+      return true;
+    }
+
+    const currentUserId = Number(this.user?.id || 0);
+    return (this.roundState?.early_reveal_votes ?? [])
+      .some((vote) => Number(vote.user_id || 0) === currentUserId);
+  }
+
+  getEarlyRevealVoteCount(round) {
+    const currentUserId = Number(this.user?.id || 0);
+    const votes = this.roundState?.early_reveal_votes ?? [];
+    const serverHasCurrentVote = votes.some((vote) => Number(vote.user_id || 0) === currentUserId);
+    const localVote = !serverHasCurrentVote && this.localRevealVoteRoundId === Number(round?.id || 0) ? 1 : 0;
+    return votes.length + localVote;
+  }
+
+  hasAnyCorrectAnswer() {
+    return (this.roundState?.answers ?? []).some((answer) => Number(answer.score_awarded || 0) > 0);
+  }
+
+  isEarlyRevealVoteAvailable(round, answerClosed) {
+    if (!this.toBool(this.currentLobby?.allow_early_reveal_vote)) {
+      return false;
+    }
+
+    if (answerClosed || String(round?.status || "").toLowerCase() !== "running") {
+      return false;
+    }
+
+    return !this.hasAnyCorrectAnswer();
   }
 
   getAnswerDeadlineMs(round) {
@@ -738,7 +854,7 @@ export class GameController {
     }
 
     if (this.isAnswerWindowClosed(round)) {
-      this.setAnswerFeedback("Le temps est ecoule.", "error");
+      this.setAnswerFeedback("Le temps est écoulé.", "error");
       this.clearAnswerInput();
       this.updateRoundPresentation();
       return;
@@ -751,7 +867,7 @@ export class GameController {
     const input = document.getElementById("game-answer");
     const answer = String(input?.value || "").trim();
     if (!answer) {
-      this.setAnswerFeedback("Reponse requise", "error");
+      this.setAnswerFeedback("Réponse requise", "error");
       return;
     }
 
@@ -764,7 +880,7 @@ export class GameController {
 
       this.setAnswerFeedback(res.error || "Erreur", "error");
       this.clearAnswerInput();
-      if (/temps de reponse est ecoule/i.test(String(res.error || ""))) {
+      if (/temps de r[eé]ponse est [eé]coul[eé]/i.test(String(res.error || ""))) {
         this.updateRoundPresentation();
       } else {
         this.flashWrongAnswer();
@@ -775,17 +891,64 @@ export class GameController {
     if (res.data?.is_correct) {
       this.correctUnlockedRoundId = Number(round.id || 0);
       this.correctUnlockedScore = Number(res.data?.score_awarded || 0);
-      this.setAnswerFeedback(`Bonne reponse, +${this.correctUnlockedScore} pt`, "success");
-      this.setStatus("Bonne reponse", true);
+      this.setAnswerFeedback(`Bonne réponse, +${this.correctUnlockedScore} pt`, "success");
+      this.setStatus("Bonne réponse", true);
       this.clearAnswerInput();
       this.updateRoundPresentation();
       return;
     }
 
-    this.setAnswerFeedback("Mauvaise reponse, reessaie.", "error");
-    this.setStatus("Mauvaise reponse", false);
+    this.setAnswerFeedback("Mauvaise réponse, réessaie.", "error");
+    this.setStatus("Mauvaise réponse", false);
     this.clearAnswerInput();
     this.flashWrongAnswer();
+  }
+
+  async voteRevealRound() {
+    const round = this.roundState?.round;
+    const answerClosed = round ? this.isAnswerWindowClosed(round) : true;
+    if (!round || !this.isEarlyRevealVoteAvailable(round, answerClosed) || this.hasCurrentUserVotedReveal(round) || this.revealVoteRequestInFlight) {
+      return;
+    }
+
+    this.revealVoteRequestInFlight = true;
+    const res = await window.httpClient.voteRevealRound(this.getLobbyId());
+    this.revealVoteRequestInFlight = false;
+
+    if (!res.success) {
+      if (this.shouldExitLobby(res.error)) {
+        this.exitLobbyIfActive();
+        return;
+      }
+
+      if (/d[eé]j[aà] trouv[eé]/i.test(String(res.error || ""))) {
+        this.refreshGameState();
+        return;
+      }
+
+      this.setStatus(res.error || "Erreur", false);
+      this.updateRoundPresentation();
+      return;
+    }
+
+    this.localRevealVoteRoundId = Number(round.id || 0);
+    const voteCount = Number(res.data?.votes_count || this.getEarlyRevealVoteCount(round));
+    const requiredCount = Number(res.data?.required_count || Math.max(1, Math.ceil(this.players.length * 0.5)));
+    this.setStatus(
+      res.data?.revealed
+        ? "Réponse révélée"
+        : `Vote de révélation enregistré (${voteCount}/${requiredCount})`,
+      true
+    );
+
+    if (res.data?.revealed) {
+      this.roundRefreshTimeout = window.setTimeout(() => {
+        this.roundRefreshTimeout = null;
+        this.refreshGameState();
+      }, 200);
+    }
+
+    this.updateRoundPresentation();
   }
 
   async voteNextRound(isAutomatic) {
@@ -821,10 +984,10 @@ export class GameController {
 
     const readyCount = Number(res.data?.ready_count || 0);
     const requiredCount = Number(res.data?.required_count || Math.max(1, Math.ceil(this.players.length * 0.5)));
-    const label = isAutomatic ? "Vote automatique enregistre" : "Vote enregistre";
+    const label = isAutomatic ? "Vote automatique enregistré" : "Vote enregistré";
     this.setStatus(
       res.data?.advanced
-        ? (res.data?.finished_game ? "Fin de partie" : "Manche suivante en preparation")
+        ? (res.data?.finished_game ? "Fin de partie" : "Manche suivante en préparation")
         : `${label} (${readyCount}/${requiredCount})`,
       true
     );
@@ -1204,7 +1367,7 @@ export class GameController {
 
   shouldExitLobby(error) {
     const text = String(error || "");
-    return /lobby introuvable/i.test(text) || /utilisateur non present/i.test(text);
+    return /lobby introuvable/i.test(text) || /utilisateur non pr[eé]sent/i.test(text);
   }
 
   exitLobbyIfActive() {
@@ -1216,6 +1379,35 @@ export class GameController {
   formatRank(rank) {
     if (rank === 1) return "1er";
     return `${rank}e`;
+  }
+
+  renderAvatar(player) {
+    const username = String(player?.username || "joueur");
+    const avatarUrl = String(player?.avatar_url || "").trim();
+    if (avatarUrl) {
+      return `<img class="mq-avatar" src="${this.escapeAttr(avatarUrl)}" alt="" loading="lazy" />`;
+    }
+
+    return `<span class="mq-avatar mq-avatar--fallback" aria-hidden="true">${this.escapeHtml(this.getInitials(username))}</span>`;
+  }
+
+  getInitials(username) {
+    const parts = String(username || "joueur").trim().split(/\s+/).filter(Boolean);
+    const letters = parts.length > 1
+      ? `${parts[0][0] || ""}${parts[1][0] || ""}`
+      : String(parts[0] || "j").slice(0, 2);
+
+    return letters.toUpperCase();
+  }
+
+  formatPlayerRole(role) {
+    return String(role || "").toLowerCase() === "owner" ? "créateur" : "joueur";
+  }
+
+  toBool(value) {
+    if (typeof value === "boolean") return value;
+    if (typeof value === "number") return value === 1;
+    return ["1", "true", "yes", "on"].includes(String(value ?? "").trim().toLowerCase());
   }
 
   escapeHtml(value) {

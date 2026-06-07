@@ -2,8 +2,8 @@
   <section class="mq-card mq-card--soft mq-lobby-action-bar">
     <div class="mq-card-heading mq-card-heading--compact">
       <div class="mq-kicker">Avant de lancer</div>
-      <h2>Invite tes joueurs, puis demarre</h2>
-      <p class="mq-card-copy">Le createur regle les manches et les categories. Les autres peuvent patienter ici.</p>
+      <h2>Invite tes joueurs, puis démarre</h2>
+      <p class="mq-card-copy">Le créateur règle les manches et les catégories. Les autres peuvent patienter ici.</p>
     </div>
     <div class="mq-actions">
       <button id="btn-lobby-leave" type="button" class="mq-danger">Quitter le salon</button>
@@ -22,9 +22,9 @@
 
     <section class="mq-card mq-card--soft">
       <div class="mq-card-heading">
-        <div class="mq-kicker">Reglages</div>
+        <div class="mq-kicker">Réglages</div>
         <h2>Partie</h2>
-        <p class="mq-card-copy">Ces options sont sauvegardees automatiquement avant le lancement.</p>
+        <p class="mq-card-copy">Ces options sont sauvegardées automatiquement avant le lancement.</p>
       </div>
       <div class="mq-grid">
         <div class="mq-field">
@@ -36,17 +36,32 @@
           <input id="lobby-config-rounds" type="number" min="1" max="1000" />
         </div>
         <div class="mq-field">
-          <label for="lobby-config-timer">Secondes par reponse</label>
+          <label for="lobby-config-timer">Secondes par réponse</label>
           <input id="lobby-config-timer" type="number" min="1" max="600" />
         </div>
       </div>
 
+      <div class="mq-lobby-options">
+        <label class="mq-check">
+          <input id="lobby-config-public" type="checkbox" />
+          <span>Afficher ce salon dans la liste publique</span>
+        </label>
+        <label class="mq-check">
+          <input id="lobby-config-show-category" type="checkbox" />
+          <span>Afficher la catégorie pendant la manche</span>
+        </label>
+        <label class="mq-check">
+          <input id="lobby-config-early-reveal" type="checkbox" />
+          <span>Autoriser le vote pour révéler la réponse si personne ne trouve</span>
+        </label>
+      </div>
+
       <div>
-        <p class="mq-section-label">Categories jouees</p>
+        <p class="mq-section-label">Catégories jouées</p>
         <div id="lobby-config-categories" class="mq-check-grid"></div>
       </div>
 
-      <p id="lobby-config-help" class="mq-muted">Chargement des reglages...</p>
+      <p id="lobby-config-help" class="mq-muted">Chargement des réglages...</p>
 
       <div class="mq-actions owner-only" style="display:none;">
         <button id="btn-lobby-start" type="button">Lancer la partie</button>

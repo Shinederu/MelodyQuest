@@ -2,9 +2,9 @@
   <div class="mq-player-dashboard">
     <section class="mq-card mq-card--accent mq-play-card">
       <div class="mq-card-heading">
-        <div class="mq-kicker">Depart rapide</div>
-        <h2>Creer ou rejoindre</h2>
-        <p class="mq-card-copy">Si tu organises la partie, cree un salon. Si quelqu'un t'a donne un code, colle-le ici.</p>
+        <div class="mq-kicker">Départ rapide</div>
+        <h2>Créer ou rejoindre</h2>
+        <p class="mq-card-copy">Si tu organises la partie, crée un salon. Si quelqu'un t'a donné un code, colle-le ici.</p>
       </div>
 
       <div class="mq-main-action-stack">
@@ -14,7 +14,11 @@
             <label for="main-lobby-name">Nom du salon</label>
             <input id="main-lobby-name" type="text" maxlength="120" placeholder="Blindtest du vendredi" />
           </div>
-          <button id="btn-main-create" type="button">Creer le salon</button>
+          <label class="mq-check mq-check--compact">
+            <input id="main-lobby-public" type="checkbox" checked />
+            <span>Visible dans la liste des salons publics</span>
+          </label>
+          <button id="btn-main-create" type="button">Créer le salon</button>
         </div>
 
         <div class="mq-main-action-block">
@@ -38,12 +42,12 @@
       <div class="mq-card-heading">
         <div class="mq-kicker">Public</div>
         <h2>Salons ouverts</h2>
-        <p class="mq-card-copy">La liste se met a jour pendant que tu regardes.</p>
+        <p class="mq-card-copy">La liste se met à jour pendant que tu regardes.</p>
       </div>
 
       <div class="mq-row">
         <span id="main-lobby-count" class="mq-chip">0 salon actif</span>
-        <button id="btn-main-refresh" type="button" class="mq-secondary">Rafraichir</button>
+        <button id="btn-main-refresh" type="button" class="mq-secondary">Rafraîchir</button>
       </div>
 
       <ul id="main-lobby-list" class="mq-clean-list"></ul>
