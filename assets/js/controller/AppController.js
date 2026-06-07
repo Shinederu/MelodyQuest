@@ -2,7 +2,7 @@ import { HttpService } from "../utils/HttpService.js?v=20260607-game-options";
 import { HeaderModel } from "../model/HeaderModel.js?v=20260607-header-pages";
 import { PublicController } from "./PublicController.js?v=20260606-public-auth-switch";
 import { MainController } from "./MainController.js?v=20260607-game-options";
-import { LobbyController } from "./LobbyController.js?v=20260607-lobby-bootstrap-fix";
+import { LobbyController } from "./LobbyController.js?v=20260607-lobby-avatar-fix";
 import { LobbyListController } from "./LobbyListController.js?v=20260607-game-options";
 import { GameController } from "./GameController.js?v=20260607-game-options";
 import { ResultController } from "./ResultController.js?v=20260606-player-flow";
@@ -12,7 +12,7 @@ import { ManagementFamiliesController } from "./ManagementFamiliesController.js?
 import { ManagementTracksController } from "./ManagementTracksController.js?v=20260606-clean-status";
 import { ManagementValidationController } from "./ManagementValidationController.js?v=20260607-validation-aliases";
 
-const ASSET_VERSION = "20260607-lobby-bootstrap-fix";
+const ASSET_VERSION = "20260607-lobby-avatar-fix";
 
 let currentUser = null;
 let headerManager = null;

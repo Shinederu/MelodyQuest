@@ -628,6 +628,10 @@ export class LobbyController {
       .replaceAll(">", "&gt;");
   }
 
+  escapeAttr(value) {
+    return this.escapeHtml(value).replaceAll('"', "&quot;");
+  }
+
   setStatus(text, ok) {
     const el = document.getElementById("lobby-status");
     if (!el) return;
