@@ -38,7 +38,7 @@ L'API `auth` utilise aussi ce meme schema partage avec ses variables (`DB_*`).
 - Option de lobby pour afficher la categorie de la musique pendant la manche
 - Option de lobby pour autoriser un vote de revelation anticipee si personne n'a trouve la reponse
 - Lecture synchronisee entre tous les joueurs d'un lobby
-- Images de profil issues de `users.avatar_url` affichees dans les listes de joueurs et le classement
+- Images de profil exposees par l'API MelodyQuest avec URL d'avatar normalisee depuis l'API Auth, affichees dans les listes de joueurs et le classement
 - Administrateurs de catalogue definis par le droit central `melodyquest.catalog.manage` (`core_*`) ou par le super-admin global
 - Administrateurs: gestion du catalogue (categories, familles, musiques)
 
