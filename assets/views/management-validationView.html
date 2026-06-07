@@ -3,13 +3,13 @@
     <div class="mq-admin-toolbar">
       <div class="mq-actions">
         <button id="btn-validation-back" type="button" class="mq-secondary">Retour management</button>
-        <button id="btn-validation-refresh" type="button">Rafraichir</button>
+        <button id="btn-validation-refresh" type="button">Rafraîchir</button>
       </div>
       <div class="mq-admin-toolbar__meta">
         <div class="mq-admin-toolbar__cluster">
           <span id="validation-count" class="mq-chip">0 musique en attente</span>
         </div>
-        <p id="validation-status" class="status">Selectionne une musique en attente pour verifier sa preview YouTube.</p>
+        <p id="validation-status" class="status">Sélectionne une musique en attente pour vérifier sa preview YouTube.</p>
       </div>
     </div>
   </section>
@@ -19,8 +19,8 @@
       <div class="mq-admin-pane__header">
         <div class="mq-card-heading">
           <div class="mq-kicker">File d'attente</div>
-          <h2>Musiques a verifier</h2>
-          <p class="mq-card-copy">Chaque nouvelle piste reste ici tant qu'un controle manuel n'a pas ete effectue.</p>
+          <h2>Musiques à vérifier</h2>
+          <p class="mq-card-copy">Chaque nouvelle piste reste ici tant qu'un contrôle manuel n'a pas été effectué.</p>
         </div>
         <span id="validation-count-inline" class="mq-chip">0 musique en attente</span>
       </div>
@@ -31,39 +31,50 @@
 
     <section class="mq-card mq-card--accent mq-admin-pane mq-admin-pane--sticky">
       <div class="mq-card-heading">
-        <div class="mq-kicker">Controle</div>
-        <h2 id="validation-detail-title">Aucune musique selectionnee</h2>
-        <p id="validation-detail-helper" class="mq-admin-helper">Choisis une piste en attente pour verifier sa video YouTube et la valider.</p>
+        <div class="mq-kicker">Contrôle</div>
+        <h2 id="validation-detail-title">Aucune musique sélectionnée</h2>
+        <p id="validation-detail-helper" class="mq-admin-helper">Choisis une piste en attente pour vérifier sa vidéo YouTube et la valider.</p>
       </div>
 
       <div class="mq-admin-form-grid">
         <div id="validation-detail-meta" class="mq-admin-item__meta">
-          <span class="mq-muted">Aucune piste n'est selectionnee pour le moment.</span>
+          <span class="mq-muted">Aucune piste n'est sélectionnée pour le moment.</span>
         </div>
 
         <div id="validation-edit-form" class="mq-admin-form-grid">
           <div class="mq-admin-form-split">
             <div class="mq-field">
-              <label for="validation-category">Categorie</label>
+              <label for="validation-category">Catégorie</label>
               <select id="validation-category" disabled></select>
             </div>
 
             <div class="mq-field">
-              <label for="validation-family-name">Oeuvre / reponse attendue</label>
-              <input id="validation-family-name" type="text" list="validation-family-options" placeholder="Ex: Pokemon" disabled />
+              <label for="validation-family-name">Œuvre / réponse attendue</label>
+              <input id="validation-family-name" type="text" list="validation-family-options" placeholder="Ex: Pokémon" disabled />
               <datalist id="validation-family-options"></datalist>
+            </div>
+          </div>
+
+          <div class="mq-field mq-validation-alias-field">
+            <label for="validation-alias-input">Alias acceptés</label>
+            <div class="mq-alias-editor">
+              <div class="mq-alias-editor__add">
+                <input id="validation-alias-input" type="text" placeholder="Ex: Pokémon, Pocket Monsters" disabled />
+                <button id="btn-validation-add-alias" type="button" class="mq-secondary mq-inline-btn" disabled>Ajouter</button>
+              </div>
+              <div id="validation-alias-list" class="mq-alias-list" aria-live="polite"></div>
             </div>
           </div>
 
           <div class="mq-admin-form-split">
             <div class="mq-field">
-              <label for="validation-track-title">Libelle de la piste</label>
+              <label for="validation-track-title">Libellé de la piste</label>
               <input id="validation-track-title" type="text" placeholder="Ex: Ending S1" disabled />
             </div>
 
             <div class="mq-field">
               <label for="validation-track-artist">Artiste / licence</label>
-              <input id="validation-track-artist" type="text" placeholder="Ex: Pokemon" disabled />
+              <input id="validation-track-artist" type="text" placeholder="Ex: Pokémon" disabled />
             </div>
           </div>
 

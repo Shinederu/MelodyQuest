@@ -1225,6 +1225,10 @@ input[type="range"] {
   padding: 0 10px;
 }
 
+.mq-validation-alias-field .mq-alias-editor__add input {
+  flex: 1 1 180px;
+}
+
 .mq-validation-video-shell,
 .mq-video-shell {
   position: relative;

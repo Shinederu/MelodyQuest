@@ -6,13 +6,23 @@ export class ManagementValidationController {
     this.categories = [];
     this.families = [];
     this.selectedId = null;
+    this.aliases = [];
+    this.aliasesAvailable = false;
+    this.aliasDirty = false;
 
     document.getElementById("btn-validation-back")?.addEventListener("click", () => window.appCtrl.changeView("management"));
     document.getElementById("btn-validation-refresh")?.addEventListener("click", () => this.refresh());
     document.getElementById("btn-validation-approve")?.addEventListener("click", () => this.validateSelected());
     document.getElementById("btn-validation-reject")?.addEventListener("click", () => this.rejectSelected());
     document.getElementById("btn-validation-open-youtube")?.addEventListener("click", () => this.openSelectedTrackOnYouTube());
-    document.getElementById("validation-category")?.addEventListener("change", () => this.renderFamilyOptions());
+    document.getElementById("btn-validation-add-alias")?.addEventListener("click", () => this.addAliasFromInput());
+    document.getElementById("validation-category")?.addEventListener("change", () => {
+      this.renderFamilyOptions();
+      this.syncAliasesFromSelectedFamily();
+    });
+    document.getElementById("validation-family-name")?.addEventListener("input", () => this.syncAliasesFromSelectedFamily());
+    document.getElementById("validation-family-name")?.addEventListener("change", () => this.syncAliasesFromSelectedFamily());
+    document.getElementById("validation-alias-input")?.addEventListener("keydown", (event) => this.handleAliasInputKeydown(event));
     document.getElementById("validation-youtube-url")?.addEventListener("input", () => this.updatePreviewFromForm());
     document.getElementById("validation-track-title")?.addEventListener("input", () => this.updateTitleFromForm());
 
@@ -34,6 +44,7 @@ export class ManagementValidationController {
     this.items = pendingRes.data?.items ?? [];
     this.categories = catRes.success ? (catRes.data?.items ?? []) : [];
     this.families = famRes.success ? (famRes.data?.items ?? []) : [];
+    this.aliasesAvailable = famRes.success;
     this.renderCategoryOptions();
     this.renderCounters();
     this.renderList();
@@ -66,7 +77,7 @@ export class ManagementValidationController {
     const selectedItem = this.getSelectedItem();
     const currentValue = Number(select.value || selectedItem?.category_id || 0);
     select.innerHTML = `
-      <option value="">Choisir une categorie</option>
+      <option value="">Choisir une catégorie</option>
       ${this.categories.map((item) => `<option value="${Number(item.id)}">${this.escapeHtml(item.name)}</option>`).join("")}
     `;
 
@@ -107,7 +118,7 @@ export class ManagementValidationController {
       list.innerHTML = `
         <div class="mq-admin-empty">
           <strong>Aucune musique en attente</strong>
-          <p class="mq-muted">Toutes les pistes actuellement en base ont deja ete validees.</p>
+          <p class="mq-muted">Toutes les pistes actuellement en base ont déjà été validées.</p>
         </div>
       `;
       return;
@@ -117,11 +128,11 @@ export class ManagementValidationController {
       <button type="button" class="mq-admin-item ${Number(item.id) === Number(this.selectedId) ? "is-selected" : ""}" data-id="${Number(item.id)}">
         <strong>${this.escapeHtml(item.title || "Sans titre")}</strong>
         <div class="mq-admin-item__meta">
-          <span class="mq-admin-badge">${this.escapeHtml(item.category_name || "Sans categorie")}</span>
-          <span class="mq-admin-badge">${this.escapeHtml(item.family_name || "Sans oeuvre")}</span>
-          <span class="mq-admin-badge mq-admin-badge--pending">A valider</span>
+          <span class="mq-admin-badge">${this.escapeHtml(item.category_name || "Sans catégorie")}</span>
+          <span class="mq-admin-badge">${this.escapeHtml(item.family_name || "Sans œuvre")}</span>
+          <span class="mq-admin-badge mq-admin-badge--pending">À valider</span>
           ${item.artist ? `<span class="mq-muted">${this.escapeHtml(item.artist)}</span>` : ""}
-          <span class="mq-muted">Ajoutee le ${this.escapeHtml(this.formatDate(item.created_at))}</span>
+          <span class="mq-muted">Ajoutée le ${this.escapeHtml(this.formatDate(item.created_at))}</span>
         </div>
       </button>
     `).join("");
@@ -145,9 +156,9 @@ export class ManagementValidationController {
 
     const item = this.getSelectedItem();
     if (!item) {
-      if (title) title.textContent = "Aucune musique selectionnee";
-      if (helper) helper.textContent = "Choisis une piste en attente pour verifier sa video YouTube et la valider.";
-      if (meta) meta.innerHTML = `<span class="mq-muted">Aucune piste n'est selectionnee pour le moment.</span>`;
+      if (title) title.textContent = "Aucune musique sélectionnée";
+      if (helper) helper.textContent = "Choisis une piste en attente pour vérifier sa vidéo YouTube et la valider.";
+      if (meta) meta.innerHTML = `<span class="mq-muted">Aucune piste n'est sélectionnée pour le moment.</span>`;
       if (created) created.textContent = "Date d'ajout indisponible";
       if (approve) approve.disabled = true;
       if (reject) reject.disabled = true;
@@ -159,17 +170,17 @@ export class ManagementValidationController {
     this.fillForm(item);
 
     if (helper) {
-      helper.textContent = "Corrige si besoin la categorie, l'oeuvre, le libelle ou l'URL YouTube avant de valider la musique.";
+      helper.textContent = "Corrige si besoin la catégorie, l'œuvre, les alias, le libellé ou l'URL YouTube avant de valider la musique.";
     }
     if (meta) {
       meta.innerHTML = `
-        <span class="mq-admin-badge">${this.escapeHtml(item.category_name || "Sans categorie")}</span>
-        <span class="mq-admin-badge">${this.escapeHtml(item.family_name || "Sans oeuvre")}</span>
-        ${item.created_by_username ? `<span class="mq-muted">Ajoutee par ${this.escapeHtml(item.created_by_username)}</span>` : ""}
+        <span class="mq-admin-badge">${this.escapeHtml(item.category_name || "Sans catégorie")}</span>
+        <span class="mq-admin-badge">${this.escapeHtml(item.family_name || "Sans œuvre")}</span>
+        ${item.created_by_username ? `<span class="mq-muted">Ajoutée par ${this.escapeHtml(item.created_by_username)}</span>` : ""}
       `;
     }
     if (created) {
-      created.textContent = `Ajoutee le ${this.formatDate(item.created_at)}`;
+      created.textContent = `Ajoutée le ${this.formatDate(item.created_at)}`;
     }
     if (approve) approve.disabled = false;
     if (reject) reject.disabled = false;
@@ -193,6 +204,8 @@ export class ManagementValidationController {
     if (artist) artist.value = item.artist || "";
     if (youtube) youtube.value = item.youtube_url || item.youtube_video_id || "";
 
+    this.aliasDirty = false;
+    this.setAliases(this.getAliasesForTrack(item), { markDirty: false });
     this.renderFamilyOptions();
   }
 
@@ -209,6 +222,8 @@ export class ManagementValidationController {
     if (artist) artist.value = "";
     if (youtube) youtube.value = "";
 
+    this.aliasDirty = false;
+    this.setAliases([], { markDirty: false });
     this.renderFamilyOptions();
     this.setFormDisabled(true);
   }
@@ -223,6 +238,12 @@ export class ManagementValidationController {
     ].forEach((id) => {
       const el = document.getElementById(id);
       if (el) el.disabled = disabled;
+    });
+
+    const aliasDisabled = disabled || !this.aliasesAvailable;
+    ["validation-alias-input", "btn-validation-add-alias"].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.disabled = aliasDisabled;
     });
   }
 
@@ -255,7 +276,7 @@ export class ManagementValidationController {
     if (empty) {
       empty.hidden = Boolean(embedUrl);
       if (!embedUrl) {
-        empty.innerHTML = `<p class="mq-muted">Impossible de generer la preview YouTube. Corrige l'ID ou l'URL avant validation.</p>`;
+        empty.innerHTML = `<p class="mq-muted">Impossible de générer la preview YouTube. Corrige l'ID ou l'URL avant validation.</p>`;
       }
     }
 
@@ -277,7 +298,7 @@ export class ManagementValidationController {
     if (!payload) return;
 
     const res = await window.httpClient.validateTrack(payload);
-    this.setStatus(res.success ? "Musique validee avec corrections appliquees" : (res.error || "Erreur"), res.success);
+    this.setStatus(res.success ? "Musique validée avec corrections appliquées" : (res.error || "Erreur"), res.success);
     if (res.success) {
       await this.refresh();
     }
@@ -292,7 +313,7 @@ export class ManagementValidationController {
     if (!confirmed) return;
 
     const res = await window.httpClient.deleteTrack(Number(item.id));
-    this.setStatus(res.success ? "Musique refusee et supprimee" : (res.error || "Erreur"), res.success);
+    this.setStatus(res.success ? "Musique refusée et supprimée" : (res.error || "Erreur"), res.success);
     if (res.success) {
       this.selectedId = null;
       await this.refresh();
@@ -307,15 +328,15 @@ export class ManagementValidationController {
     const youtubeVideoId = extractYouTubeVideoId(this.getYoutubeInput());
 
     if (categoryId <= 0) {
-      this.setStatus("Categorie requise avant validation", false);
+      this.setStatus("Catégorie requise avant validation", false);
       return null;
     }
     if (!familyName) {
-      this.setStatus("Oeuvre requise avant validation", false);
+      this.setStatus("Œuvre requise avant validation", false);
       return null;
     }
     if (!title) {
-      this.setStatus("Libelle de piste requis avant validation", false);
+      this.setStatus("Libellé de piste requis avant validation", false);
       return null;
     }
     if (!youtubeVideoId) {
@@ -323,7 +344,7 @@ export class ManagementValidationController {
       return null;
     }
 
-    return {
+    const payload = {
       track_id: Number(item.id),
       category_id: categoryId,
       family_name: familyName,
@@ -331,6 +352,143 @@ export class ManagementValidationController {
       artist,
       youtube_video_id: youtubeVideoId,
     };
+
+    if (this.aliasesAvailable) {
+      payload.aliases = [...this.aliases];
+    }
+
+    return payload;
+  }
+
+  handleAliasInputKeydown(event) {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    this.addAliasFromInput();
+  }
+
+  addAliasFromInput() {
+    const input = document.getElementById("validation-alias-input");
+    if (!input || input.disabled) return;
+
+    const value = String(input.value || "").trim();
+    if (!value) return;
+
+    const nextAliases = [...this.aliases];
+    this.parseAliases(value).forEach((alias) => {
+      if (this.hasAlias(nextAliases, alias)) return;
+      nextAliases.push(alias);
+    });
+
+    input.value = "";
+    this.setAliases(nextAliases, { markDirty: true });
+  }
+
+  setAliases(values, options = {}) {
+    this.aliases = this.parseAliases(Array.isArray(values) ? values.join("\n") : values);
+    if (options.markDirty) {
+      this.aliasDirty = true;
+    }
+    this.renderAliasList();
+  }
+
+  renderAliasList() {
+    const list = document.getElementById("validation-alias-list");
+    if (!list) return;
+
+    if (!this.aliasesAvailable) {
+      list.innerHTML = `
+        <div class="mq-alias-empty">
+          <span>Alias indisponibles pour le moment.</span>
+        </div>
+      `;
+      return;
+    }
+
+    if (!this.aliases.length) {
+      list.innerHTML = `
+        <div class="mq-alias-empty">
+          <span>Aucun alias ajouté pour le moment.</span>
+        </div>
+      `;
+      return;
+    }
+
+    list.innerHTML = this.aliases.map((alias, index) => `
+      <div class="mq-alias-item">
+        <span>${this.escapeHtml(alias)}</span>
+        <button type="button" class="mq-danger mq-alias-item__remove" data-alias-index="${index}" aria-label="Supprimer l'alias ${this.escapeHtml(alias)}">X</button>
+      </div>
+    `).join("");
+
+    list.querySelectorAll("[data-alias-index]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const aliasIndex = Number(button.dataset.aliasIndex);
+        this.aliases = this.aliases.filter((_, index) => index !== aliasIndex);
+        this.aliasDirty = true;
+        this.renderAliasList();
+      });
+    });
+  }
+
+  syncAliasesFromSelectedFamily() {
+    if (this.aliasDirty || !this.aliasesAvailable) return;
+
+    const family = this.findMatchingFamily(
+      this.getFormCategoryId(),
+      document.getElementById("validation-family-name")?.value || "",
+    );
+    this.setAliases(family?.aliases || [], { markDirty: false });
+  }
+
+  getAliasesForTrack(item) {
+    const family = this.findFamilyById(item.family_id)
+      || this.findMatchingFamily(item.category_id, item.family_name);
+    return family?.aliases || [];
+  }
+
+  findFamilyById(familyId) {
+    const id = Number(familyId || 0);
+    if (id <= 0) return null;
+    return this.families.find((family) => Number(family.id) === id) || null;
+  }
+
+  findMatchingFamily(categoryId, familyName) {
+    const normalizedName = this.normalizeSearch(familyName);
+    const normalizedCategoryId = Number(categoryId || 0);
+    if (!normalizedName || normalizedCategoryId <= 0) return null;
+
+    return this.families.find((family) => {
+      return Number(family.category_id) === normalizedCategoryId
+        && this.normalizeSearch(family.name) === normalizedName;
+    }) || null;
+  }
+
+  parseAliases(rawValue) {
+    const seen = new Set();
+    const values = String(rawValue || "")
+      .split(/\r?\n|,|;/)
+      .map((value) => String(value || "").trim())
+      .filter(Boolean);
+
+    return values.filter((value) => {
+      const key = this.normalizeAlias(value);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
+  hasAlias(aliases, value) {
+    const key = this.normalizeAlias(value);
+    return aliases.some((alias) => this.normalizeAlias(alias) === key);
+  }
+
+  normalizeAlias(value) {
+    return String(value || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .trim();
   }
 
   openSelectedTrackOnYouTube() {
