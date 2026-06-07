@@ -20,52 +20,85 @@
       <ul id="lobby-players" class="mq-clean-list"></ul>
     </section>
 
-    <section class="mq-card mq-card--soft">
-      <div class="mq-card-heading">
+    <section class="mq-card mq-card--soft mq-lobby-settings-card">
+      <div class="mq-card-heading mq-lobby-settings-heading">
         <div class="mq-kicker">Réglages</div>
         <h2>Partie</h2>
-        <p class="mq-card-copy">Ces options sont sauvegardées automatiquement avant le lancement.</p>
+        <span id="lobby-config-save-state" class="mq-chip">Chargement</span>
       </div>
-      <div class="mq-grid">
-        <div class="mq-field">
-          <label for="lobby-config-name">Nom du salon</label>
-          <input id="lobby-config-name" type="text" maxlength="120" placeholder="Blindtest du vendredi" />
+
+      <div class="mq-lobby-settings">
+        <div class="mq-lobby-settings-block mq-lobby-settings-block--identity">
+          <div class="mq-field mq-lobby-name-field">
+            <label for="lobby-config-name">Nom du salon</label>
+            <input id="lobby-config-name" type="text" maxlength="120" placeholder="Blindtest du vendredi" />
+          </div>
+
+          <label class="mq-toggle-row mq-toggle-row--primary">
+            <input id="lobby-config-public" type="checkbox" />
+            <span>
+              <strong>Salon public</strong>
+              <small>Visible dans la liste</small>
+            </span>
+          </label>
         </div>
-        <div class="mq-field">
-          <label for="lobby-config-rounds">Manches</label>
-          <input id="lobby-config-rounds" type="number" min="1" max="1000" />
+
+        <div class="mq-lobby-settings-block">
+          <p class="mq-section-label">Rythme</p>
+          <div class="mq-lobby-number-grid">
+            <div class="mq-field">
+              <label for="lobby-config-rounds">Manches</label>
+              <input id="lobby-config-rounds" type="number" min="1" max="1000" />
+            </div>
+            <div class="mq-field">
+              <label for="lobby-config-timer">Secondes par réponse</label>
+              <input id="lobby-config-timer" type="number" min="1" max="600" />
+            </div>
+          </div>
         </div>
-        <div class="mq-field">
-          <label for="lobby-config-timer">Secondes par réponse</label>
-          <input id="lobby-config-timer" type="number" min="1" max="600" />
+
+        <div class="mq-lobby-settings-block">
+          <p class="mq-section-label">Options de manche</p>
+          <div class="mq-lobby-options">
+            <label class="mq-toggle-row">
+              <input id="lobby-config-show-category" type="checkbox" />
+              <span>
+                <strong>Catégorie visible</strong>
+                <small>Pendant la manche</small>
+              </span>
+            </label>
+            <label class="mq-toggle-row">
+              <input id="lobby-config-early-reveal" type="checkbox" />
+              <span>
+                <strong>Vote de révélation</strong>
+                <small>Si personne ne trouve</small>
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <div class="mq-lobby-settings-block">
+          <div class="mq-lobby-category-head">
+            <div>
+              <p class="mq-section-label">Catégories jouées</p>
+              <p id="lobby-category-summary" class="mq-muted">Chargement des catégories...</p>
+            </div>
+            <div class="mq-lobby-category-actions owner-only" style="display:none;">
+              <button id="btn-lobby-select-all-categories" type="button" class="mq-secondary mq-inline-btn">Tout cocher</button>
+              <button id="btn-lobby-clear-categories" type="button" class="mq-secondary mq-inline-btn">Vider</button>
+            </div>
+          </div>
+
+          <div id="lobby-config-categories" class="mq-check-grid mq-category-grid"></div>
         </div>
       </div>
 
-      <div class="mq-lobby-options">
-        <label class="mq-check">
-          <input id="lobby-config-public" type="checkbox" />
-          <span>Afficher ce salon dans la liste publique</span>
-        </label>
-        <label class="mq-check">
-          <input id="lobby-config-show-category" type="checkbox" />
-          <span>Afficher la catégorie pendant la manche</span>
-        </label>
-        <label class="mq-check">
-          <input id="lobby-config-early-reveal" type="checkbox" />
-          <span>Autoriser le vote pour révéler la réponse si personne ne trouve</span>
-        </label>
-      </div>
-
-      <div>
-        <p class="mq-section-label">Catégories jouées</p>
-        <div id="lobby-config-categories" class="mq-check-grid"></div>
-      </div>
-
-      <p id="lobby-config-help" class="mq-muted">Chargement des réglages...</p>
-
-      <div class="mq-actions owner-only" style="display:none;">
-        <button id="btn-lobby-start" type="button">Lancer la partie</button>
-        <button id="btn-lobby-delete" type="button" class="mq-danger">Supprimer le salon</button>
+      <div class="mq-lobby-launchbar">
+        <p id="lobby-config-help" class="mq-muted">Chargement des réglages...</p>
+        <div class="mq-actions owner-only" style="display:none;">
+          <button id="btn-lobby-start" type="button">Lancer la partie</button>
+          <button id="btn-lobby-delete" type="button" class="mq-danger">Supprimer le salon</button>
+        </div>
       </div>
     </section>
   </div>

@@ -311,12 +311,20 @@ export class LobbyController {
     }
 
     const selected = new Set((source.selected_category_ids || []).map((id) => Number(id)));
-    categoriesForm.innerHTML = this.categories.map((category) => `
-      <label class="mq-check">
-        <input type="checkbox" value="${Number(category.id || 0)}" ${selected.has(Number(category.id || 0)) ? "checked" : ""} ${editable ? "" : "disabled"} />
-        <span>${this.escapeHtml(category.name || "Catégorie")} (${this.getCategoryTrackCount(category)})</span>
-      </label>
-    `).join("");
+    categoriesForm.innerHTML = this.categories.length
+      ? this.categories.map((category) => {
+        const trackCount = this.getCategoryTrackCount(category);
+        return `
+          <label class="mq-check mq-category-check">
+            <input type="checkbox" value="${Number(category.id || 0)}" ${selected.has(Number(category.id || 0)) ? "checked" : ""} ${editable ? "" : "disabled"} />
+            <span class="mq-category-check__body">
+              <strong>${this.escapeHtml(category.name || "Catégorie")}</strong>
+              <small>${this.escapeHtml(this.formatMusicCount(trackCount))}</small>
+            </span>
+          </label>
+        `;
+      }).join("")
+      : `<div class="mq-settings-empty">Aucune catégorie disponible.</div>`;
 
     this.bindConfigInputs(lobby);
     this.updateConfigUiState(source, editable);
@@ -330,6 +338,8 @@ export class LobbyController {
     const showCategoryInput = document.getElementById("lobby-config-show-category");
     const earlyRevealInput = document.getElementById("lobby-config-early-reveal");
     const categoryInputs = document.querySelectorAll("#lobby-config-categories input");
+    const selectAllButton = document.getElementById("btn-lobby-select-all-categories");
+    const clearCategoriesButton = document.getElementById("btn-lobby-clear-categories");
     const handleInput = () => this.handleConfigInput(lobby);
     const handleCategoryChange = () => this.handleConfigInput(lobby, true);
 
@@ -342,12 +352,30 @@ export class LobbyController {
     categoryInputs.forEach((input) => {
       input.onchange = handleCategoryChange;
     });
+
+    if (selectAllButton) {
+      selectAllButton.disabled = !this.isOwner() || this.categories.length === 0;
+      selectAllButton.onclick = () => this.setAllCategoriesSelected(lobby, true);
+    }
+    if (clearCategoriesButton) {
+      clearCategoriesButton.disabled = !this.isOwner() || this.categories.length === 0;
+      clearCategoriesButton.onclick = () => this.setAllCategoriesSelected(lobby, false);
+    }
   }
 
   handleConfigInput(lobby, immediate = false) {
     if (!this.isOwner()) return;
     this.captureDraftConfig(lobby);
     this.queueConfigSave(immediate ? 0 : 350);
+  }
+
+  setAllCategoriesSelected(lobby, checked) {
+    if (!this.isOwner()) return;
+
+    document.querySelectorAll("#lobby-config-categories input").forEach((input) => {
+      input.checked = Boolean(checked);
+    });
+    this.handleConfigInput(lobby, true);
   }
 
   queueConfigSave(delay = 350) {
@@ -666,6 +694,26 @@ export class LobbyController {
     return Math.max(0, Number(category?.track_count || 0));
   }
 
+  formatMusicCount(count) {
+    const safeCount = Math.max(0, Number(count || 0));
+    return `${safeCount} ${safeCount > 1 ? "musiques" : "musique"}`;
+  }
+
+  formatAvailableMusicCount(count) {
+    const safeCount = Math.max(0, Number(count || 0));
+    return `${safeCount} ${safeCount > 1 ? "musiques disponibles" : "musique disponible"}`;
+  }
+
+  formatCategoryCount(count) {
+    const safeCount = Math.max(0, Number(count || 0));
+    return `${safeCount} ${safeCount > 1 ? "catégories" : "catégorie"}`;
+  }
+
+  formatSelectedCategoryCount(count) {
+    const safeCount = Math.max(0, Number(count || 0));
+    return `${safeCount} ${safeCount > 1 ? "catégories sélectionnées" : "catégorie sélectionnée"}`;
+  }
+
   getAvailableTrackCount(selectedCategoryIds = []) {
     const selected = new Set((Array.isArray(selectedCategoryIds) ? selectedCategoryIds : []).map(Number));
     return this.categories.reduce((total, category) => {
@@ -707,12 +755,21 @@ export class LobbyController {
 
   updateConfigUiState(config, editable, validation = null) {
     const helper = document.getElementById("lobby-config-help");
+    const categorySummary = document.getElementById("lobby-category-summary");
+    const saveState = document.getElementById("lobby-config-save-state");
     const startButton = document.getElementById("btn-lobby-start");
     const review = validation || this.validateConfig(config);
+    const totalCategoryCount = this.categories.length;
+
+    if (categorySummary) {
+      categorySummary.textContent = totalCategoryCount > 0
+        ? `${review.selectedCount} sur ${this.formatCategoryCount(totalCategoryCount)} - ${this.formatMusicCount(review.availableTracks)}`
+        : "Aucune catégorie disponible";
+    }
 
     if (helper) {
       if (!editable) {
-        helper.textContent = `${review.selectedCount} catégorie(s) sélectionnée(s) - ${review.availableTracks} musique(s) disponible(s).`;
+        helper.textContent = `${this.formatSelectedCategoryCount(review.selectedCount)} - ${this.formatAvailableMusicCount(review.availableTracks)}.`;
         helper.className = "mq-muted";
       } else if (review.issues.length) {
         helper.textContent = review.issues[0];
@@ -721,12 +778,32 @@ export class LobbyController {
         helper.textContent = "Réglages en cours d'application...";
         helper.className = "status";
       } else if (this.configDirty) {
-        helper.textContent = `${review.selectedCount} catégorie(s) sélectionnée(s) - ${review.availableTracks} musique(s) disponibles.`;
+        helper.textContent = `${this.formatSelectedCategoryCount(review.selectedCount)} - ${this.formatAvailableMusicCount(review.availableTracks)}.`;
         helper.className = "status success";
       } else {
-        helper.textContent = `Réglages sauvegardés - ${review.selectedCount} catégorie(s) - ${review.availableTracks} musique(s) disponibles.`;
+        helper.textContent = `Réglages sauvegardés - ${this.formatCategoryCount(review.selectedCount)} - ${this.formatAvailableMusicCount(review.availableTracks)}.`;
         helper.className = "mq-muted";
       }
+    }
+
+    if (saveState) {
+      let label = "Sauvegardé";
+      let modifier = "success";
+      if (!editable) {
+        label = "Lecture seule";
+        modifier = "";
+      } else if (review.issues.length) {
+        label = "À corriger";
+        modifier = "danger";
+      } else if (this.configSaveInFlight) {
+        label = "Sauvegarde";
+        modifier = "warning";
+      } else if (this.configDirty) {
+        label = "Modifié";
+        modifier = "warning";
+      }
+      saveState.textContent = label;
+      saveState.className = `mq-chip${modifier ? ` mq-chip--${modifier}` : ""}`;
     }
 
     if (startButton) {

@@ -63,7 +63,7 @@ Les flux `login/register/logout/me` passent par ce client auth partage.
 - Vue `public`: login/register
 - Vue `main`: menu principal (creer un salon public/prive, rejoindre par code, salons publics)
 - Vue `lobby-list`: lobbies publics en cours + rejoindre par code
-- Vue `lobby`: page lobby (joueurs avec avatars, reglages owner, visibilite public/prive, categorie visible, vote de revelation, presence maintenue pendant le chargement initial)
+- Vue `lobby`: page lobby (joueurs avec avatars, reglages owner regroupes par salon/rythme/options/categories, visibilite public/prive, categorie visible, vote de revelation, presence maintenue pendant le chargement initial)
 - Vue `game`: partie en cours avec lecteur YouTube synchronise a gauche sur desktop, reponse/classement/code lobby en colonne droite, solution lisible sous la video, vote de revelation anticipee, puis empilement responsive sur mobile
 - Vue `management`: hub management global
 - Vue `management-categories`: gestion categories

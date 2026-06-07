@@ -830,9 +830,148 @@ input[type="range"] {
 
 .mq-lobby-options {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
-  margin: 14px 0;
+}
+
+.mq-lobby-settings-card {
+  display: grid;
+  gap: 16px;
+}
+
+.mq-lobby-settings-heading {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  column-gap: 12px;
+}
+
+.mq-lobby-settings-heading .mq-kicker,
+.mq-lobby-settings-heading h2 {
+  grid-column: 1;
+}
+
+.mq-lobby-settings-heading .mq-chip {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  justify-self: end;
+}
+
+.mq-lobby-settings {
+  display: grid;
+  gap: 15px;
+}
+
+.mq-lobby-settings-block {
+  display: grid;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--mq-line);
+}
+
+.mq-lobby-settings-block:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.mq-lobby-settings-block--identity,
+.mq-lobby-number-grid,
+.mq-lobby-category-head,
+.mq-lobby-launchbar {
+  display: grid;
+  gap: 12px;
+  align-items: center;
+}
+
+.mq-lobby-settings-block--identity {
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 0.45fr);
+}
+
+.mq-lobby-number-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.mq-lobby-category-head,
+.mq-lobby-launchbar {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.mq-lobby-category-head .mq-section-label,
+.mq-lobby-category-head .mq-muted,
+.mq-lobby-launchbar .mq-muted,
+.mq-lobby-launchbar .status {
+  margin: 0;
+}
+
+.mq-lobby-category-actions,
+.mq-lobby-launchbar .mq-actions {
+  margin-top: 0;
+  justify-content: flex-end;
+}
+
+.mq-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 62px;
+  padding: 12px;
+  border: 1px solid var(--mq-line);
+  border-radius: var(--mq-radius);
+  color: var(--mq-text-soft);
+  background:
+    linear-gradient(145deg, rgba(120, 183, 255, 0.05), rgba(233, 130, 189, 0.025)),
+    rgba(255, 255, 255, 0.035);
+}
+
+.mq-toggle-row--primary {
+  min-height: 100%;
+}
+
+.mq-toggle-row span {
+  display: grid;
+  gap: 3px;
+}
+
+.mq-toggle-row strong {
+  color: var(--mq-text);
+  font-size: 0.94rem;
+  line-height: 1.2;
+}
+
+.mq-toggle-row small,
+.mq-category-check small {
+  color: var(--mq-text-faint);
+  font-size: 0.78rem;
+  line-height: 1.2;
+}
+
+.mq-category-grid {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.mq-category-check {
+  min-height: 62px;
+}
+
+.mq-category-check__body {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.mq-category-check__body strong {
+  overflow: hidden;
+  color: var(--mq-text);
+  font-size: 0.93rem;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mq-settings-empty {
+  padding: 12px;
+  color: var(--mq-text-faint);
+  border: 1px dashed var(--mq-line);
+  border-radius: var(--mq-radius);
 }
 
 .mq-field {
@@ -875,6 +1014,24 @@ input[type="range"] {
   font-size: 0.82rem;
   font-weight: 760;
   background: rgba(120, 183, 255, 0.09);
+}
+
+.mq-chip--success {
+  color: #9df4c7;
+  border-color: rgba(105, 224, 157, 0.28);
+  background: rgba(105, 224, 157, 0.1);
+}
+
+.mq-chip--warning {
+  color: #ffd47a;
+  border-color: rgba(255, 205, 112, 0.3);
+  background: rgba(255, 205, 112, 0.1);
+}
+
+.mq-chip--danger {
+  color: #ff9fb1;
+  border-color: rgba(255, 99, 132, 0.3);
+  background: rgba(255, 99, 132, 0.1);
 }
 
 .mq-clean-list,
@@ -1689,6 +1846,11 @@ input[type="range"] {
     grid-template-columns: 1fr;
   }
 
+  .mq-lobby-settings-block--identity,
+  .mq-lobby-number-grid {
+    grid-template-columns: 1fr;
+  }
+
   .mq-game-side {
     display: contents;
   }
@@ -1718,10 +1880,25 @@ input[type="range"] {
   .mq-game-stage__head,
   .mq-admin-pane__header,
   .mq-lobby-header,
+  .mq-lobby-settings-heading,
+  .mq-lobby-category-head,
+  .mq-lobby-launchbar,
   .mq-lobby-action-bar,
   .mq-admin-toolbar {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .mq-lobby-settings-heading,
+  .mq-lobby-category-head,
+  .mq-lobby-launchbar {
+    grid-template-columns: 1fr;
+  }
+
+  .mq-lobby-settings-heading .mq-chip {
+    grid-column: 1;
+    grid-row: auto;
+    justify-self: start;
   }
 
   .mq-topbar__brand,
@@ -1755,6 +1932,7 @@ input[type="range"] {
   .mq-topbar__actions button,
   .mq-topbar__role,
   .mq-actions button,
+  .mq-lobby-category-actions button,
   .mq-row button,
   .mq-admin-form-actions button,
   .mq-validation-meta button,
