@@ -5,5 +5,6 @@ export class ManagementController {
     document.getElementById("btn-mgmt-families")?.addEventListener("click", () => window.appCtrl.changeView("management-families"));
     document.getElementById("btn-mgmt-tracks")?.addEventListener("click", () => window.appCtrl.changeView("management-tracks"));
     document.getElementById("btn-mgmt-validation")?.addEventListener("click", () => window.appCtrl.changeView("management-validation"));
+    document.getElementById("btn-mgmt-suggestions")?.addEventListener("click", () => window.appCtrl.changeView("management-suggestions"));
   }
 }

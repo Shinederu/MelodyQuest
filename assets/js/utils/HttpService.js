@@ -240,6 +240,32 @@ export class HttpService {
     });
   }
 
+  async submitSuggestion(data) {
+    return this.request(MELODY_BASE_URL, "POST", "submitSuggestion", data);
+  }
+
+  async holdSuggestion(lobbyId, roundId) {
+    return this.request(MELODY_BASE_URL, "POST", "holdSuggestion", {
+      lobby_id: lobbyId,
+      round_id: roundId,
+    });
+  }
+
+  async releaseSuggestionHold(lobbyId, roundId) {
+    return this.request(MELODY_BASE_URL, "POST", "releaseSuggestionHold", {
+      lobby_id: lobbyId,
+      round_id: roundId,
+    });
+  }
+
+  async listSuggestions(status = "pending") {
+    return this.request(MELODY_BASE_URL, "GET", "listSuggestions", { status });
+  }
+
+  async updateSuggestionStatus(id, status) {
+    return this.request(MELODY_BASE_URL, "POST", "updateSuggestionStatus", { id, status });
+  }
+
   async listPublicLobbies() {
     return this.request(MELODY_BASE_URL, "GET", "listPublicLobbies");
   }

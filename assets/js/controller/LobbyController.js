@@ -34,6 +34,7 @@ export class LobbyController {
     document.getElementById("btn-lobby-leave")?.addEventListener("click", () => this.leaveLobby());
     document.getElementById("btn-lobby-delete")?.addEventListener("click", () => this.deleteLobby());
     document.getElementById("btn-lobby-start")?.addEventListener("click", () => this.startGame());
+    document.getElementById("btn-lobby-share")?.addEventListener("click", () => this.shareLobby());
 
     document.addEventListener("visibilitychange", this.visibilityHandler);
 
@@ -48,10 +49,30 @@ export class LobbyController {
     return String(this.currentLobby?.lobby_code || "");
   }
 
+  getSharedLobbyCode() {
+    const query = String(window.location.hash || "").split("?")[1] || "";
+    return String(new URLSearchParams(query).get("code") || "").trim().toUpperCase();
+  }
+
   async bootstrap() {
-    const code = this.getLobbyCode();
+    let code = this.getLobbyCode();
+    const sharedCode = this.getSharedLobbyCode();
+    if (!code && sharedCode) {
+      const joinRes = await window.httpClient.joinLobby(sharedCode);
+      if (joinRes.success && joinRes.data?.lobby) {
+        this.currentLobby = joinRes.data.lobby;
+        setCurrentLobby(this.currentLobby);
+        code = this.getLobbyCode();
+      } else {
+        this.setStatus(joinRes.error || "Impossible de rejoindre ce salon", false);
+        window.appCtrl.changeView("main");
+        return;
+      }
+    }
+
     if (!code) {
-      this.setStatus("Aucun lobby sélectionné", false);
+      clearCurrentLobby();
+      window.appCtrl.changeView("main");
       return;
     }
 
@@ -383,6 +404,22 @@ export class LobbyController {
     if (!this.isOwner()) return;
     this.captureDraftConfig(lobby);
     this.queueConfigSave(immediate ? 0 : 350);
+  }
+
+  async shareLobby() {
+    const code = this.getLobbyCode();
+    if (!code) {
+      this.setStatus("Code de salon indisponible", false);
+      return;
+    }
+
+    const url = `${window.location.origin}${window.location.pathname}#/lobby?code=${encodeURIComponent(code)}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      this.setStatus("Lien du salon copié", true);
+    } catch {
+      this.setStatus(url, true);
+    }
   }
 
   setAllCategoriesSelected(lobby, checked) {

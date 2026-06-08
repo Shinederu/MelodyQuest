@@ -14,6 +14,7 @@ export class PublicController {
     registerForm?.addEventListener("submit", () => this.submitRegister());
     loginTab?.addEventListener("click", () => this.setAuthMode("login"));
     registerTab?.addEventListener("click", () => this.setAuthMode("register"));
+    document.getElementById("btn-public-suggest-track")?.addEventListener("click", () => window.appCtrl.changeView("suggest-track"));
     this.setAuthMode(this.authMode);
 
     console.log("PublicController initialized");

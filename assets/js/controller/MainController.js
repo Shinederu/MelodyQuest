@@ -19,6 +19,7 @@ export class MainController {
     document.getElementById("btn-main-create")?.addEventListener("click", () => this.createLobby());
     document.getElementById("btn-main-join-code")?.addEventListener("click", () => this.joinLobbyByCode());
     document.getElementById("btn-main-refresh")?.addEventListener("click", () => this.refreshLobbies());
+    document.getElementById("btn-main-suggest-track")?.addEventListener("click", () => window.appCtrl.changeView("suggest-track"));
     document.getElementById("btn-main-management")?.addEventListener("click", () => window.appCtrl.changeView("management"));
     document.addEventListener("visibilitychange", this.visibilityHandler);
 
@@ -27,8 +28,29 @@ export class MainController {
 
   async bootstrap() {
     this.renderAdminActions();
+    if (await this.consumePendingLobbyCode()) {
+      return;
+    }
     await this.refreshLobbies();
     this.startRealtime();
+  }
+
+  async consumePendingLobbyCode() {
+    const code = String(sessionStorage.getItem("mq_pending_lobby_code") || "").trim().toUpperCase();
+    if (!code) {
+      return false;
+    }
+
+    sessionStorage.removeItem("mq_pending_lobby_code");
+    const res = await window.httpClient.joinLobby(code);
+    if (res.success && res.data?.lobby) {
+      setCurrentLobby(res.data.lobby);
+      window.appCtrl.changeView("lobby");
+      return true;
+    }
+
+    this.setStatus(res.error || "Impossible de rejoindre ce salon", false);
+    return false;
   }
 
   async createLobby() {

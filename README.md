@@ -40,8 +40,10 @@ L'API `auth` utilise aussi ce meme schema partage avec ses variables (`DB_*`).
 - Option de lobby `Precision des reponses` pour choisir un seuil de correspondance de `70%` a `100%`; `100%` conserve la validation stricte.
 - Lecture synchronisee entre tous les joueurs d'un lobby
 - Images de profil exposees par l'API MelodyQuest avec URL d'avatar normalisee depuis l'API Auth, affichees dans les listes de joueurs et le classement
+- Partage direct d'un salon via URL `#/lobby?code=...`, utilisable depuis le lobby et depuis la partie
+- Suggestions joueurs: correction/alias/URL pendant une partie, avec verrou temporaire de manche pendant la saisie, et page publique `#/suggest-track` pour proposer une nouvelle musique
 - Administrateurs de catalogue definis par le droit central `melodyquest.catalog.manage` (`core_*`) ou par le super-admin global
-- Administrateurs: gestion du catalogue (categories, familles, musiques)
+- Administrateurs: gestion du catalogue (categories, familles, musiques) et suivi des suggestions joueurs
 
 ## Authentification (client)
 
@@ -62,15 +64,17 @@ Les flux `login/register/logout/me` passent par ce client auth partage.
 ## Etat client actuel
 
 - Vue `public`: login/register
+- Vue `suggest-track`: page publique de proposition de nouvelle musique, accessible avec ou sans session
 - Vue `main`: menu principal (creer un salon public/prive, rejoindre par code, salons publics)
 - Vue `lobby-list`: lobbies publics en cours + rejoindre par code
 - Vue `lobby`: page lobby (joueurs avec avatars, reglages owner regroupes par salon/rythme/options/validation/categories, visibilite public/prive, categorie visible, vote de revelation, seuil de precision des reponses, presence maintenue pendant le chargement initial)
-- Vue `game`: partie en cours avec lecteur YouTube synchronise a gauche sur desktop, reponse/classement/code lobby en colonne droite, solution lisible sous la video, vote de revelation anticipee, puis empilement responsive sur mobile
+- Vue `game`: partie en cours avec lecteur YouTube synchronise a gauche sur desktop, reponse/classement/code lobby en colonne droite, solution lisible sous la video, vote de revelation anticipee unanime, autofocus du champ de reponse, timer visible apres une bonne reponse, pseudos verts quand un joueur a trouve, derniers essais rates visibles, proposition de correction et partage du salon, puis empilement responsive sur mobile
 - Vue `management`: hub management global
 - Vue `management-categories`: gestion categories
 - Vue `management-families`: gestion familles
 - Vue `management-tracks`: gestion musiques
 - Vue `management-validation`: validation des musiques en attente, avec correction editable de la categorie, de l'oeuvre, des alias acceptes, du libelle, de l'artiste/licence et de l'ID ou URL YouTube avant validation
+- Vue `management-suggestions`: revue des corrections, alias et nouvelles musiques envoyes par les joueurs
 
 ## Interface
 
@@ -80,6 +84,7 @@ Les flux `login/register/logout/me` passent par ce client auth partage.
 - Layout desktop de la page jeu concu pour tenir sur un ecran PC courant: scene video a gauche, actions et classement a droite.
 - Layout mobile empile les sections et conserve le lecteur en ratio 16:9.
 - La solution affiche l'oeuvre en grand sous la video, puis les infos de musique/artiste en plus petit; la categorie apparait uniquement si l'option du lobby est activee.
+- L'option "suivant automatique" n'est plus persistee en stockage navigateur: elle repart desactivee a chaque nouvelle session de jeu.
 
 ## Lancer en local
 
@@ -128,8 +133,10 @@ server {
 Avec le routage hash, les pages sont accessibles via:
 
 - `https://melodyquest.shinederu.ch/#/public`
+- `https://melodyquest.shinederu.ch/#/suggest-track`
 - `https://melodyquest.shinederu.ch/#/main`
 - `https://melodyquest.shinederu.ch/#/lobby-list`
+- `https://melodyquest.shinederu.ch/#/lobby?code=ABCDEFGH`
 - `https://melodyquest.shinederu.ch/#/lobby`
 - `https://melodyquest.shinederu.ch/#/management`
 

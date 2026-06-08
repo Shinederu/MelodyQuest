@@ -1,0 +1,64 @@
+<section class="mq-page">
+  <section class="mq-card mq-card--soft">
+    <div class="mq-admin-toolbar">
+      <div class="mq-actions">
+        <button id="btn-suggestions-back" type="button" class="mq-secondary">Retour management</button>
+        <button id="btn-suggestions-refresh" type="button">Rafraîchir</button>
+      </div>
+      <div class="mq-admin-toolbar__meta">
+        <div class="mq-admin-toolbar__cluster">
+          <span id="suggestions-count" class="mq-chip">0 proposition</span>
+        </div>
+        <p id="suggestions-status" class="status">Charge les propositions envoyées par les joueurs.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="mq-admin-workspace">
+    <section class="mq-card mq-admin-pane">
+      <div class="mq-admin-pane__header">
+        <div class="mq-card-heading">
+          <div class="mq-kicker">File joueurs</div>
+          <h2>Propositions</h2>
+          <p class="mq-card-copy">Corrections envoyées depuis une partie et nouvelles musiques proposées depuis la page publique.</p>
+        </div>
+      </div>
+
+      <div class="mq-admin-filter-bar">
+        <div class="mq-field">
+          <label for="suggestions-filter-status">Statut</label>
+          <select id="suggestions-filter-status">
+            <option value="pending">En attente</option>
+            <option value="reviewed">Traitées</option>
+            <option value="rejected">Refusées</option>
+            <option value="all">Toutes</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="mq-admin-list-shell">
+        <div id="suggestions-list" class="mq-admin-list"></div>
+      </div>
+    </section>
+
+    <section class="mq-card mq-card--accent mq-admin-pane mq-admin-pane--sticky">
+      <div class="mq-card-heading">
+        <div class="mq-kicker">Detail</div>
+        <h2 id="suggestions-detail-title">Aucune proposition sélectionnée</h2>
+        <p id="suggestions-detail-helper" class="mq-admin-helper">Choisis une proposition pour comparer les valeurs actuelles et les corrections demandées.</p>
+      </div>
+
+      <div id="suggestions-detail-meta" class="mq-admin-item__meta">
+        <span class="mq-muted">Aucune proposition sélectionnée.</span>
+      </div>
+
+      <div id="suggestions-detail-body" class="mq-suggestion-detail"></div>
+
+      <div class="mq-admin-form-actions">
+        <button id="btn-suggestion-reviewed" type="button" disabled>Marquer traitée</button>
+        <button id="btn-suggestion-rejected" type="button" class="mq-danger" disabled>Refuser</button>
+        <button id="btn-suggestion-pending" type="button" class="mq-secondary" disabled>Remettre en attente</button>
+      </div>
+    </section>
+  </div>
+</section>

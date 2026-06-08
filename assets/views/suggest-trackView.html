@@ -1,0 +1,49 @@
+<section class="mq-page">
+  <section class="mq-card mq-card--soft mq-suggest-track-card">
+    <div class="mq-admin-toolbar">
+      <div class="mq-actions">
+        <button id="btn-suggest-track-back" type="button" class="mq-secondary">Retour</button>
+      </div>
+      <p id="suggest-track-status" class="status">Propose une musique à ajouter au blindtest.</p>
+    </div>
+
+    <div class="mq-two-cols--balanced">
+      <div class="mq-card-heading">
+        <div class="mq-kicker">Contribution</div>
+        <h1>Proposer une musique</h1>
+        <p class="mq-card-copy">Indique une piste YouTube et les infos utiles. Un admin vérifiera la proposition avant de la rendre jouable.</p>
+      </div>
+
+      <form id="suggest-track-form" class="mq-form-stack" method="post" action="#/suggest-track">
+        <div class="mq-field">
+          <label for="suggest-track-title">Libellé de la piste</label>
+          <input id="suggest-track-title" type="text" maxlength="220" placeholder="Ex: Opening 1, theme principal..." />
+        </div>
+
+        <div class="mq-field">
+          <label for="suggest-track-artist">Artiste / licence</label>
+          <input id="suggest-track-artist" type="text" maxlength="160" placeholder="Ex: Genshin Impact, Pokemon, Disney..." />
+        </div>
+
+        <div class="mq-field">
+          <label for="suggest-track-url">URL YouTube</label>
+          <input id="suggest-track-url" type="text" maxlength="255" placeholder="https://www.youtube.com/watch?v=..." />
+        </div>
+
+        <div class="mq-field">
+          <label for="suggest-track-alias">Alias ou réponse attendue</label>
+          <input id="suggest-track-alias" type="text" maxlength="160" placeholder="Ex: Genshin, Pokemon, Roi Lion..." />
+        </div>
+
+        <div class="mq-field">
+          <label for="suggest-track-note">Note</label>
+          <textarea id="suggest-track-note" placeholder="Contexte, moment conseillé dans la vidéo, raison de l'ajout..."></textarea>
+        </div>
+
+        <div class="mq-actions">
+          <button id="btn-suggest-track-submit" type="submit">Envoyer la proposition</button>
+        </div>
+      </form>
+    </div>
+  </section>
+</section>

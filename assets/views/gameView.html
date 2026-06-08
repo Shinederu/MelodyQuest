@@ -65,6 +65,9 @@
         <div id="game-answer-locked" class="mq-game-note" hidden>
           <strong id="game-answer-locked-title">Solution</strong>
           <p id="game-answer-locked-copy" class="mq-muted"></p>
+          <div class="mq-actions">
+            <button id="btn-game-suggest-correction" type="button" class="mq-secondary">Proposer une correction</button>
+          </div>
         </div>
 
         <div id="game-reveal-vote" class="mq-game-note mq-game-reveal-vote" hidden>
@@ -74,6 +77,11 @@
           <div class="mq-actions">
             <button id="btn-game-reveal" type="button" class="mq-secondary">Révéler la réponse</button>
           </div>
+        </div>
+
+        <div id="game-missed-panel" class="mq-game-note mq-game-missed-panel" hidden>
+          <strong>Derniers essais ratés</strong>
+          <ul id="game-missed-answers" class="mq-clean-list mq-missed-answer-list"></ul>
         </div>
       </section>
 
@@ -96,6 +104,9 @@
           <div class="mq-kicker">Classement</div>
           <h3>Classement</h3>
         </div>
+        <div class="mq-actions mq-actions--full">
+          <button id="btn-game-share-lobby" type="button" class="mq-secondary mq-button-block">Partager le salon</button>
+        </div>
         <ul id="game-scoreboard" class="mq-clean-list"></ul>
       </section>
 
@@ -115,4 +126,53 @@
       </section>
     </aside>
   </section>
+
+  <div id="game-suggestion-modal" class="mq-modal" hidden>
+    <div class="mq-modal__backdrop" data-game-suggestion-close></div>
+    <section class="mq-card mq-card--accent mq-modal__panel" role="dialog" aria-modal="true" aria-labelledby="game-suggestion-title">
+      <div class="mq-modal__header">
+        <div class="mq-card-heading mq-card-heading--compact">
+          <div class="mq-kicker">Correction</div>
+          <h2 id="game-suggestion-title">Proposer une correction</h2>
+          <p class="mq-card-copy">Remplis uniquement les champs que tu veux corriger. La manche attendra pendant que tu fais ta proposition.</p>
+        </div>
+        <button id="btn-game-suggestion-close" type="button" class="mq-secondary mq-icon-button" aria-label="Fermer">X</button>
+      </div>
+
+      <div class="mq-form-stack">
+        <div class="mq-field">
+          <label for="game-suggestion-url">Nouvelle URL YouTube</label>
+          <input id="game-suggestion-url" type="text" placeholder="" />
+        </div>
+
+        <div class="mq-field">
+          <label for="game-suggestion-alias">Nouvel alias</label>
+          <input id="game-suggestion-alias" type="text" placeholder="" />
+        </div>
+
+        <div class="mq-grid">
+          <div class="mq-field">
+            <label for="game-suggestion-title-input">Meilleur libellé de piste</label>
+            <input id="game-suggestion-title-input" type="text" placeholder="" />
+          </div>
+
+          <div class="mq-field">
+            <label for="game-suggestion-artist">Artiste / licence</label>
+            <input id="game-suggestion-artist" type="text" placeholder="" />
+          </div>
+        </div>
+
+        <div class="mq-field">
+          <label for="game-suggestion-note">Note</label>
+          <textarea id="game-suggestion-note" placeholder="Contexte utile pour l'admin"></textarea>
+        </div>
+
+        <p id="game-suggestion-status" class="status"></p>
+        <div class="mq-actions">
+          <button id="btn-game-suggestion-submit" type="button">Envoyer la proposition</button>
+          <button id="btn-game-suggestion-cancel" type="button" class="mq-secondary">Annuler</button>
+        </div>
+      </div>
+    </section>
+  </div>
 </section>

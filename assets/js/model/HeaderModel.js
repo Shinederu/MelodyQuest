@@ -5,14 +5,15 @@ export class HeaderModel {
       return;
     }
 
-    const canLogout = view !== "public";
+    const hasUser = Boolean(username);
+    const canLogout = view !== "public" && hasUser;
 
     const buttonHtml = canLogout
       ? `<button id="header-btn-logout" type="button" class="mq-danger">Deconnexion</button>`
       : "";
 
     const roleLabel = isAdmin ? "admin" : (role || "user");
-    const safeUsername = this.escapeHtml(username || "joueur");
+    const safeUsername = this.escapeHtml(username || "visiteur");
     const safeRole = this.escapeHtml(roleLabel);
     const page = this.getPageMeta(view);
     const pageHtml = page ? this.renderPageMeta(page) : "";
@@ -21,11 +22,11 @@ export class HeaderModel {
       <div class="mq-topbar">
         <div class="mq-topbar__brand">
           <div class="mq-topbar__eyebrow">MelodyQuest</div>
-          <div class="mq-topbar__user">Bonjour ${safeUsername}</div>
+          <div class="mq-topbar__user">${hasUser ? `Bonjour ${safeUsername}` : "MelodyQuest"}</div>
         </div>
         ${pageHtml}
         <div class="mq-topbar__actions">
-          <span class="mq-topbar__role">${safeRole}</span>
+          ${hasUser ? `<span class="mq-topbar__role">${safeRole}</span>` : ""}
           ${buttonHtml}
         </div>
       </div>
@@ -53,6 +54,11 @@ export class HeaderModel {
         eyebrow: "Blindtest entre amis",
         title: "Jouer maintenant",
         description: "Creer un salon, partager le code, lancer la musique.",
+      },
+      "suggest-track": {
+        eyebrow: "Contribution",
+        title: "Proposer une musique",
+        description: "Envoie une piste ou une correction à vérifier.",
       },
       "lobby-list": {
         eyebrow: "Rejoindre",
@@ -94,7 +100,7 @@ export class HeaderModel {
       "management-families": {
         eyebrow: "Catalogue",
         title: "Gestion des oeuvres",
-        description: "Regroupe les musiques par reponse attendue.",
+        description: "Regroupe les musiques par réponse attendue.",
       },
       "management-tracks": {
         eyebrow: "Catalogue",
@@ -105,6 +111,11 @@ export class HeaderModel {
         eyebrow: "Administration",
         title: "Verification / validation",
         description: "Controle les nouvelles musiques avant de les rendre jouables.",
+      },
+      "management-suggestions": {
+        eyebrow: "Administration",
+        title: "Suggestions joueurs",
+        description: "Trie les corrections, alias et nouvelles musiques proposés.",
       },
     };
 

@@ -1,24 +1,27 @@
-import { HttpService } from "../utils/HttpService.js?v=20260607-game-options";
-import { HeaderModel } from "../model/HeaderModel.js?v=20260607-header-pages";
-import { PublicController } from "./PublicController.js?v=20260606-public-auth-switch";
-import { MainController } from "./MainController.js?v=20260608-answer-threshold";
-import { LobbyController } from "./LobbyController.js?v=20260608-answer-threshold";
+import { HttpService } from "../utils/HttpService.js?v=20260608-playtest-notes";
+import { HeaderModel } from "../model/HeaderModel.js?v=20260608-playtest-notes";
+import { PublicController } from "./PublicController.js?v=20260608-playtest-notes";
+import { SuggestTrackController } from "./SuggestTrackController.js?v=20260608-playtest-notes";
+import { MainController } from "./MainController.js?v=20260608-playtest-notes";
+import { LobbyController } from "./LobbyController.js?v=20260608-playtest-notes";
 import { LobbyListController } from "./LobbyListController.js?v=20260607-game-options";
-import { GameController } from "./GameController.js?v=20260607-game-options";
+import { GameController } from "./GameController.js?v=20260608-playtest-notes";
 import { ResultController } from "./ResultController.js?v=20260606-player-flow";
-import { ManagementController } from "./ManagementController.js";
+import { ManagementController } from "./ManagementController.js?v=20260608-playtest-notes";
 import { ManagementCategoriesController } from "./ManagementCategoriesController.js?v=20260606-clean-status";
 import { ManagementFamiliesController } from "./ManagementFamiliesController.js?v=20260606-clean-status";
 import { ManagementTracksController } from "./ManagementTracksController.js?v=20260606-clean-status";
 import { ManagementValidationController } from "./ManagementValidationController.js?v=20260607-validation-aliases";
+import { ManagementSuggestionsController } from "./ManagementSuggestionsController.js?v=20260608-playtest-notes";
 
-const ASSET_VERSION = "20260608-answer-threshold";
+const ASSET_VERSION = "20260608-playtest-notes";
 
 let currentUser = null;
 let headerManager = null;
 
 const ROUTES = {
   public: { auth: false, admin: false, controller: PublicController },
+  "suggest-track": { auth: false, admin: false, allowAuthed: true, controller: SuggestTrackController },
   main: { auth: true, admin: false, controller: MainController },
   "lobby-list": { auth: true, admin: false, controller: LobbyListController },
   lobby: { auth: true, admin: false, controller: LobbyController },
@@ -29,6 +32,7 @@ const ROUTES = {
   "management-families": { auth: true, admin: true, controller: ManagementFamiliesController },
   "management-tracks": { auth: true, admin: true, controller: ManagementTracksController },
   "management-validation": { auth: true, admin: true, controller: ManagementValidationController },
+  "management-suggestions": { auth: true, admin: true, controller: ManagementSuggestionsController },
 };
 
 function toBool(value) {
@@ -94,7 +98,10 @@ export class AppController {
 
   async selectView() {
     const runId = ++this.selectViewRunId;
-    let requested = window.location.hash.replace(/^#\/?/, "").toLowerCase();
+    const rawRequested = window.location.hash.replace(/^#\/?/, "");
+    const [requestedPath, requestedQuery = ""] = rawRequested.split("?");
+    let requested = requestedPath.toLowerCase();
+    const routeParams = new URLSearchParams(requestedQuery);
     if (!requested) requested = "public";
 
     if (this.ctrl && typeof this.ctrl.destroy === "function") {
@@ -115,10 +122,14 @@ export class AppController {
 
     const route = ROUTES[requested];
     if (route.auth && !session) {
+      const sharedLobbyCode = requested === "lobby" ? String(routeParams.get("code") || "").trim().toUpperCase() : "";
+      if (sharedLobbyCode) {
+        sessionStorage.setItem("mq_pending_lobby_code", sharedLobbyCode);
+      }
       requested = "public";
     } else if (route.admin && !isAdmin) {
       requested = "main";
-    } else if (!route.auth && session) {
+    } else if (!route.auth && session && !route.allowAuthed) {
       requested = "main";
     }
 
