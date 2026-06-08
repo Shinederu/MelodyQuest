@@ -78,6 +78,21 @@
         </div>
 
         <div class="mq-lobby-settings-block">
+          <p class="mq-section-label">Validation</p>
+          <div class="mq-lobby-threshold">
+            <div class="mq-lobby-threshold__head">
+              <label for="lobby-config-answer-threshold">Précision des réponses</label>
+              <span id="lobby-config-answer-threshold-value" class="mq-chip">100%</span>
+            </div>
+            <input id="lobby-config-answer-threshold" type="range" min="70" max="100" step="1" />
+            <div class="mq-lobby-threshold__scale" aria-hidden="true">
+              <span>Souple</span>
+              <span>Strict</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="mq-lobby-settings-block">
           <div class="mq-lobby-category-head">
             <div>
               <p class="mq-section-label">Catégories jouées</p>

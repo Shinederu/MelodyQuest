@@ -4,6 +4,8 @@ const MIN_TOTAL_ROUNDS = 1;
 const MAX_TOTAL_ROUNDS = 1000;
 const MIN_ROUND_DURATION = 1;
 const MAX_ROUND_DURATION = 600;
+const MIN_ANSWER_THRESHOLD = 70;
+const MAX_ANSWER_THRESHOLD = 100;
 
 export class LobbyController {
   constructor() {
@@ -281,6 +283,7 @@ export class LobbyController {
     const publicInput = document.getElementById("lobby-config-public");
     const showCategoryInput = document.getElementById("lobby-config-show-category");
     const earlyRevealInput = document.getElementById("lobby-config-early-reveal");
+    const answerThresholdInput = document.getElementById("lobby-config-answer-threshold");
     if (!categoriesForm) return;
 
     const editable = this.isOwner();
@@ -308,6 +311,11 @@ export class LobbyController {
     if (earlyRevealInput) {
       earlyRevealInput.checked = Boolean(source.allow_early_reveal_vote);
       earlyRevealInput.disabled = !editable;
+    }
+    if (answerThresholdInput) {
+      answerThresholdInput.value = String(this.normalizeAnswerThreshold(source.answer_similarity_threshold));
+      answerThresholdInput.disabled = !editable;
+      this.updateAnswerThresholdValue(answerThresholdInput.value);
     }
 
     const selected = new Set((source.selected_category_ids || []).map((id) => Number(id)));
@@ -337,6 +345,7 @@ export class LobbyController {
     const publicInput = document.getElementById("lobby-config-public");
     const showCategoryInput = document.getElementById("lobby-config-show-category");
     const earlyRevealInput = document.getElementById("lobby-config-early-reveal");
+    const answerThresholdInput = document.getElementById("lobby-config-answer-threshold");
     const categoryInputs = document.querySelectorAll("#lobby-config-categories input");
     const selectAllButton = document.getElementById("btn-lobby-select-all-categories");
     const clearCategoriesButton = document.getElementById("btn-lobby-clear-categories");
@@ -349,6 +358,13 @@ export class LobbyController {
     if (publicInput) publicInput.onchange = handleCategoryChange;
     if (showCategoryInput) showCategoryInput.onchange = handleCategoryChange;
     if (earlyRevealInput) earlyRevealInput.onchange = handleCategoryChange;
+    if (answerThresholdInput) {
+      answerThresholdInput.oninput = () => {
+        this.updateAnswerThresholdValue(answerThresholdInput.value);
+        handleInput();
+      };
+      answerThresholdInput.onchange = handleCategoryChange;
+    }
     categoryInputs.forEach((input) => {
       input.onchange = handleCategoryChange;
     });
@@ -398,6 +414,7 @@ export class LobbyController {
       round_duration_seconds: Number.parseInt(lobby?.round_duration_seconds ?? 30, 10),
       show_track_category: this.toBool(lobby?.show_track_category),
       allow_early_reveal_vote: this.toBool(lobby?.allow_early_reveal_vote ?? true),
+      answer_similarity_threshold: this.normalizeAnswerThreshold(lobby?.answer_similarity_threshold),
       selected_category_ids: (Array.isArray(lobby?.selected_category_ids) ? lobby.selected_category_ids : []).map(Number),
     };
   }
@@ -419,6 +436,7 @@ export class LobbyController {
       round_duration_seconds: this.parseIntegerInput(document.getElementById("lobby-config-timer")?.value),
       show_track_category: document.getElementById("lobby-config-show-category")?.checked === true,
       allow_early_reveal_vote: document.getElementById("lobby-config-early-reveal")?.checked === true,
+      answer_similarity_threshold: this.normalizeAnswerThreshold(document.getElementById("lobby-config-answer-threshold")?.value),
       selected_category_ids: Array.from(document.querySelectorAll("#lobby-config-categories input:checked"))
         .map((input) => Number(input.value))
         .filter((value) => value > 0),
@@ -483,6 +501,7 @@ export class LobbyController {
       round_duration_seconds: Number(draft.round_duration_seconds || 30),
       show_track_category: Boolean(draft.show_track_category),
       allow_early_reveal_vote: Boolean(draft.allow_early_reveal_vote),
+      answer_similarity_threshold: this.normalizeAnswerThreshold(draft.answer_similarity_threshold),
       selected_category_ids: Array.isArray(draft.selected_category_ids) ? draft.selected_category_ids : [],
     });
 
@@ -676,6 +695,7 @@ export class LobbyController {
       round_duration_seconds: Number.parseInt(config.round_duration_seconds ?? 0, 10),
       show_track_category: Boolean(config.show_track_category),
       allow_early_reveal_vote: Boolean(config.allow_early_reveal_vote),
+      answer_similarity_threshold: this.normalizeAnswerThreshold(config.answer_similarity_threshold),
       selected_category_ids: Array.isArray(config.selected_category_ids) ? config.selected_category_ids.map(Number) : [],
     });
   }
@@ -688,6 +708,18 @@ export class LobbyController {
   parseIntegerInput(value) {
     const parsed = Number.parseInt(String(value ?? "").trim(), 10);
     return Number.isFinite(parsed) ? parsed : Number.NaN;
+  }
+
+  normalizeAnswerThreshold(value) {
+    const parsed = Number.parseInt(String(value ?? MAX_ANSWER_THRESHOLD).trim(), 10);
+    if (!Number.isFinite(parsed)) return MAX_ANSWER_THRESHOLD;
+    return Math.max(MIN_ANSWER_THRESHOLD, Math.min(MAX_ANSWER_THRESHOLD, parsed));
+  }
+
+  updateAnswerThresholdValue(value) {
+    const el = document.getElementById("lobby-config-answer-threshold-value");
+    if (!el) return;
+    el.textContent = `${this.normalizeAnswerThreshold(value)}%`;
   }
 
   getCategoryTrackCount(category) {
@@ -727,6 +759,7 @@ export class LobbyController {
   validateConfig(config) {
     const totalRounds = Number.parseInt(config?.total_rounds ?? 0, 10);
     const roundDuration = Number.parseInt(config?.round_duration_seconds ?? 0, 10);
+    const answerThreshold = this.normalizeAnswerThreshold(config?.answer_similarity_threshold);
     const selectedCategoryIds = Array.isArray(config?.selected_category_ids) ? config.selected_category_ids.map(Number) : [];
     const availableTracks = this.getAvailableTrackCount(selectedCategoryIds);
     const issues = [];
@@ -740,6 +773,9 @@ export class LobbyController {
     if (!Number.isInteger(roundDuration) || roundDuration < MIN_ROUND_DURATION || roundDuration > MAX_ROUND_DURATION) {
       issues.push(`Le chrono doit etre compris entre ${MIN_ROUND_DURATION} et ${MAX_ROUND_DURATION} secondes.`);
     }
+    if (!Number.isInteger(answerThreshold) || answerThreshold < MIN_ANSWER_THRESHOLD || answerThreshold > MAX_ANSWER_THRESHOLD) {
+      issues.push(`La precision doit etre comprise entre ${MIN_ANSWER_THRESHOLD}% et ${MAX_ANSWER_THRESHOLD}%.`);
+    }
     if (selectedCategoryIds.length > 0 && availableTracks < Math.max(0, totalRounds || 0)) {
       issues.push(`Pas assez de musiques disponibles: ${availableTracks} pour ${Number.isInteger(totalRounds) ? totalRounds : 0} manches.`);
     }
@@ -750,6 +786,7 @@ export class LobbyController {
       availableTracks,
       totalRounds,
       roundDuration,
+      answerThreshold,
     };
   }
 

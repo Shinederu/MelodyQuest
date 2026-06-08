@@ -47,6 +47,7 @@ export class MainController {
       guess_mode: "title",
       show_track_category: false,
       allow_early_reveal_vote: true,
+      answer_similarity_threshold: 100,
     });
 
     this.setStatus(res.success ? "Salon créé" : (res.error || "Erreur"), res.success);
