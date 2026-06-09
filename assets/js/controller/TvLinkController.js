@@ -1,4 +1,4 @@
-import { getCurrentLobby } from "../utils/LobbyState.js?v=20260609-mobile-ui-v2";
+import { getCurrentLobby } from "../utils/LobbyState.js?v=20260609-player-mode";
 
 function getRouteParams() {
   const query = String(window.location.hash || "").split("?")[1] || "";

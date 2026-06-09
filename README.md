@@ -43,6 +43,7 @@ L'API `auth` utilise aussi ce meme schema partage avec ses variables (`DB_*`).
 - Images de profil exposees par l'API MelodyQuest avec URL d'avatar normalisee depuis l'API Auth, affichees dans les listes de joueurs et le classement
 - Partage direct d'un salon via URL `#/lobby?code=...`, utilisable depuis le lobby et depuis la partie
 - Mode TV via `https://melodyquest.shinederu.ch/tv`: une TV genere un QR code/code court, puis un joueur connecte dans un salon peut la lier depuis `#/tv-link`, avec saisie manuelle ou scan du QR via la camera du telephone; la TV suit ensuite le salon, precharge la prochaine manche avec un player cache, joue le son sans bouton d'activation, affiche la video/solution au moment de la revelation et garde le classement visible
+- Mode joueur de salon dans `#/game`: un telephone ou PC peut basculer en interface de reponse seule quand une TV est liee, sans lecteur YouTube ni prechargement video local.
 - Suggestions joueurs: correction/alias/URL pendant une partie, avec verrou temporaire de manche pendant la saisie, et page publique `#/suggest-track` pour proposer une nouvelle musique
 - Administrateurs de catalogue definis par le droit central `melodyquest.catalog.manage` (`core_*`) ou par le super-admin global
 - Administrateurs: gestion du catalogue (categories, familles, musiques) et suivi des suggestions joueurs
@@ -73,7 +74,7 @@ Les flux `login/register/logout/me` passent par ce client auth partage.
 - Vue `main`: menu principal (creer un salon public/prive, rejoindre par code, salons publics)
 - Vue `lobby-list`: lobbies publics en cours + rejoindre par code
 - Vue `lobby`: page lobby (joueurs avec avatars, reglages owner regroupes par salon/rythme/options/validation/categories, visibilite public/prive, categorie visible, vote de revelation, seuil de precision des reponses, presence maintenue pendant le chargement initial)
-- Vue `game`: partie en cours avec lecteur YouTube synchronise a gauche sur desktop, reponse/classement/code lobby en colonne droite, solution lisible sous la video, vote de revelation anticipee unanime, autofocus du champ de reponse, timer visible apres une bonne reponse, pseudos verts quand un joueur a trouve, derniers essais rates visibles, proposition de correction et partage du salon, puis empilement responsive sur mobile
+- Vue `game`: partie en cours avec lecteur YouTube synchronise a gauche sur desktop, reponse/classement/code lobby en colonne droite, solution lisible sous la video, mode joueur sans video pour les soirees avec TV, vote de revelation anticipee unanime, autofocus du champ de reponse, timer visible apres une bonne reponse, pseudos verts quand un joueur a trouve, derniers essais rates visibles, proposition de correction et partage du salon, puis empilement responsive sur mobile
 - Vue `management`: hub management global
 - Vue `management-categories`: gestion categories
 - Vue `management-families`: gestion familles
@@ -90,6 +91,7 @@ Les flux `login/register/logout/me` passent par ce client auth partage.
 - Layout mobile compact: header reduit, lecteur en ratio 16:9, actions de reponse proches de la video, controles de partage/TV et classement densifies pour limiter le defilement pendant une partie.
 - La solution affiche l'oeuvre en grand sous la video, puis les infos de musique/artiste en plus petit; la categorie apparait uniquement si l'option du lobby est activee.
 - L'option "suivant automatique" n'est plus persistee en stockage navigateur: elle repart desactivee a chaque nouvelle session de jeu.
+- Le mode joueur de salon masque le lecteur, le volume, le classement et les informations de partage afin de garder uniquement la reponse, l'etat de manche, les votes et les corrections utiles; le choix est conserve localement sur l'appareil.
 - Le mode TV est pense pour une soiree IRL: pas de header/footer ni navigation visible, QR code/code lisible a distance au demarrage, son actif par defaut, prechargement de la prochaine video via un player YouTube cache, puis grand timer, solution et classement visibles sur un ecran partage avec un layout adapte a la taille et au ratio du navigateur.
 - Le scan camera de `tv-link` utilise d'abord `BarcodeDetector` quand disponible, puis le decodeur local vendore `assets/js/vendor/jsqr/` en fallback; le champ code reste toujours disponible.
 

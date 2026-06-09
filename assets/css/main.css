@@ -198,6 +198,13 @@ button.mq-secondary:hover:not(:disabled),
   box-shadow: 0 12px 26px rgba(0, 0, 0, 0.2);
 }
 
+button.mq-secondary.is-active,
+.mq-secondary.is-active {
+  border-color: rgba(120, 183, 255, 0.6);
+  color: var(--mq-primary-strong);
+  background: rgba(120, 183, 255, 0.14);
+}
+
 button.mq-danger,
 .mq-danger {
   color: #fff;
@@ -1757,6 +1764,68 @@ input[type="range"] {
 
 .mq-game-stage__head .mq-actions {
   margin-top: 0;
+}
+
+.mq-game-player-summary {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 12px;
+  padding: 12px;
+  border: 1px solid rgba(120, 183, 255, 0.22);
+  border-radius: var(--mq-radius);
+  color: var(--mq-text-soft);
+  background: rgba(120, 183, 255, 0.08);
+}
+
+.mq-game-player-summary[hidden] {
+  display: none;
+}
+
+.mq-game-player-summary strong {
+  color: var(--mq-text);
+  font-size: 1rem;
+}
+
+.mq-game-player-summary span {
+  overflow-wrap: anywhere;
+}
+
+.mq-game-page.is-player-only-mode .mq-game-shell {
+  grid-template-columns: minmax(0, 720px);
+  justify-content: center;
+}
+
+.mq-game-page.is-player-only-mode .mq-game-stage {
+  padding: 12px;
+}
+
+.mq-game-page.is-player-only-mode #game-video,
+.mq-game-page.is-player-only-mode .mq-video-toolbar,
+.mq-game-page.is-player-only-mode #game-round-category,
+.mq-game-page.is-player-only-mode #game-solution,
+.mq-game-page.is-player-only-mode .mq-game-info-card,
+.mq-game-page.is-player-only-mode .mq-game-missed-panel {
+  display: none;
+}
+
+.mq-game-page.is-player-only-mode .mq-game-side {
+  display: grid;
+  gap: 12px;
+}
+
+.mq-game-page.is-player-only-mode .mq-game-answer-card .mq-kicker,
+.mq-game-page.is-player-only-mode .mq-game-answer-card .mq-card-copy {
+  display: none;
+}
+
+.mq-game-page.is-player-only-mode .mq-game-answer-card,
+.mq-game-page.is-player-only-mode .mq-game-vote-panel {
+  padding: clamp(16px, 3vw, 26px);
+}
+
+.mq-game-page.is-player-only-mode #game-answer-shell input {
+  min-height: 58px;
+  font-size: 1.08rem;
 }
 
 .mq-game-stage h1 {

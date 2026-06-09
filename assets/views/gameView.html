@@ -4,6 +4,7 @@
       <div class="mq-game-stage__head mq-game-stage__head--compact">
         <p id="game-status" class="status"></p>
         <div class="mq-actions">
+          <button id="btn-game-player-mode" type="button" class="mq-secondary" aria-pressed="false">Mode joueur</button>
           <button id="btn-game-leave" type="button" class="mq-danger">Quitter le salon</button>
         </div>
       </div>
@@ -52,6 +53,8 @@
           <h2>Ta réponse</h2>
           <p class="mq-card-copy">Trouve le morceau avant la fin du chrono.</p>
         </div>
+
+        <div id="game-player-mode-summary" class="mq-game-player-summary" hidden></div>
 
         <div id="game-answer-shell" class="mq-form-stack">
           <label for="game-answer">Réponse</label>

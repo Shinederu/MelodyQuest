@@ -1,6 +1,7 @@
 import { getCurrentLobby, setCurrentLobby, clearCurrentLobby } from "../utils/LobbyState.js";
 
 const PLAYER_VOLUME_STORAGE_KEY = "mq_game_volume";
+const PLAYER_ONLY_MODE_STORAGE_KEY = "mq_game_player_only_mode";
 const DEFAULT_PLAYER_VOLUME = 70;
 const TIMER_RING_RADIUS = 44;
 const TIMER_RING_CIRCUMFERENCE = 2 * Math.PI * TIMER_RING_RADIUS;
@@ -98,6 +99,7 @@ export class GameController {
     this.preloadPlayerRequestedVideoId = "";
     this.preloadPrimeTimeout = null;
     this.playerVolume = this.loadStoredVolume();
+    this.playerOnlyMode = this.loadPlayerOnlyMode();
     this.isLobbyCodeHidden = false;
     this.suggestionModalOpen = false;
     this.suggestionSubmitInFlight = false;
@@ -107,6 +109,7 @@ export class GameController {
     document.getElementById("btn-game-next")?.addEventListener("click", () => this.voteNextRound(false));
     document.getElementById("btn-game-reveal")?.addEventListener("click", () => this.voteRevealRound());
     document.getElementById("btn-game-leave")?.addEventListener("click", () => this.leaveLobby());
+    document.getElementById("btn-game-player-mode")?.addEventListener("click", () => this.togglePlayerOnlyMode());
     document.getElementById("btn-game-toggle-code")?.addEventListener("click", () => this.toggleLobbyCodeVisibility());
     document.getElementById("btn-game-share-lobby")?.addEventListener("click", () => this.shareLobby());
     document.getElementById("btn-game-link-tv")?.addEventListener("click", () => this.linkTv());
@@ -137,6 +140,7 @@ export class GameController {
     document.addEventListener("visibilitychange", this.visibilityHandler);
 
     this.updateVolumeUi();
+    this.updatePlayerOnlyModeUi();
     this.bootstrap();
   }
 
@@ -404,6 +408,43 @@ export class GameController {
     window.appCtrl.changeView("tv-link?from=game");
   }
 
+  togglePlayerOnlyMode() {
+    this.playerOnlyMode = !this.playerOnlyMode;
+    localStorage.setItem(PLAYER_ONLY_MODE_STORAGE_KEY, this.playerOnlyMode ? "1" : "0");
+    if (this.playerOnlyMode) {
+      this.destroyPlayer();
+      this.destroyPreloadPlayer();
+      this.videoRenderKey = "player-only";
+      this.setStatus("Mode joueur activé", true);
+    } else {
+      this.setStatus("Mode complet activé", true);
+    }
+    this.updatePlayerOnlyModeUi();
+    this.updateRoundPresentation();
+  }
+
+  loadPlayerOnlyMode() {
+    return localStorage.getItem(PLAYER_ONLY_MODE_STORAGE_KEY) === "1";
+  }
+
+  updatePlayerOnlyModeUi() {
+    const page = document.querySelector(".mq-game-page");
+    page?.classList.toggle("is-player-only-mode", this.playerOnlyMode);
+
+    const button = document.getElementById("btn-game-player-mode");
+    if (button) {
+      button.setAttribute("aria-pressed", this.playerOnlyMode ? "true" : "false");
+      button.textContent = this.playerOnlyMode ? "Mode complet" : "Mode joueur";
+      button.classList.toggle("is-active", this.playerOnlyMode);
+    }
+
+    const summary = document.getElementById("game-player-mode-summary");
+    if (summary && !this.playerOnlyMode) {
+      summary.hidden = true;
+      summary.textContent = "";
+    }
+  }
+
   renderScoreboard() {
     const list = document.getElementById("game-scoreboard");
     if (!list) return;
@@ -456,8 +497,11 @@ export class GameController {
       return;
     }
 
+    this.updatePlayerOnlyModeUi();
+
     const round = this.roundState?.round;
     if (!round) {
+      this.renderPlayerOnlyRoundSummary(null);
       this.renderVideo(null, false);
       if (String(this.currentLobby?.status || "").toLowerCase() === "finished") {
         this.finishToResult(this.scoreboard || []);
@@ -479,8 +523,13 @@ export class GameController {
     const earlyRevealAvailable = this.isEarlyRevealVoteAvailable(round, answerClosed);
 
     this.renderTimer(round, answerClosed, nextVoteAvailable);
+    this.renderPlayerOnlyRoundSummary(round, userAnswer, hasCorrectAnswer, answerClosed, nextVoteAvailable);
     this.renderVideo(round?.track, revealVisible, round);
-    this.ensureUpcomingPlayer(this.roundState?.next_track, round);
+    if (this.playerOnlyMode) {
+      this.destroyPreloadPlayer();
+    } else {
+      this.ensureUpcomingPlayer(this.roundState?.next_track, round);
+    }
     this.renderAnswerPhase(round, userAnswer, hasCorrectAnswer, answerClosed);
     this.renderMissedAnswerPhase(round);
     this.renderRevealVotePhase(round, earlyRevealAvailable);
@@ -538,6 +587,10 @@ export class GameController {
   }
 
   schedulePlayerSync(force = false, delayMs = 0) {
+    if (this.playerOnlyMode) {
+      return;
+    }
+
     if (this.playerSyncTimeout) {
       clearTimeout(this.playerSyncTimeout);
       this.playerSyncTimeout = null;
@@ -603,6 +656,52 @@ export class GameController {
     ring.style.strokeDashoffset = String(TIMER_RING_CIRCUMFERENCE * (1 - safeRatio));
   }
 
+  renderPlayerOnlyRoundSummary(round, userAnswer = null, hasCorrectAnswer = false, answerClosed = false, nextVoteAvailable = false) {
+    const summary = document.getElementById("game-player-mode-summary");
+    if (!summary) return;
+
+    if (!this.playerOnlyMode || !round) {
+      summary.hidden = true;
+      summary.textContent = "";
+      return;
+    }
+
+    let title = "Mode joueur";
+    let copy = "La vidéo n'est pas chargée sur cet appareil.";
+
+    if (this.isRoundPendingStart(round)) {
+      const remaining = Math.max(0, Math.ceil(this.getMsUntilRoundStart(round) / 1000));
+      title = "Synchronisation";
+      copy = `Départ dans ${remaining}s. Prépare ta réponse.`;
+    } else if (!answerClosed && !hasCorrectAnswer) {
+      const remainingMs = Math.max(0, this.getAnswerDeadlineMs(round) - this.getNowMs());
+      const remaining = Math.max(0, Math.ceil(remainingMs / 1000));
+      title = "Réponse ouverte";
+      copy = `Il reste ${remaining}s pour trouver.`;
+    } else if (hasCorrectAnswer && !answerClosed) {
+      const awardedScore = Number(userAnswer?.score_awarded || this.correctUnlockedScore || 0);
+      const remainingMs = Math.max(0, this.getAnswerDeadlineMs(round) - this.getNowMs());
+      const remaining = Math.max(0, Math.ceil(remainingMs / 1000));
+      title = "Bonne réponse";
+      copy = awardedScore > 0
+        ? `+${awardedScore} pt. Il reste ${remaining}s aux autres.`
+        : `Il reste ${remaining}s aux autres.`;
+    } else if (!nextVoteAvailable) {
+      const remaining = Math.max(0, Math.ceil((this.getNextVoteAvailableMs(round) - this.getNowMs()) / 1000));
+      title = "Solution affichée";
+      copy = `Vote disponible dans ${remaining}s.`;
+    } else {
+      title = "Vote disponible";
+      copy = "Le groupe peut passer à la manche suivante.";
+    }
+
+    summary.hidden = false;
+    summary.innerHTML = `
+      <strong>${this.escapeHtml(title)}</strong>
+      <span>${this.escapeHtml(copy)}</span>
+    `;
+  }
+
   renderAnswerPhase(round, userAnswer, hasCorrectAnswer, answerClosed) {
     const shell = document.getElementById("game-answer-shell");
     const locked = document.getElementById("game-answer-locked");
@@ -651,6 +750,12 @@ export class GameController {
       lockedCopy.textContent = awardedScore > 0
         ? `+${awardedScore} pt. Il reste ${remaining}s aux autres.`
         : `Il reste ${remaining}s aux autres.`;
+      return;
+    }
+
+    if (this.playerOnlyMode) {
+      lockedTitle.textContent = "Solution sur l'écran";
+      lockedCopy.textContent = "Regarde la TV ou l'écran partagé pour la réponse.";
       return;
     }
 
@@ -770,6 +875,19 @@ export class GameController {
     const overlay = document.getElementById("game-video-overlay");
     const overlayHint = document.getElementById("game-video-overlay-hint");
     if (!host || !overlay || !overlayHint) return;
+
+    if (this.playerOnlyMode) {
+      host.classList.add("is-concealed");
+      overlay.hidden = true;
+      if (guard) {
+        guard.hidden = true;
+      }
+      this.renderRoundCategory(null);
+      this.renderSolution(null, false);
+      this.destroyPlayer();
+      this.videoRenderKey = "player-only";
+      return;
+    }
 
     const videoId = String(track?.youtube_video_id || "");
     const renderKey = `${videoId}:${showVideo ? "visible" : "hidden"}`;
@@ -1383,6 +1501,13 @@ export class GameController {
   }
 
   async ensurePlayer(videoId, showVideo, round = this.roundState?.round) {
+    if (this.playerOnlyMode) {
+      this.playerRequestedVideoId = "";
+      this.playerVisible = false;
+      this.destroyPlayer();
+      return;
+    }
+
     this.playerRequestedVideoId = videoId;
     this.playerVisible = Boolean(showVideo);
     this.updateVolumeUi();
@@ -1483,6 +1608,11 @@ export class GameController {
   }
 
   async ensureUpcomingPlayer(track, currentRound = this.roundState?.round) {
+    if (this.playerOnlyMode) {
+      this.destroyPreloadPlayer();
+      return;
+    }
+
     const videoId = String(track?.youtube_video_id || "").trim();
     const currentVideoId = String(currentRound?.track?.youtube_video_id || "").trim();
     if (!videoId || videoId === currentVideoId) {
@@ -1586,7 +1716,7 @@ export class GameController {
   }
 
   handlePlayerStateChange(event) {
-    if (!this.player || !this.playerReady || !window.YT?.PlayerState) {
+    if (this.playerOnlyMode || !this.player || !this.playerReady || !window.YT?.PlayerState) {
       return;
     }
 
@@ -1601,7 +1731,7 @@ export class GameController {
   }
 
   syncPlayerPlayback(force = false) {
-    if (!this.player || !this.playerReady || !this.roundState?.round || !window.YT?.PlayerState) {
+    if (this.playerOnlyMode || !this.player || !this.playerReady || !this.roundState?.round || !window.YT?.PlayerState) {
       return;
     }
 
@@ -1646,7 +1776,7 @@ export class GameController {
   }
 
   ensurePlayerIsPlaying() {
-    if (!this.player || !this.playerReady || !window.YT?.PlayerState) {
+    if (this.playerOnlyMode || !this.player || !this.playerReady || !window.YT?.PlayerState) {
       return;
     }
 
@@ -1781,6 +1911,13 @@ export class GameController {
     this.player = null;
     this.playerReady = false;
     this.playerVideoId = "";
+    this.playerRequestedVideoId = "";
+    this.playerVisible = false;
+
+    const host = document.getElementById(this.playerHostId);
+    if (host) {
+      host.innerHTML = "";
+    }
   }
 
   destroyPreloadPlayer() {
@@ -1798,6 +1935,8 @@ export class GameController {
     this.preloadPlayerReady = false;
     this.preloadPlayerVideoId = "";
     this.preloadPlayerRequestedVideoId = "";
+
+    document.getElementById(this.preloadPlayerHostId)?.remove();
   }
 
   clearAnswerInput() {
