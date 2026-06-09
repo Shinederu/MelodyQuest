@@ -16,7 +16,7 @@ import { ManagementTracksController } from "./ManagementTracksController.js?v=20
 import { ManagementValidationController } from "./ManagementValidationController.js?v=20260609-tv-mode";
 import { ManagementSuggestionsController } from "./ManagementSuggestionsController.js?v=20260609-tv-mode";
 
-const ASSET_VERSION = "20260609-tv-mode";
+const ASSET_VERSION = "20260609-tv-mode-3";
 
 let currentUser = null;
 let headerManager = null;
@@ -114,6 +114,7 @@ export class AppController {
     const rawRequested = window.location.hash.replace(/^#\/?/, "");
     const [requestedPath, requestedQuery = ""] = rawRequested.split("?");
     let requested = requestedPath.toLowerCase() || this.resolvePathRoute();
+    const initialRequested = requested;
     const routeParams = new URLSearchParams(requestedQuery);
     if (!requested) requested = "public";
 
@@ -128,9 +129,11 @@ export class AppController {
     }
 
     const isAdmin = Boolean(currentUser?.is_admin);
+    let shouldPreserveQuery = Boolean(requestedQuery) && requested === initialRequested;
 
     if (!ROUTES[requested]) {
       requested = session ? "main" : "public";
+      shouldPreserveQuery = false;
     }
 
     const route = ROUTES[requested];
@@ -144,13 +147,17 @@ export class AppController {
         sessionStorage.setItem("mq_pending_tv_code", sharedTvCode);
       }
       requested = "public";
+      shouldPreserveQuery = false;
     } else if (route.admin && !isAdmin) {
       requested = "main";
+      shouldPreserveQuery = false;
     } else if (!route.auth && session && !route.allowAuthed) {
       requested = "main";
+      shouldPreserveQuery = false;
     }
 
-    if (this.navigateTo(requested)) {
+    const navTarget = shouldPreserveQuery ? `${requested}?${requestedQuery}` : requested;
+    if (this.navigateTo(navTarget)) {
       return;
     }
 
