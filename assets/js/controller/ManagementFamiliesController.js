@@ -69,14 +69,14 @@ export class ManagementFamiliesController {
     const options = this.categories.map((item) => `<option value="${Number(item.id)}">${this.escapeHtml(item.name)}</option>`).join("");
 
     if (select) {
-      select.innerHTML = `<option value="">Choisir une categorie</option>${options}`;
+      select.innerHTML = `<option value="">Choisir une catégorie</option>${options}`;
       if (formValue && this.categories.some((item) => Number(item.id) === Number(formValue))) {
         select.value = formValue;
       }
     }
 
     if (filterSelect) {
-      filterSelect.innerHTML = `<option value="">Toutes les categories</option>${options}`;
+      filterSelect.innerHTML = `<option value="">Toutes les catégories</option>${options}`;
       this.filterCategoryId = this.categories.some((item) => Number(item.id) === Number(filterValue)) ? String(filterValue) : "";
       filterSelect.value = this.filterCategoryId;
     }
@@ -90,8 +90,8 @@ export class ManagementFamiliesController {
     if (!this.items.length) {
       list.innerHTML = `
         <div class="mq-admin-empty">
-          <strong>Aucune oeuvre</strong>
-          <p class="mq-muted">Ajoute une oeuvre pour regrouper plusieurs variantes sous une meme reponse attendue.</p>
+          <strong>Aucune œuvre</strong>
+          <p class="mq-muted">Ajoute une œuvre pour regrouper plusieurs variantes sous une même réponse attendue.</p>
         </div>
       `;
       return;
@@ -100,8 +100,8 @@ export class ManagementFamiliesController {
     if (!items.length) {
       list.innerHTML = `
         <div class="mq-admin-empty">
-          <strong>Aucune oeuvre trouvee</strong>
-          <p class="mq-muted">Ajuste la categorie ou le texte de recherche pour elargir la liste.</p>
+          <strong>Aucune œuvre trouvée</strong>
+          <p class="mq-muted">Ajuste la catégorie ou le texte de recherche pour élargir la liste.</p>
         </div>
       `;
       return;
@@ -111,7 +111,7 @@ export class ManagementFamiliesController {
       <button type="button" class="mq-admin-item ${Number(item.id) === Number(this.selectedId) ? "is-selected" : ""}" data-id="${Number(item.id)}">
         <strong>${this.escapeHtml(item.name)}</strong>
         <div class="mq-admin-item__meta">
-          <span class="mq-admin-badge">${this.escapeHtml(item.category_name || "Sans categorie")}</span>
+          <span class="mq-admin-badge">${this.escapeHtml(item.category_name || "Sans catégorie")}</span>
           <span class="mq-admin-submeta">${this.escapeHtml(this.formatFamilyCounts(item))}</span>
           ${Number(item.alias_count || 0) > 0 ? `<span class="mq-admin-badge">${Number(item.alias_count)} alias</span>` : ""}
           ${item.description ? `<span class="mq-muted">${this.escapeHtml(item.description)}</span>` : ""}
@@ -178,16 +178,16 @@ export class ManagementFamiliesController {
     const updateBtn = document.getElementById("btn-fam-update");
     const deleteBtn = document.getElementById("btn-fam-delete");
     const resetBtn = document.getElementById("btn-fam-reset");
-    if (title) title.textContent = this.selectedId ? "Modifier l'oeuvre" : "Nouvelle oeuvre";
+    if (title) title.textContent = this.selectedId ? "Modifier l'œuvre" : "Nouvelle œuvre";
     if (helper) {
       helper.textContent = this.selectedId
-        ? "Mets a jour le nom principal et les alias acceptes."
-        : "Choisis une categorie, puis renseigne l'oeuvre attendue et ses alias si besoin.";
+        ? "Mets à jour le nom principal et les alias acceptés."
+        : "Choisis une catégorie, puis renseigne l'œuvre attendue et ses alias si besoin.";
     }
     if (createBtn) createBtn.disabled = !!this.selectedId;
     if (updateBtn) updateBtn.disabled = !this.selectedId;
     if (deleteBtn) deleteBtn.disabled = !this.selectedId;
-    if (resetBtn) resetBtn.textContent = this.selectedId ? "Nouvelle oeuvre" : "Vider";
+    if (resetBtn) resetBtn.textContent = this.selectedId ? "Nouvelle œuvre" : "Vider";
   }
 
   async create() {
@@ -197,7 +197,7 @@ export class ManagementFamiliesController {
     const aliases = [...this.aliases];
     const slug = slugify(name);
     const res = await window.httpClient.createFamily({ category_id, name, slug, description, aliases });
-    this.setStatus(res.success ? "Oeuvre creee" : (res.error || "Erreur"), res.success);
+    this.setStatus(res.success ? "Œuvre créée" : (res.error || "Erreur"), res.success);
     if (res.success) {
       this.selectedId = null;
       await this.refresh();
@@ -212,14 +212,14 @@ export class ManagementFamiliesController {
     const aliases = [...this.aliases];
     const slug = slugify(name);
     const res = await window.httpClient.updateFamily({ id: this.selectedId, category_id, name, slug, description, aliases });
-    this.setStatus(res.success ? "Oeuvre mise a jour" : (res.error || "Erreur"), res.success);
+    this.setStatus(res.success ? "Œuvre mise à jour" : (res.error || "Erreur"), res.success);
     if (res.success) await this.refresh();
   }
 
   async remove() {
     if (!this.selectedId) return;
     const res = await window.httpClient.deleteFamily(this.selectedId);
-    this.setStatus(res.success ? "Oeuvre supprimee" : (res.error || "Erreur"), res.success);
+    this.setStatus(res.success ? "Œuvre supprimée" : (res.error || "Erreur"), res.success);
     if (res.success) {
       this.selectedId = null;
       await this.refresh();
@@ -237,8 +237,8 @@ export class ManagementFamiliesController {
     const count = this.getFilteredItems().length;
     const total = this.items.length;
     const text = this.hasActiveFilters()
-      ? `${count}/${total} ${total > 1 ? "oeuvres" : "oeuvre"}`
-      : `${total} ${total > 1 ? "oeuvres" : "oeuvre"}`;
+      ? `${count}/${total} ${total > 1 ? "œuvres" : "œuvre"}`
+      : `${total} ${total > 1 ? "œuvres" : "œuvre"}`;
     ["fam-count", "fam-count-inline"].forEach((id) => {
       const el = document.getElementById(id);
       if (el) el.textContent = text;

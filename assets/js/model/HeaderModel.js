@@ -9,7 +9,7 @@ export class HeaderModel {
     const canLogout = view !== "public" && hasUser;
 
     const buttonHtml = canLogout
-      ? `<button id="header-btn-logout" type="button" class="mq-danger">Deconnexion</button>`
+      ? `<button id="header-btn-logout" type="button" class="mq-danger">Déconnexion</button>`
       : "";
 
     const roleLabel = isAdmin ? "admin" : (role || "user");
@@ -37,12 +37,22 @@ export class HeaderModel {
     if (canLogout) {
       const logoutButton = document.getElementById("header-btn-logout");
       logoutButton?.addEventListener("click", async () => {
+        logoutButton.disabled = true;
+        logoutButton.textContent = "Déconnexion...";
         const response = await window.httpClient.logout();
         if (response.success) {
           localStorage.removeItem("user");
           window.appCtrl.changeView("public");
         } else {
-          alert("Logout failed: " + response.error);
+          logoutButton.disabled = false;
+          logoutButton.textContent = "Erreur";
+          logoutButton.title = response.error || "Déconnexion impossible";
+          window.setTimeout(() => {
+            if (document.body.contains(logoutButton)) {
+              logoutButton.textContent = "Déconnexion";
+              logoutButton.title = "";
+            }
+          }, 2200);
         }
       });
     }
@@ -53,7 +63,7 @@ export class HeaderModel {
       main: {
         eyebrow: "Blindtest entre amis",
         title: "Jouer maintenant",
-        description: "Creer un salon, partager le code, lancer la musique.",
+        description: "Créer un salon, partager le code, lancer la musique.",
       },
       "suggest-track": {
         eyebrow: "Contribution",
@@ -88,9 +98,9 @@ export class HeaderModel {
       },
       result: {
         eyebrow: "Fin de partie",
-        title: "Partie terminee",
+        title: "Partie terminée",
         titleId: "result-title",
-        description: "Les scores sont poses. Le salon se prepare pour une revanche.",
+        description: "Les scores sont posés. Le salon se prépare pour une revanche.",
       },
       management: {
         eyebrow: "Administration",
@@ -99,12 +109,12 @@ export class HeaderModel {
       },
       "management-categories": {
         eyebrow: "Catalogue",
-        title: "Gestion des categories",
-        description: "Selectionne une categorie ou cree-en une nouvelle.",
+        title: "Gestion des catégories",
+        description: "Sélectionne une catégorie ou crée-en une nouvelle.",
       },
       "management-families": {
         eyebrow: "Catalogue",
-        title: "Gestion des oeuvres",
+        title: "Gestion des œuvres",
         description: "Regroupe les musiques par réponse attendue.",
       },
       "management-tracks": {
@@ -114,8 +124,8 @@ export class HeaderModel {
       },
       "management-validation": {
         eyebrow: "Administration",
-        title: "Verification / validation",
-        description: "Controle les nouvelles musiques avant de les rendre jouables.",
+        title: "Vérification / validation",
+        description: "Contrôle les nouvelles musiques avant de les rendre jouables.",
       },
       "management-suggestions": {
         eyebrow: "Administration",

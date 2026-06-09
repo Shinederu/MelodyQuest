@@ -50,14 +50,15 @@
 
           <div class="mq-field">
             <label for="login-username">Nom d'utilisateur</label>
-            <input type="text" id="login-username" name="username" autocomplete="username" maxlength="254" size="30" placeholder="Ton pseudo" />
+            <input type="text" id="login-username" name="username" autocomplete="username" required maxlength="254" size="30" placeholder="Ton pseudo" />
           </div>
 
           <div class="mq-field">
             <label for="login-password">Mot de passe</label>
-            <input type="password" id="login-password" name="password" autocomplete="current-password" maxlength="254" size="30" placeholder="Ton mot de passe" />
+            <input type="password" id="login-password" name="password" autocomplete="current-password" required maxlength="254" size="30" placeholder="Ton mot de passe" />
           </div>
 
+          <p id="login-status" class="status" aria-live="polite"></p>
           <button id="btn-login" type="submit">Se connecter</button>
         </form>
 
@@ -79,14 +80,15 @@
 
           <div class="mq-field">
             <label for="register-password">Mot de passe</label>
-            <input type="password" id="register-password" name="new-password" autocomplete="new-password" maxlength="254" size="30" placeholder="Minimum conseillé : un mot de passe unique" />
+            <input type="password" id="register-password" name="new-password" autocomplete="new-password" required maxlength="254" size="30" placeholder="Minimum conseillé : un mot de passe unique" />
           </div>
 
           <div class="mq-field">
             <label for="register-confirm-password">Confirmer le mot de passe</label>
-            <input type="password" id="register-confirm-password" name="confirm-password" autocomplete="new-password" maxlength="254" size="30" placeholder="Retape le mot de passe" />
+            <input type="password" id="register-confirm-password" name="confirm-password" autocomplete="new-password" required maxlength="254" size="30" placeholder="Retape le mot de passe" />
           </div>
 
+          <p id="register-status" class="status" aria-live="polite"></p>
           <button id="btn-register" type="submit">S'inscrire</button>
         </form>
       </div>

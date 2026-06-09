@@ -10,7 +10,7 @@
         <div class="mq-admin-toolbar__cluster">
           <span id="track-count" class="mq-chip">0 musiques</span>
         </div>
-        <p id="track-status" class="status">Selectionne une musique pour l'editer ou ajoute une nouvelle entree.</p>
+        <p id="track-status" class="status">Sélectionne une musique pour l'éditer ou ajoute une nouvelle entrée.</p>
       </div>
     </div>
   </section>
@@ -21,21 +21,21 @@
         <div class="mq-card-heading">
           <div class="mq-kicker">Exploration</div>
           <h2>Liste des musiques</h2>
-          <p class="mq-card-copy">La liste sert de navigateur. L'editeur a droite te permet de changer categorie, oeuvre attendue et piste sans passer par plusieurs ecrans.</p>
+          <p class="mq-card-copy">La liste sert de navigateur. L'éditeur à droite te permet de changer catégorie, œuvre attendue et piste sans passer par plusieurs écrans.</p>
         </div>
         <span id="track-count-inline" class="mq-chip">0 musiques</span>
       </div>
       <div class="mq-admin-filter-bar">
         <div class="mq-field">
-          <label for="track-filter-category">Filtrer par categorie</label>
+          <label for="track-filter-category">Filtrer par catégorie</label>
           <select id="track-filter-category"></select>
         </div>
         <div class="mq-field">
-          <label for="track-filter-family">Rechercher une oeuvre</label>
-          <input id="track-filter-family" type="text" placeholder="Ex: Pokemon" autocomplete="off" />
+          <label for="track-filter-family">Rechercher une œuvre</label>
+          <input id="track-filter-family" type="text" placeholder="Ex: Pokémon" autocomplete="off" />
         </div>
         <div class="mq-field">
-          <label for="track-filter-query">Rechercher une track</label>
+          <label for="track-filter-query">Rechercher une piste</label>
           <input id="track-filter-query" type="text" placeholder="Ex: Ending S1" autocomplete="off" />
         </div>
         <button id="btn-track-clear-filters" type="button" class="mq-secondary">Effacer</button>
@@ -47,14 +47,14 @@
 
     <section class="mq-card mq-card--accent mq-admin-pane mq-admin-pane--sticky">
       <div class="mq-card-heading">
-        <div class="mq-kicker">Edition</div>
+        <div class="mq-kicker">Édition</div>
         <h2 id="track-form-title">Nouvelle musique</h2>
-        <p id="track-form-helper" class="mq-admin-helper">Mode creation actif. Si l'oeuvre n'existe pas encore dans la categorie choisie, elle sera creee automatiquement, puis la piste devra etre validee.</p>
+        <p id="track-form-helper" class="mq-admin-helper">Mode création actif. Si l'œuvre n'existe pas encore dans la catégorie choisie, elle sera créée automatiquement, puis la piste devra être validée.</p>
       </div>
       <div id="track-form" class="mq-admin-form-grid">
         <div class="mq-admin-form-split">
           <div class="mq-field">
-            <label for="track-category">Categorie</label>
+            <label for="track-category">Catégorie</label>
             <select id="track-category"></select>
           </div>
 
@@ -66,7 +66,7 @@
                 type="text"
                 autocomplete="off"
                 spellcheck="false"
-                placeholder="Ex: Pokemon"
+                placeholder="Ex: Pokémon"
                 aria-autocomplete="list"
                 aria-expanded="false"
                 aria-controls="track-family-suggestions"
@@ -78,13 +78,13 @@
 
         <div class="mq-admin-form-split">
           <div class="mq-field">
-            <label for="track-title">Libelle de la piste</label>
+            <label for="track-title">Libellé de la piste</label>
             <input id="track-title" type="text" placeholder="Ex: Ending S1" />
           </div>
 
           <div class="mq-field">
             <label for="track-artist">Artiste / licence</label>
-            <input id="track-artist" type="text" placeholder="Ex: Pokemon" />
+            <input id="track-artist" type="text" placeholder="Ex: Pokémon" />
           </div>
         </div>
 
@@ -93,12 +93,12 @@
           <input id="track-youtube-url" type="text" placeholder="Ex: dQw4w9WgXcQ ou https://www.youtube.com/watch?v=..." />
         </div>
 
-        <p id="track-family-hint" class="mq-muted">Selectionne d'abord une categorie pour voir les oeuvres existantes reutilisables.</p>
-        <p class="mq-muted">Tu peux coller une URL complete ou uniquement l'identifiant de la video.</p>
+        <p id="track-family-hint" class="mq-muted">Sélectionne d'abord une catégorie pour voir les œuvres existantes réutilisables.</p>
+        <p class="mq-muted">Tu peux coller une URL complète ou uniquement l'identifiant de la vidéo.</p>
       </div>
       <div class="mq-admin-form-actions">
         <button id="btn-track-create" type="button">Ajouter</button>
-        <button id="btn-track-update" type="button">Mettre a jour</button>
+        <button id="btn-track-update" type="button">Mettre à jour</button>
         <button id="btn-track-unvalidate" type="button" class="mq-secondary">Repasser en attente</button>
         <button id="btn-track-reset" type="button" class="mq-secondary">Vider</button>
         <button id="btn-track-delete" type="button" class="mq-danger">Supprimer</button>

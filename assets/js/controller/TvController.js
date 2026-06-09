@@ -1,4 +1,4 @@
-import { renderQrSvg } from "../utils/qr.js?v=20260609-responsive-safe";
+import { renderQrSvg } from "../utils/qr.js?v=20260609-audit-polish";
 
 const TV_TOKEN_STORAGE_KEY = "mq_tv_device_token";
 const TV_PAIRING_POLL_INTERVAL_MS = 1000;

@@ -78,7 +78,7 @@ export class ManagementTracksController {
     const options = this.categories.map((item) => `<option value="${Number(item.id)}">${this.escapeHtml(item.name)}</option>`).join("");
 
     if (select) {
-      select.innerHTML = `<option value="">Choisir une categorie</option>${options}`;
+      select.innerHTML = `<option value="">Choisir une catégorie</option>${options}`;
 
       if (selectedValue > 0 && this.categories.some((item) => Number(item.id) === selectedValue)) {
         select.value = String(selectedValue);
@@ -86,7 +86,7 @@ export class ManagementTracksController {
     }
 
     if (filterSelect) {
-      filterSelect.innerHTML = `<option value="">Toutes les categories</option>${options}`;
+      filterSelect.innerHTML = `<option value="">Toutes les catégories</option>${options}`;
       this.filterCategoryId = this.categories.some((item) => Number(item.id) === Number(filterValue)) ? String(filterValue) : "";
       filterSelect.value = this.filterCategoryId;
     }
@@ -135,7 +135,7 @@ export class ManagementTracksController {
           `).join("")
         : `
             <div class="mq-autocomplete__empty">
-              Aucune oeuvre existante ne correspond. La saisie sera creee automatiquement.
+              Aucune œuvre existante ne correspond. La saisie sera créée automatiquement.
             </div>
           `;
 
@@ -158,30 +158,30 @@ export class ManagementTracksController {
     if (!hint) return;
 
     if (categoryId <= 0) {
-      hint.textContent = "Selectionne d'abord une categorie pour voir les oeuvres existantes reutilisables.";
+      hint.textContent = "Sélectionne d'abord une catégorie pour voir les œuvres existantes réutilisables.";
       return;
     }
 
     if (!familyName) {
       hint.textContent = families.length
-        ? `${families.length} ${families.length > 1 ? "oeuvres existent" : "oeuvre existe"} deja dans cette categorie. Commence a taper pour filtrer.`
-        : "Aucune oeuvre enregistree dans cette categorie pour le moment.";
+        ? `${families.length} ${families.length > 1 ? "œuvres existent" : "œuvre existe"} déjà dans cette catégorie. Commence à taper pour filtrer.`
+        : "Aucune œuvre enregistrée dans cette catégorie pour le moment.";
       return;
     }
 
     if (exactMatch) {
-      hint.textContent = "Cette oeuvre existe deja dans cette categorie. Elle sera reutilisee.";
+      hint.textContent = "Cette œuvre existe déjà dans cette catégorie. Elle sera réutilisée.";
       return;
     }
 
     if (this.familySuggestions.length) {
-      hint.textContent = `${this.familySuggestions.length} ${this.familySuggestions.length > 1 ? "propositions correspondent" : "proposition correspond"} a ta saisie. Tu peux en selectionner une ci-dessous.`;
+      hint.textContent = `${this.familySuggestions.length} ${this.familySuggestions.length > 1 ? "propositions correspondent" : "proposition correspond"} à ta saisie. Tu peux en sélectionner une ci-dessous.`;
       return;
     }
 
     hint.textContent = families.length
-      ? "Aucune oeuvre existante ne correspond. La saisie sera creee automatiquement."
-      : "Aucune oeuvre enregistree dans cette categorie pour le moment.";
+      ? "Aucune œuvre existante ne correspond. La saisie sera créée automatiquement."
+      : "Aucune œuvre enregistrée dans cette catégorie pour le moment.";
   }
 
   buildFamilySuggestions(families, query) {
@@ -316,7 +316,7 @@ export class ManagementTracksController {
       list.innerHTML = `
         <div class="mq-admin-empty">
           <strong>Aucune musique</strong>
-          <p class="mq-muted">Ajoute un premier morceau. L'oeuvre sera creee ou reutilisee directement depuis le formulaire.</p>
+          <p class="mq-muted">Ajoute un premier morceau. L'œuvre sera créée ou réutilisée directement depuis le formulaire.</p>
         </div>
       `;
       return;
@@ -325,8 +325,8 @@ export class ManagementTracksController {
     if (!items.length) {
       list.innerHTML = `
         <div class="mq-admin-empty">
-          <strong>Aucune musique trouvee</strong>
-          <p class="mq-muted">Ajuste la categorie, l'oeuvre ou le texte de track pour elargir la liste.</p>
+          <strong>Aucune musique trouvée</strong>
+          <p class="mq-muted">Ajuste la catégorie, l'œuvre ou le texte de piste pour élargir la liste.</p>
         </div>
       `;
       return;
@@ -336,10 +336,10 @@ export class ManagementTracksController {
       <button type="button" class="mq-admin-item ${Number(item.id) === Number(this.selectedId) ? "is-selected" : ""}" data-id="${Number(item.id)}">
         <strong>${this.escapeHtml(item.title)}</strong>
         <div class="mq-admin-item__meta">
-          <span class="mq-admin-badge">${this.escapeHtml(item.category_name || "Sans categorie")}</span>
-          <span class="mq-admin-badge">${this.escapeHtml(item.family_name || "Sans oeuvre")}</span>
+          <span class="mq-admin-badge">${this.escapeHtml(item.category_name || "Sans catégorie")}</span>
+          <span class="mq-admin-badge">${this.escapeHtml(item.family_name || "Sans œuvre")}</span>
           <span class="mq-admin-badge ${Number(item.is_validated) === 1 ? "mq-admin-badge--success" : "mq-admin-badge--pending"}">
-            ${Number(item.is_validated) === 1 ? "Validee" : "En attente"}
+            ${Number(item.is_validated) === 1 ? "Validée" : "En attente"}
           </span>
           ${item.artist ? `<span class="mq-muted">${this.escapeHtml(item.artist)}</span>` : ""}
         </div>
@@ -436,8 +436,8 @@ export class ManagementTracksController {
     if (title) title.textContent = this.selectedId ? "Modifier la musique" : "Nouvelle musique";
     if (helper) {
       helper.textContent = this.selectedId
-        ? "Mode modification actif. Toute mise a jour repasse la piste en attente, et tu peux aussi la rebasculer manuellement si besoin."
-        : "Mode creation actif. Les nouvelles musiques sont ajoutees en attente de validation, avec categorie et oeuvre conservees pour enchainer rapidement.";
+        ? "Mode modification actif. Toute mise à jour repasse la piste en attente, et tu peux aussi la rebasculer manuellement si besoin."
+        : "Mode création actif. Les nouvelles musiques sont ajoutées en attente de validation, avec catégorie et œuvre conservées pour enchaîner rapidement.";
     }
     if (createBtn) createBtn.disabled = !!this.selectedId;
     if (updateBtn) updateBtn.disabled = !this.selectedId;
@@ -481,7 +481,7 @@ export class ManagementTracksController {
       youtube_video_id,
     });
 
-    this.setStatus(res.success ? "Musique creee en attente de validation" : (res.error || "Erreur"), res.success);
+    this.setStatus(res.success ? "Musique créée en attente de validation" : (res.error || "Erreur"), res.success);
     if (res.success) {
       this.draftCategoryId = category_id || null;
       this.draftFamilyName = family_name;
@@ -514,7 +514,7 @@ export class ManagementTracksController {
       youtube_video_id,
     });
 
-    this.setStatus(res.success ? "Musique mise a jour et repassee en attente de validation" : (res.error || "Erreur"), res.success);
+    this.setStatus(res.success ? "Musique mise à jour et repassée en attente de validation" : (res.error || "Erreur"), res.success);
     if (res.success) {
       this.draftCategoryId = category_id || null;
       this.draftFamilyName = family_name;
@@ -526,7 +526,7 @@ export class ManagementTracksController {
     if (!this.selectedId) return;
 
     const res = await window.httpClient.deleteTrack(this.selectedId);
-    this.setStatus(res.success ? "Musique supprimee" : (res.error || "Erreur"), res.success);
+    this.setStatus(res.success ? "Musique supprimée" : (res.error || "Erreur"), res.success);
     if (res.success) {
       this.selectedId = null;
       await this.refresh();
@@ -537,7 +537,7 @@ export class ManagementTracksController {
     if (!this.selectedId) return;
 
     const res = await window.httpClient.unvalidateTrack(this.selectedId);
-    this.setStatus(res.success ? "Musique repassee en attente de validation" : (res.error || "Erreur"), res.success);
+    this.setStatus(res.success ? "Musique repassée en attente de validation" : (res.error || "Erreur"), res.success);
     if (res.success) {
       await this.refresh();
     }

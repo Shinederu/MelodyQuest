@@ -7,94 +7,96 @@ Repository MelodyQuest (frontend statique).
 - `index.html` : entrypoint frontend
 - `assets/` : JS/CSS/views du client
 
-## Mapping deploiement (serveur actuel)
+## Mapping déploiement (serveur actuel)
 
-- Dossier front deploye: `MelodyQuest/`
+- Dossier front déployé: `MelodyQuest/`
 - Entry point front: `MelodyQuest/index.html`
 - Assets front: `MelodyQuest/assets/*`
 - API MelodyQuest: `https://api.shinederu.ch/melodyquest/` (dossier serveur `API/melodyquest/`)
 - API Auth: `https://api.shinederu.ch/auth/` (dossier serveur `API/auth/`)
 
-## Base de donnees
+## Base de données
 
-MelodyQuest partage la meme instance MySQL et le meme schema que les autres projets Shinederu:
+MelodyQuest partage la même instance MySQL et le même schéma que les autres projets Shinederu:
 
-- schema partage
+- schéma partagé
 - variables backend MelodyQuest: `MQ_DB_*`
 
-L'API `auth` utilise aussi ce meme schema partage avec ses variables (`DB_*`).
+L'API `auth` utilise aussi ce même schéma partagé avec ses variables (`DB_*`).
 
 ## Cahier des charges produit
 
 - Jeu: blindtest multijoueur
 - Frontend: JS/CSS/HTML (sans framework)
-- Connexion centralisee/partagee sur le domaine et sous-domaines
-- Utilisateur connecte: creer/rejoindre un lobby
-- Lobby configurable uniquement par son createur, avec visibilite public/prive modifiable depuis le lobby
-- Musiques organisees en categories (films, dessins animes, series, animes, Disney, etc.)
-- Musiques organisees en familles (ex: plusieurs themes d'une meme oeuvre)
-- Aucune piste audio stockee en DB: uniquement des identifiants video YouTube
-- Lecture via player YouTube avec video cachee
-- Option de lobby pour afficher la categorie de la musique pendant la manche
-- Option de lobby pour autoriser un vote de revelation anticipee si personne n'a trouve la reponse
-- Option de lobby `Precision des reponses` pour choisir un seuil de correspondance de `70%` a `100%`; `100%` conserve la validation stricte.
-- Lecture synchronisee entre tous les joueurs d'un lobby
-- Les manches utilisent une piste d'avance exposee par l'API (`next_track`) afin que les clients et le mode TV prechargent la prochaine video YouTube en arriere-plan; le depart visible ne garde qu'une courte synchronisation.
-- Images de profil exposees par l'API MelodyQuest avec URL d'avatar normalisee depuis l'API Auth, affichees dans les listes de joueurs et le classement
+- Connexion centralisée/partagée sur le domaine et sous-domaines
+- Utilisateur connecté: créer/rejoindre un lobby
+- Lobby configurable uniquement par son créateur, avec visibilité public/privé modifiable depuis le lobby
+- Musiques organisées en catégories (films, dessins animés, séries, animés, Disney, etc.)
+- Musiques organisées en familles (ex: plusieurs thèmes d'une même œuvre)
+- Aucune piste audio stockée en DB: uniquement des identifiants vidéo YouTube
+- Lecture via player YouTube avec vidéo cachée
+- Option de lobby pour afficher la catégorie de la musique pendant la manche
+- Option de lobby pour autoriser un vote de révélation anticipée si personne n'a trouvé la réponse
+- Option de lobby `Précision des réponses` pour choisir un seuil de correspondance de `70%` à `100%`; `100%` conserve la validation stricte.
+- Lecture synchronisée entre tous les joueurs d'un lobby
+- Les manches utilisent une piste d'avance exposée par l'API (`next_track`) afin que les clients et le mode TV préchargent la prochaine vidéo YouTube en arrière-plan; le départ visible ne garde qu'une courte synchronisation.
+- Images de profil exposées par l'API MelodyQuest avec URL d'avatar normalisée depuis l'API Auth, affichées dans les listes de joueurs et le classement
 - Partage direct d'un salon via URL `#/lobby?code=...`, utilisable depuis le lobby et depuis la partie
-- Mode TV via `https://melodyquest.shinederu.ch/tv`: une TV genere un QR code/code court, puis un joueur connecte dans un salon peut la lier depuis `#/tv-link`, avec saisie manuelle ou scan du QR via la camera du telephone; la TV suit ensuite le salon, precharge la prochaine manche avec un player cache, joue le son sans bouton d'activation, affiche la video/solution au moment de la revelation et garde le classement visible
-- Mode joueur de salon dans `#/game`: un telephone ou PC peut basculer en interface de reponse seule quand une TV est liee, sans lecteur YouTube ni prechargement video local.
+- Mode TV via `https://melodyquest.shinederu.ch/tv`: une TV génère un QR code/code court, puis un joueur connecté dans un salon peut la lier depuis `#/tv-link`, avec saisie manuelle ou scan du QR via la caméra du téléphone; la TV suit ensuite le salon, précharge la prochaine manche avec un player caché, joue le son sans bouton d'activation, affiche la vidéo/solution au moment de la révélation et garde le classement visible
+- Mode joueur de salon dans `#/game`: un téléphone ou PC peut basculer en interface de réponse seule quand une TV est liée, sans lecteur YouTube ni préchargement vidéo local.
 - Suggestions joueurs: correction/alias/URL pendant une partie, avec verrou temporaire de manche pendant la saisie, et page publique `#/suggest-track` pour proposer une nouvelle musique
-- Administrateurs de catalogue definis par le droit central `melodyquest.catalog.manage` (`core_*`) ou par le super-admin global
-- Administrateurs: gestion du catalogue (categories, familles, musiques) et suivi des suggestions joueurs
+- Administrateurs de catalogue définis par le droit central `melodyquest.catalog.manage` (`core_*`) ou par le super-admin global
+- Administrateurs: gestion du catalogue (catégories, familles, musiques) et suivi des suggestions joueurs
 
 ## Authentification (client)
 
-Le client utilise `shinederu-auth-core` (version browser embarquee):
+Le client utilise `shinederu-auth-core` (version browser embarquée):
 
 - `assets/js/vendor/shinederu-auth-core/`
 - `assets/js/utils/HttpService.js`
 
-Les flux `login/register/logout/me` passent par ce client auth partage.
+Les flux `login/register/logout/me` passent par ce client auth partagé.
 
-## Temps reel
+## Temps réel
 
-- priorite: Mercure via `https://mercure.shinederu.ch/.well-known/mercure`
+- priorité: Mercure via `https://mercure.shinederu.ch/.well-known/mercure`
 - fallback de transition: SSE historique sur `api.shinederu.ch/melodyquest`
-- les ecrans `main`, `lobby-list`, `lobby` et `game` consomment `data.realtime` renvoye par l'API
-- les topics Mercure MelodyQuest sont derives de `https://api.shinederu.ch/melodyquest/topics/...`
-- l'ecran `tv` reste public et utilise un polling leger `getTvPairing` / `getTvState` avec un `device_token` temporaire, afin de ne pas exiger de session auth sur une television
+- les écrans `main`, `lobby-list`, `lobby` et `game` consomment `data.realtime` renvoyé par l'API
+- les topics Mercure MelodyQuest sont dérivés de `https://api.shinederu.ch/melodyquest/topics/...`
+- l'écran `tv` reste public et utilise un polling léger `getTvPairing` / `getTvState` avec un `device_token` temporaire, afin de ne pas exiger de session auth sur une télévision
 
-## Etat client actuel
+## État client actuel
 
 - Vue `public`: login/register
 - Vue `suggest-track`: page publique de proposition de nouvelle musique, accessible avec ou sans session
-- Vue `tv`: ecran public pour television/ecran dedie; genere un QR code et bascule en affichage de partie une fois lie a un salon
-- Vue `tv-link`: liaison d'une TV au salon courant depuis le QR code scanne avec la camera, depuis un lien QR ouvert par l'appareil, ou depuis un code manuel; accessible depuis le lobby et la partie
-- Vue `main`: menu principal (creer un salon public/prive, rejoindre par code, salons publics)
+- Vue `tv`: écran public pour télévision/écran dédié; génère un QR code et bascule en affichage de partie une fois lié à un salon
+- Vue `tv-link`: liaison d'une TV au salon courant depuis le QR code scanné avec la caméra, depuis un lien QR ouvert par l'appareil, ou depuis un code manuel; accessible depuis le lobby et la partie
+- Vue `main`: menu principal (créer un salon public/privé, rejoindre par code, salons publics)
 - Vue `lobby-list`: lobbies publics en cours + rejoindre par code
-- Vue `lobby`: page lobby (joueurs avec avatars, reglages owner regroupes par salon/rythme/options/validation/categories, visibilite public/prive, categorie visible, vote de revelation, seuil de precision des reponses, presence maintenue pendant le chargement initial)
-- Vue `game`: partie en cours avec lecteur YouTube synchronise a gauche sur desktop, reponse/classement/code lobby en colonne droite, solution lisible sous la video, mode joueur sans video pour les soirees avec TV, vote de revelation anticipee unanime, autofocus du champ de reponse, timer visible apres une bonne reponse, pseudos verts quand un joueur a trouve, derniers essais rates visibles, proposition de correction et partage du salon, puis empilement responsive sur mobile
+- Vue `lobby`: page lobby (joueurs avec avatars, réglages owner regroupés par salon/rythme/options/validation/catégories, visibilité public/privé, catégorie visible, vote de révélation, seuil de précision des réponses, présence maintenue pendant le chargement initial)
+- Vue `game`: partie en cours avec lecteur YouTube synchronisé à gauche sur desktop, réponse/classement/code lobby en colonne droite, solution lisible sous la vidéo, mode joueur sans vidéo pour les soirées avec TV, vote de révélation anticipée unanime, autofocus du champ de réponse, timer visible après une bonne réponse, pseudos verts quand un joueur a trouvé, derniers essais ratés visibles, proposition de correction et partage du salon, puis empilement responsive sur mobile
 - Vue `management`: hub management global
-- Vue `management-categories`: gestion categories
+- Vue `management-categories`: gestion catégories
 - Vue `management-families`: gestion familles
 - Vue `management-tracks`: gestion musiques
-- Vue `management-validation`: validation des musiques en attente, avec correction editable de la categorie, de l'oeuvre, des alias acceptes, du libelle, de l'artiste/licence et de l'ID ou URL YouTube avant validation
-- Vue `management-suggestions`: revue des corrections, alias et nouvelles musiques envoyes par les joueurs
+- Vue `management-validation`: validation des musiques en attente, avec correction éditable de la catégorie, de l'œuvre, des alias acceptés, du libellé, de l'artiste/licence et de l'ID ou URL YouTube avant validation
+- Vue `management-suggestions`: revue des corrections, alias et nouvelles musiques envoyés par les joueurs
 
 ## Interface
 
-- Systeme visuel sombre unifie applique globalement au frontend, sans ancien theme clair residuel.
-- Les pages joueur privilegient les actions utiles: creer un salon, rejoindre par code, choisir un salon public, inviter les joueurs, regler rapidement la partie et relancer depuis les resultats.
-- Les en-tetes de pages restent compacts par defaut afin de garder les actions principales visibles sans defilement inutile.
-- Layout desktop de la page jeu concu pour tenir sur un ecran PC courant: scene video a gauche, actions et classement a droite.
-- La page jeu possede des paliers responsive intermediaires pour les tailles laptop/tablette large, avec une colonne de droite densifiee quand la hauteur disponible est limitee.
-- Layout mobile compact: header reduit, lecteur en ratio 16:9, actions de reponse proches de la video, controles de partage/TV et classement densifies pour limiter le defilement pendant une partie.
-- La solution affiche l'oeuvre en grand sous la video, puis les infos de musique/artiste en plus petit; la categorie apparait uniquement si l'option du lobby est activee.
-- L'option "suivant automatique" n'est plus persistee en stockage navigateur: elle repart desactivee a chaque nouvelle session de jeu.
-- Le mode joueur de salon masque le lecteur, le volume, le classement et les informations de partage afin de garder uniquement la reponse, l'etat de manche, les votes et les corrections utiles; le choix est conserve localement sur l'appareil.
-- Le mode TV est pense pour une soiree IRL: pas de header/footer ni navigation visible, QR code/code lisible a distance au demarrage, son actif par defaut, prechargement de la prochaine video via un player YouTube cache, puis grand timer, solution et classement visibles sur un ecran partage avec un layout adapte a la taille et au ratio du navigateur.
-- Le scan camera de `tv-link` utilise d'abord `BarcodeDetector` quand disponible, puis le decodeur local vendore `assets/js/vendor/jsqr/` en fallback; le champ code reste toujours disponible.
+- Système visuel sombre unifié appliqué globalement au frontend, sans ancien thème clair résiduel.
+- Les pages joueur privilégient les actions utiles: créer un salon, rejoindre par code, choisir un salon public, inviter les joueurs, régler rapidement la partie et relancer depuis les résultats.
+- Les en-têtes de pages restent compacts par défaut afin de garder les actions principales visibles sans défilement inutile.
+- Les retours utilisateur importants utilisent des statuts intégrés aux cartes, sans popups navigateur pour les flux de connexion/inscription.
+- Layout desktop de la page jeu conçu pour tenir sur un écran PC courant: scène vidéo à gauche, actions et classement à droite.
+- La page jeu possède des paliers responsive intermédiaires pour les tailles laptop/tablette large, avec une colonne de droite densifiée quand la hauteur disponible est limitée.
+- Layout mobile compact: header réduit, lecteur en ratio 16:9, actions de réponse proches de la vidéo, contrôles de partage/TV et classement densifiés pour limiter le défilement pendant une partie.
+- La solution affiche l'œuvre en grand sous la vidéo, puis les infos de musique/artiste en plus petit; la catégorie apparaît uniquement si l'option du lobby est activée.
+- L'option "suivant automatique" n'est plus persistée en stockage navigateur: elle repart désactivée à chaque nouvelle session de jeu.
+- Le mode joueur de salon masque le lecteur, le volume, le classement et les informations de partage afin de garder uniquement la réponse, l'état de manche, les votes et les corrections utiles; le choix est conservé localement sur l'appareil.
+- Le mode TV est pensé pour une soirée IRL: pas de header/footer ni navigation visible, QR code/code lisible à distance au démarrage, son actif par défaut, préchargement de la prochaine vidéo via un player YouTube caché, puis grand timer, solution et classement visibles sur un écran partagé avec un layout adapté à la taille et au ratio du navigateur.
+- Le scan caméra de `tv-link` utilise d'abord `BarcodeDetector` quand disponible, puis le décodeur local vendoré `assets/js/vendor/jsqr/` en fallback; le champ code reste toujours disponible.
+- Les libellés d'administration doivent rester cohérents et lisibles côté utilisateur, avec accents et vocabulaire français ("œuvre", "piste", "catégorie").
 
 ## Lancer en local
 
@@ -102,10 +104,10 @@ Servir le dossier statique avec un serveur HTTP (ex: nginx, caddy, vite static, 
 
 - `index.html`
 
-## Adaptation hebergement actuel
+## Adaptation hébergement actuel
 
-- Front route principalement en hash (`#/main`, `#/lobby-list`, etc.) pour eviter toute dependance au rewrite Nginx.
-- Route lisible speciale `https://melodyquest.shinederu.ch/tv` pour le mode TV; le fallback Nginx vers `index.html` reste necessaire.
+- Front route principalement en hash (`#/main`, `#/lobby-list`, etc.) pour éviter toute dépendance au rewrite Nginx.
+- Route lisible spéciale `https://melodyquest.shinederu.ch/tv` pour le mode TV; le fallback Nginx vers `index.html` reste nécessaire.
 - API auth: `https://api.shinederu.ch/auth/`
 - API MelodyQuest: `https://api.shinederu.ch/melodyquest/`
 - Hub Mercure: `https://mercure.shinederu.ch/.well-known/mercure`

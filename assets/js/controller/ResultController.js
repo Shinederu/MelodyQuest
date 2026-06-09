@@ -16,7 +16,7 @@ export class ResultController {
 
   async bootstrap() {
     const title = document.getElementById("result-title");
-    if (title) title.textContent = this.currentLobby?.name || "Partie terminee";
+    if (title) title.textContent = this.currentLobby?.name || "Partie terminée";
 
     let scoreboard = [];
     try {
@@ -65,7 +65,7 @@ export class ResultController {
 
     this.returnInFlight = true;
     this.stopAutoReturnCountdown();
-    this.setStatus("Preparation du salon...", null);
+    this.setStatus("Préparation du salon...", null);
 
     const res = await window.httpClient.resetLobbyForReplay(lobbyId);
     this.returnInFlight = false;
@@ -77,14 +77,14 @@ export class ResultController {
       }
 
       this.startAutoReturnCountdown();
-      this.setStatus(res.error || "Impossible de preparer le salon", false);
+      this.setStatus(res.error || "Impossible de préparer le salon", false);
       return;
     }
 
     this.currentLobby = res.data.lobby;
     setCurrentLobby(res.data.lobby);
     localStorage.removeItem("mq_last_scoreboard");
-    this.setStatus("Salon pret", true);
+    this.setStatus("Salon prêt", true);
     window.appCtrl.changeView("lobby");
   }
 

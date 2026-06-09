@@ -1,4 +1,4 @@
-import { getCurrentLobby } from "../utils/LobbyState.js?v=20260609-responsive-safe";
+import { getCurrentLobby } from "../utils/LobbyState.js?v=20260609-audit-polish";
 
 function getRouteParams() {
   const query = String(window.location.hash || "").split("?")[1] || "";

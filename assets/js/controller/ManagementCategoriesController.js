@@ -51,8 +51,8 @@ export class ManagementCategoriesController {
     if (!this.items.length) {
       list.innerHTML = `
         <div class="mq-admin-empty">
-          <strong>Aucune categorie</strong>
-          <p class="mq-muted">Commence par creer une premiere categorie pour poser la base du catalogue.</p>
+          <strong>Aucune catégorie</strong>
+          <p class="mq-muted">Commence par créer une première catégorie pour poser la base du catalogue.</p>
         </div>
       `;
       return;
@@ -99,23 +99,23 @@ export class ManagementCategoriesController {
     const deleteBtn = document.getElementById("btn-cat-delete");
     const resetBtn = document.getElementById("btn-cat-reset");
 
-    if (title) title.textContent = this.selectedId ? "Modifier la categorie" : "Nouvelle categorie";
+    if (title) title.textContent = this.selectedId ? "Modifier la catégorie" : "Nouvelle catégorie";
     if (helper) {
       helper.textContent = this.selectedId
-        ? "Modifie le nom, puis enregistre ou supprime la categorie."
-        : "Donne un nom clair a la nouvelle categorie.";
+        ? "Modifie le nom, puis enregistre ou supprime la catégorie."
+        : "Donne un nom clair à la nouvelle catégorie.";
     }
     if (createBtn) createBtn.disabled = !!this.selectedId;
     if (updateBtn) updateBtn.disabled = !this.selectedId;
     if (deleteBtn) deleteBtn.disabled = !this.selectedId;
-    if (resetBtn) resetBtn.textContent = this.selectedId ? "Nouvelle categorie" : "Vider";
+    if (resetBtn) resetBtn.textContent = this.selectedId ? "Nouvelle catégorie" : "Vider";
   }
 
   async create() {
     const name = document.getElementById("cat-name")?.value ?? "";
     const slug = slugify(name);
     const res = await window.httpClient.createCategory({ name, slug });
-    this.setStatus(res.success ? "Categorie creee" : (res.error || "Erreur"), res.success);
+    this.setStatus(res.success ? "Catégorie créée" : (res.error || "Erreur"), res.success);
     if (res.success) {
       this.selectedId = null;
       await this.refresh();
@@ -127,14 +127,14 @@ export class ManagementCategoriesController {
     const name = document.getElementById("cat-name")?.value ?? "";
     const slug = slugify(name);
     const res = await window.httpClient.updateCategory({ id: this.selectedId, name, slug });
-    this.setStatus(res.success ? "Categorie mise a jour" : (res.error || "Erreur"), res.success);
+    this.setStatus(res.success ? "Catégorie mise à jour" : (res.error || "Erreur"), res.success);
     if (res.success) await this.refresh();
   }
 
   async remove() {
     if (!this.selectedId) return;
     const res = await window.httpClient.deleteCategory(this.selectedId);
-    this.setStatus(res.success ? "Categorie supprimee" : (res.error || "Erreur"), res.success);
+    this.setStatus(res.success ? "Catégorie supprimée" : (res.error || "Erreur"), res.success);
     if (res.success) {
       this.selectedId = null;
       await this.refresh();
@@ -149,7 +149,7 @@ export class ManagementCategoriesController {
   }
 
   renderCounters() {
-    const text = `${this.items.length} ${this.items.length > 1 ? "categories" : "categorie"}`;
+    const text = `${this.items.length} ${this.items.length > 1 ? "catégories" : "catégorie"}`;
     ["cat-count", "cat-count-inline"].forEach((id) => {
       const el = document.getElementById(id);
       if (el) el.textContent = text;
