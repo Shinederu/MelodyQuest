@@ -39,9 +39,10 @@ L'API `auth` utilise aussi ce meme schema partage avec ses variables (`DB_*`).
 - Option de lobby pour autoriser un vote de revelation anticipee si personne n'a trouve la reponse
 - Option de lobby `Precision des reponses` pour choisir un seuil de correspondance de `70%` a `100%`; `100%` conserve la validation stricte.
 - Lecture synchronisee entre tous les joueurs d'un lobby
+- Les manches demarrent avec une courte phase de prechargement serveur afin que les clients et le mode TV puissent charger le lecteur YouTube avant le vrai depart.
 - Images de profil exposees par l'API MelodyQuest avec URL d'avatar normalisee depuis l'API Auth, affichees dans les listes de joueurs et le classement
 - Partage direct d'un salon via URL `#/lobby?code=...`, utilisable depuis le lobby et depuis la partie
-- Mode TV via `https://melodyquest.shinederu.ch/tv`: une TV genere un QR code/code court, puis un joueur connecte dans un salon peut la lier depuis `#/tv-link`, avec saisie manuelle ou scan du QR via la camera du telephone; la TV suit ensuite le salon, joue le son, affiche la video/solution au moment de la revelation et garde le classement visible
+- Mode TV via `https://melodyquest.shinederu.ch/tv`: une TV genere un QR code/code court, puis un joueur connecte dans un salon peut la lier depuis `#/tv-link`, avec saisie manuelle ou scan du QR via la camera du telephone; la TV suit ensuite le salon, precharge les manches, joue le son, affiche la video/solution au moment de la revelation et garde le classement visible
 - Suggestions joueurs: correction/alias/URL pendant une partie, avec verrou temporaire de manche pendant la saisie, et page publique `#/suggest-track` pour proposer une nouvelle musique
 - Administrateurs de catalogue definis par le droit central `melodyquest.catalog.manage` (`core_*`) ou par le super-admin global
 - Administrateurs: gestion du catalogue (categories, familles, musiques) et suivi des suggestions joueurs
@@ -89,7 +90,7 @@ Les flux `login/register/logout/me` passent par ce client auth partage.
 - Layout mobile empile les sections et conserve le lecteur en ratio 16:9.
 - La solution affiche l'oeuvre en grand sous la video, puis les infos de musique/artiste en plus petit; la categorie apparait uniquement si l'option du lobby est activee.
 - L'option "suivant automatique" n'est plus persistee en stockage navigateur: elle repart desactivee a chaque nouvelle session de jeu.
-- Le mode TV est pense pour une soiree IRL: pas de header/footer ni navigation visible, QR code/code lisible a distance au demarrage, activation manuelle du son uniquement si necessaire pour contourner les blocages d'autoplay navigateur, puis grand timer, solution et classement visibles sur un ecran partage.
+- Le mode TV est pense pour une soiree IRL: pas de header/footer ni navigation visible, QR code/code lisible a distance au demarrage, activation manuelle du son uniquement si necessaire pour contourner les blocages d'autoplay navigateur, prechargement de la video avant le depart de manche, puis grand timer, solution et classement visibles sur un ecran partage.
 - Le scan camera de `tv-link` utilise d'abord `BarcodeDetector` quand disponible, puis le decodeur local vendore `assets/js/vendor/jsqr/` en fallback; le champ code reste toujours disponible.
 
 ## Lancer en local

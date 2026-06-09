@@ -4,9 +4,10 @@ const PLAYER_VOLUME_STORAGE_KEY = "mq_game_volume";
 const DEFAULT_PLAYER_VOLUME = 70;
 const TIMER_RING_RADIUS = 44;
 const TIMER_RING_CIRCUMFERENCE = 2 * Math.PI * TIMER_RING_RADIUS;
-const PLAYER_SYNC_DRIFT_SECONDS = 1.35;
-const PLAYER_SYNC_INTERVAL_MS = 4000;
-const PLAYER_SYNC_COOLDOWN_MS = 1500;
+const PLAYER_SYNC_DRIFT_SECONDS = 0.65;
+const PLAYER_SYNC_INTERVAL_MS = 2500;
+const PLAYER_SYNC_COOLDOWN_MS = 1000;
+const ROUND_START_PLAY_LEAD_MS = 60;
 
 let youtubeIframeApiPromise = null;
 
@@ -462,13 +463,14 @@ export class GameController {
 
     const userAnswer = this.getCurrentUserAnswer();
     const hasCorrectAnswer = this.hasCorrectAnswer(round, userAnswer);
+    const pendingStart = this.isRoundPendingStart(round);
     const answerClosed = this.isAnswerWindowClosed(round);
-    const revealVisible = hasCorrectAnswer || answerClosed || Boolean(round?.is_reveal_visible);
+    const revealVisible = !pendingStart && (hasCorrectAnswer || answerClosed || Boolean(round?.is_reveal_visible));
     const nextVoteAvailable = this.isNextVoteAvailable(round);
     const earlyRevealAvailable = this.isEarlyRevealVoteAvailable(round, answerClosed);
 
     this.renderTimer(round, answerClosed, nextVoteAvailable);
-    this.renderVideo(round?.track, revealVisible);
+    this.renderVideo(round?.track, revealVisible, round);
     this.renderAnswerPhase(round, userAnswer, hasCorrectAnswer, answerClosed);
     this.renderMissedAnswerPhase(round);
     this.renderRevealVotePhase(round, earlyRevealAvailable);
@@ -544,6 +546,17 @@ export class GameController {
     const ring = document.getElementById("game-video-ring-progress");
     if (!title || !copy || !hint || !ring) return;
 
+    if (this.isRoundPendingStart(round)) {
+      const totalMs = Math.max(1000, Number(round?.preload_seconds || 4) * 1000);
+      const remainingMs = Math.max(0, this.getMsUntilRoundStart(round));
+      const remaining = Math.max(0, Math.ceil(remainingMs / 1000));
+      title.textContent = "Préparation";
+      copy.textContent = `Départ dans ${remaining}s.`;
+      hint.textContent = "La vidéo se charge pour démarrer tout le monde ensemble.";
+      this.renderTimerRing(ring, 1 - (remainingMs / totalMs));
+      return;
+    }
+
     if (!answerClosed) {
       const totalMs = Math.max(1000, Number(this.currentLobby?.round_duration_seconds || 30) * 1000);
       const remainingMs = Math.max(0, this.getAnswerDeadlineMs(round) - this.getNowMs());
@@ -592,6 +605,17 @@ export class GameController {
     if (!shell || !locked || !lockedTitle || !lockedCopy || !input || !submit) return;
 
     const solutionText = this.buildSolutionText(round?.track);
+    if (this.isRoundPendingStart(round)) {
+      shell.hidden = true;
+      locked.hidden = false;
+      if (suggestButton) suggestButton.hidden = true;
+      input.disabled = true;
+      submit.disabled = true;
+      lockedTitle.textContent = "Prépare-toi";
+      lockedCopy.textContent = `Départ dans ${Math.max(0, Math.ceil(this.getMsUntilRoundStart(round) / 1000))}s.`;
+      return;
+    }
+
     if (!answerClosed && !hasCorrectAnswer) {
       shell.hidden = false;
       locked.hidden = true;
@@ -730,7 +754,7 @@ export class GameController {
     button.textContent = hasVoted ? "Vote enregistré" : "Passer au suivant";
   }
 
-  renderVideo(track, showVideo) {
+  renderVideo(track, showVideo, round = null) {
     const host = document.getElementById("game-video");
     const guard = document.getElementById("game-video-guard");
     const overlay = document.getElementById("game-video-overlay");
@@ -753,7 +777,7 @@ export class GameController {
 
     this.renderRoundCategory(track);
     this.renderSolution(track, showVideo);
-    this.ensurePlayer(videoId, showVideo);
+    this.ensurePlayer(videoId, showVideo, round);
   }
 
   renderRoundCategory(track) {
@@ -885,6 +909,10 @@ export class GameController {
   }
 
   isEarlyRevealVoteAvailable(round, answerClosed) {
+    if (this.isRoundPendingStart(round)) {
+      return false;
+    }
+
     if (!this.toBool(this.currentLobby?.allow_early_reveal_vote)) {
       return false;
     }
@@ -937,11 +965,22 @@ export class GameController {
   }
 
   isAnswerWindowClosed(round) {
+    if (this.isRoundPendingStart(round)) {
+      return false;
+    }
+
+    const nowMs = this.getNowMs();
+    const deadlineMs = this.getAnswerDeadlineMs(round);
+    const status = String(round?.status || "").toLowerCase();
+    if (status === "running" && deadlineMs > 0 && nowMs < deadlineMs) {
+      return false;
+    }
+
     if (round?.is_accepting_answers === false) {
       return true;
     }
 
-    return this.getNowMs() >= this.getAnswerDeadlineMs(round);
+    return nowMs >= deadlineMs;
   }
 
   isNextVoteAvailable(round) {
@@ -952,10 +991,39 @@ export class GameController {
     return Date.now() - this.serverClockOffsetMs;
   }
 
+  getRoundStartMs(round) {
+    const startedAtUnix = Number(round?.started_at_unix || 0);
+    if (startedAtUnix > 0) {
+      return startedAtUnix * 1000;
+    }
+
+    const startedAt = Date.parse(String(round?.started_at || ""));
+    return Number.isNaN(startedAt) ? 0 : startedAt;
+  }
+
+  getMsUntilRoundStart(round) {
+    const startMs = this.getRoundStartMs(round);
+    return startMs > 0 ? Math.max(0, startMs - this.getNowMs()) : 0;
+  }
+
+  isRoundPendingStart(round) {
+    if (!round?.id) {
+      return false;
+    }
+
+    const remainingMs = this.getMsUntilRoundStart(round);
+    return remainingMs > 0;
+  }
+
   async submitAnswer() {
     const round = this.roundState?.round;
     if (!round) {
       this.setStatus("Aucune manche en cours", false);
+      return;
+    }
+
+    if (this.isRoundPendingStart(round)) {
+      this.setAnswerFeedback("Attends le départ de la manche.", "error");
       return;
     }
 
@@ -1304,11 +1372,12 @@ export class GameController {
     }
   }
 
-  async ensurePlayer(videoId, showVideo) {
+  async ensurePlayer(videoId, showVideo, round = this.roundState?.round) {
     this.playerRequestedVideoId = videoId;
     this.playerVisible = Boolean(showVideo);
     this.updateVolumeUi();
     const previewStartOffset = this.getTrackStartOffsetSeconds();
+    const pendingStart = this.isRoundPendingStart(round);
 
     let host = document.getElementById(this.playerHostId);
     if (!host) {
@@ -1345,7 +1414,7 @@ export class GameController {
       this.player = new window.YT.Player(this.playerHostId, {
         videoId,
         playerVars: {
-          autoplay: 1,
+          autoplay: pendingStart ? 0 : 1,
           controls: 0,
           disablekb: 1,
           fs: 0,
@@ -1360,7 +1429,7 @@ export class GameController {
             this.playerReady = true;
             this.playerVideoId = videoId;
             this.applyPlayerVolume();
-            this.schedulePlayerSync(true, 250);
+            this.schedulePlayerSync(true, pendingStart ? 100 : 250);
           },
           onStateChange: (event) => this.handlePlayerStateChange(event),
         },
@@ -1374,17 +1443,28 @@ export class GameController {
 
     if (this.playerVideoId !== videoId) {
       this.playerVideoId = videoId;
-      this.safePlayerCall(() => this.player.loadVideoById({
-        videoId,
-        startSeconds: previewStartOffset,
-      }));
+      if (pendingStart && typeof this.player.cueVideoById === "function") {
+        this.safePlayerCall(() => this.player.cueVideoById({
+          videoId,
+          startSeconds: previewStartOffset,
+        }));
+      } else {
+        this.safePlayerCall(() => this.player.loadVideoById({
+          videoId,
+          startSeconds: previewStartOffset,
+        }));
+      }
       this.applyPlayerVolume();
-      this.schedulePlayerSync(true, 400);
+      this.schedulePlayerSync(true, pendingStart ? 100 : 400);
       return;
     }
 
     this.applyPlayerVolume();
-    this.ensurePlayerIsPlaying();
+    if (pendingStart) {
+      this.schedulePlayerSync(true, 100);
+    } else {
+      this.ensurePlayerIsPlaying();
+    }
   }
 
   handlePlayerStateChange(event) {
@@ -1417,6 +1497,22 @@ export class GameController {
     const duration = this.getPlayerDurationSeconds();
     const state = this.safePlayerRead(() => Number(this.player.getPlayerState()), -1);
     const drift = this.computePlaybackDriftSeconds(currentTime, expectedTime, duration);
+    const pendingStart = this.isRoundPendingStart(this.roundState?.round);
+
+    if (pendingStart) {
+      if (drift > 0.35 && typeof this.player.seekTo === "function") {
+        this.safePlayerCall(() => this.player.seekTo(expectedTime, true));
+        this.playerLastSeekAtMs = nowMs;
+      }
+      if (state === window.YT.PlayerState.PLAYING && typeof this.player.pauseVideo === "function") {
+        this.safePlayerCall(() => this.player.pauseVideo());
+      }
+
+      const remainingMs = this.getMsUntilRoundStart(this.roundState?.round);
+      const delayMs = Math.max(0, remainingMs > ROUND_START_PLAY_LEAD_MS ? remainingMs - ROUND_START_PLAY_LEAD_MS : remainingMs);
+      this.schedulePlayerSync(true, delayMs);
+      return;
+    }
 
     if (
       (force || drift > PLAYER_SYNC_DRIFT_SECONDS)
@@ -1451,6 +1547,10 @@ export class GameController {
 
     const duration = this.getPlayerDurationSeconds();
     const startOffset = this.getTrackStartOffsetSeconds(round?.track, duration);
+    if (this.isRoundPendingStart(round)) {
+      return startOffset;
+    }
+
     const elapsedSeconds = Math.max(0, (this.getNowMs() / 1000) - startedAtUnix);
     const playableDuration = duration - startOffset;
     if (playableDuration > 1) {

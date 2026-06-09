@@ -1,11 +1,14 @@
-import { renderQrSvg } from "../utils/qr.js?v=20260609-tv-mode";
+import { renderQrSvg } from "../utils/qr.js?v=20260609-tv-sync";
 
 const TV_TOKEN_STORAGE_KEY = "mq_tv_device_token";
-const TV_POLL_INTERVAL_MS = 1500;
+const TV_PAIRING_POLL_INTERVAL_MS = 1000;
+const TV_STATE_POLL_INTERVAL_MS = 650;
 const TV_TIMER_INTERVAL_MS = 250;
 const TV_PLAYER_VOLUME_KEY = "mq_tv_volume";
 const TV_SOUND_ENABLED_KEY = "mq_tv_sound_enabled";
-const PLAYER_SYNC_DRIFT_SECONDS = 1.35;
+const PLAYER_SYNC_DRIFT_SECONDS = 0.45;
+const PLAYER_SYNC_COOLDOWN_MS = 900;
+const TV_ROUND_START_PLAY_LEAD_MS = 90;
 
 let youtubeIframeApiPromise = null;
 
@@ -61,6 +64,8 @@ export class TvController {
     this.playerReady = false;
     this.playerVideoId = "";
     this.playerRequestedVideoId = "";
+    this.playerLastSeekAtMs = 0;
+    this.playerPrimingUntilMs = 0;
     this.playerVolume = this.loadVolume();
     this.soundEnabled = localStorage.getItem(TV_SOUND_ENABLED_KEY) === "1";
 
@@ -165,7 +170,7 @@ export class TvController {
 
   startPairingPolling() {
     this.stopPairingPolling();
-    this.pairingPollInterval = window.setInterval(() => this.pollPairing(), TV_POLL_INTERVAL_MS);
+    this.pairingPollInterval = window.setInterval(() => this.pollPairing(), TV_PAIRING_POLL_INTERVAL_MS);
     this.pollPairing();
   }
 
@@ -210,7 +215,7 @@ export class TvController {
 
   startStatePolling() {
     this.stopStatePolling();
-    this.statePollInterval = window.setInterval(() => this.refreshState(), TV_POLL_INTERVAL_MS);
+    this.statePollInterval = window.setInterval(() => this.refreshState(), TV_STATE_POLL_INTERVAL_MS);
     this.refreshState();
   }
 
@@ -333,8 +338,9 @@ export class TvController {
   updateRoundPresentation() {
     const round = this.snapshot?.round?.round || null;
     const track = round?.track || null;
-    const revealVisible = Boolean(round?.is_reveal_visible);
-    const acceptingAnswers = Boolean(round?.is_accepting_answers);
+    const pendingStart = this.isRoundPendingStart(round);
+    const revealVisible = this.isRoundRevealVisible(round);
+    const acceptingAnswers = this.isRoundAnswerOpen(round);
     const hasRound = Boolean(round?.id);
     const categoryEl = document.getElementById("tv-round-category");
     const phaseEl = document.getElementById("tv-round-phase");
@@ -359,19 +365,27 @@ export class TvController {
       return;
     }
 
-    if (phaseEl) {
-      phaseEl.textContent = acceptingAnswers ? "Écoute" : "Solution";
-    }
-    if (hintEl) {
-      hintEl.textContent = acceptingAnswers
-        ? "Les joueurs répondent sur leur téléphone ou ordinateur."
-        : "La solution est affichée pour tout le monde.";
-    }
-    if (overlayTitle) {
-      overlayTitle.textContent = acceptingAnswers ? "Vidéo cachée" : "Solution révélée";
-    }
-    if (overlayCopy) {
-      overlayCopy.textContent = acceptingAnswers ? "Écoute l'extrait." : "Regarde la réponse.";
+    if (pendingStart) {
+      const remaining = Math.max(0, Math.ceil(this.getMsUntilRoundStart(round) / 1000));
+      if (phaseEl) phaseEl.textContent = "Préparation";
+      if (hintEl) hintEl.textContent = "La vidéo se charge pour démarrer avec les joueurs.";
+      if (overlayTitle) overlayTitle.textContent = "Départ imminent";
+      if (overlayCopy) overlayCopy.textContent = `Départ dans ${remaining}s.`;
+    } else {
+      if (phaseEl) {
+        phaseEl.textContent = acceptingAnswers ? "Écoute" : "Solution";
+      }
+      if (hintEl) {
+        hintEl.textContent = acceptingAnswers
+          ? "Les joueurs répondent sur leur téléphone ou ordinateur."
+          : "La solution est affichée pour tout le monde.";
+      }
+      if (overlayTitle) {
+        overlayTitle.textContent = acceptingAnswers ? "Vidéo cachée" : "Solution révélée";
+      }
+      if (overlayCopy) {
+        overlayCopy.textContent = acceptingAnswers ? "Écoute l'extrait." : "Regarde la réponse.";
+      }
     }
 
     this.setVideoConcealed(!revealVisible);
@@ -398,7 +412,10 @@ export class TvController {
 
   startTimer() {
     if (this.timerInterval) return;
-    this.timerInterval = window.setInterval(() => this.updateTimer(), TV_TIMER_INTERVAL_MS);
+    this.timerInterval = window.setInterval(() => {
+      this.updateTimer();
+      this.syncPlayer(this.snapshot?.round?.round);
+    }, TV_TIMER_INTERVAL_MS);
     this.updateTimer();
   }
 
@@ -437,8 +454,16 @@ export class TvController {
     const lobby = this.snapshot?.lobby || {};
     if (!round?.id) return null;
 
+    if (this.isRoundPendingStart(round)) {
+      return {
+        label: "Préparation",
+        remaining: Math.max(0, this.getMsUntilRoundStart(round) / 1000),
+        total: Math.max(1, Number(round.preload_seconds || 4)),
+      };
+    }
+
     const now = this.getServerNowUnix();
-    if (round.is_accepting_answers) {
+    if (this.isRoundAnswerOpen(round)) {
       const deadline = Number(round.answer_deadline_unix || 0);
       if (!deadline) return null;
       return {
@@ -464,6 +489,73 @@ export class TvController {
     return (Date.now() - this.serverClockOffsetMs) / 1000;
   }
 
+  getServerNowMs() {
+    return Date.now() - this.serverClockOffsetMs;
+  }
+
+  getRoundStartMs(round) {
+    const startedAtUnix = Number(round?.started_at_unix || 0);
+    if (startedAtUnix > 0) {
+      return startedAtUnix * 1000;
+    }
+
+    const startedAt = Date.parse(String(round?.started_at || ""));
+    return Number.isNaN(startedAt) ? 0 : startedAt;
+  }
+
+  getMsUntilRoundStart(round) {
+    const startMs = this.getRoundStartMs(round);
+    return startMs > 0 ? Math.max(0, startMs - this.getServerNowMs()) : 0;
+  }
+
+  isRoundPendingStart(round) {
+    if (!round?.id) {
+      return false;
+    }
+
+    const remainingMs = this.getMsUntilRoundStart(round);
+    return remainingMs > TV_ROUND_START_PLAY_LEAD_MS;
+  }
+
+  getAnswerDeadlineMs(round) {
+    const deadlineUnix = Number(round?.answer_deadline_unix || 0);
+    if (deadlineUnix > 0) {
+      return deadlineUnix * 1000;
+    }
+
+    const deadline = Date.parse(String(round?.answer_deadline_at || ""));
+    return Number.isNaN(deadline) ? 0 : deadline;
+  }
+
+  isRoundAnswerOpen(round) {
+    if (!round?.id || this.isRoundPendingStart(round)) {
+      return false;
+    }
+
+    const status = String(round?.status || "").toLowerCase();
+    const deadlineMs = this.getAnswerDeadlineMs(round);
+    const nowMs = this.getServerNowMs();
+    if (status === "running" && deadlineMs > 0) {
+      return nowMs < deadlineMs;
+    }
+
+    return Boolean(round?.is_accepting_answers);
+  }
+
+  isRoundRevealVisible(round) {
+    if (!round?.id || this.isRoundPendingStart(round)) {
+      return false;
+    }
+
+    if (Boolean(round?.is_reveal_visible)) {
+      return true;
+    }
+
+    const status = String(round?.status || "").toLowerCase();
+    const deadlineMs = this.getAnswerDeadlineMs(round);
+    return status === "running" && deadlineMs > 0 && this.getServerNowMs() >= deadlineMs;
+  }
+
   setVideoConcealed(isConcealed) {
     const shell = document.getElementById("tv-video");
     const overlay = document.getElementById("tv-video-overlay");
@@ -475,6 +567,7 @@ export class TvController {
     const host = document.getElementById("tv-video-player");
     if (!host || !videoId || !round?.id) return;
 
+    const pendingStart = this.isRoundPendingStart(round);
     this.playerRequestedVideoId = videoId;
     try {
       const YT = await loadYouTubeIframeApi();
@@ -484,10 +577,11 @@ export class TvController {
         this.player = new YT.Player("tv-video-player", {
           videoId,
           playerVars: {
-            autoplay: 1,
+            autoplay: pendingStart ? 0 : 1,
             controls: 0,
             disablekb: 1,
             modestbranding: 1,
+            mute: pendingStart ? 1 : 0,
             playsinline: 1,
             rel: 0,
             start: Math.floor(this.getTargetVideoTime(round)),
@@ -497,8 +591,12 @@ export class TvController {
             onReady: () => {
               this.playerReady = true;
               this.playerVideoId = videoId;
-              this.applyAudioState();
-              this.syncPlayer(round);
+              this.applyAudioState({ allowPlayback: false });
+              if (this.isRoundPendingStart(round)) {
+                this.primePlayerForPendingStart(round);
+              } else {
+                this.syncPlayer(round, true);
+              }
             },
           },
         });
@@ -507,14 +605,23 @@ export class TvController {
 
       if (this.playerVideoId !== videoId && typeof this.player.loadVideoById === "function") {
         this.playerVideoId = videoId;
+        if (pendingStart && typeof this.player.mute === "function") {
+          this.player.mute();
+        }
         this.player.loadVideoById({
           videoId,
           startSeconds: Math.floor(this.getTargetVideoTime(round)),
         });
-        this.applyAudioState();
+        this.applyAudioState({ allowPlayback: false });
+        if (pendingStart) {
+          this.primePlayerForPendingStart(round);
+        } else {
+          this.syncPlayer(round, true);
+        }
         return;
       }
 
+      this.applyAudioState({ allowPlayback: false });
       this.syncPlayer(round);
     } catch {
       this.setStageStatus("Impossible de charger le lecteur YouTube.", false);
@@ -527,31 +634,118 @@ export class TvController {
     }
     this.playerVideoId = "";
     this.playerRequestedVideoId = "";
+    this.playerPrimingUntilMs = 0;
   }
 
-  syncPlayer(round) {
+  primePlayerForPendingStart(round) {
+    if (!this.playerReady || !this.player || !this.isRoundPendingStart(round)) {
+      return;
+    }
+
+    this.playerPrimingUntilMs = Date.now() + 350;
+    if (typeof this.player.mute === "function") {
+      this.player.mute();
+    }
+    if (typeof this.player.playVideo === "function") {
+      this.player.playVideo();
+    }
+    window.setTimeout(() => {
+      if (this.isRoundPendingStart(round)) {
+        this.syncPlayer(round, true);
+      }
+    }, 380);
+  }
+
+  syncPlayer(round, force = false) {
     if (!this.playerReady || !this.player || !round?.id || typeof this.player.getCurrentTime !== "function") {
       return;
     }
 
+    const nowMs = Date.now();
+    const pendingStart = this.isRoundPendingStart(round);
     const wanted = this.getTargetVideoTime(round);
     const current = Number(this.player.getCurrentTime() || 0);
-    if (Math.abs(current - wanted) > PLAYER_SYNC_DRIFT_SECONDS && typeof this.player.seekTo === "function") {
+    const state = typeof this.player.getPlayerState === "function" ? Number(this.player.getPlayerState()) : -1;
+    const drift = this.computePlaybackDriftSeconds(current, wanted, this.getPlayerDurationSeconds());
+
+    if (
+      (force || drift > PLAYER_SYNC_DRIFT_SECONDS)
+      && typeof this.player.seekTo === "function"
+      && (force || (nowMs - this.playerLastSeekAtMs) >= PLAYER_SYNC_COOLDOWN_MS)
+    ) {
       this.player.seekTo(wanted, true);
+      this.playerLastSeekAtMs = nowMs;
     }
 
-    if (typeof this.player.playVideo === "function") {
+    if (pendingStart) {
+      if (
+        state === window.YT?.PlayerState?.PLAYING
+        && nowMs >= this.playerPrimingUntilMs
+        && typeof this.player.pauseVideo === "function"
+      ) {
+        this.player.pauseVideo();
+      }
+      return;
+    }
+
+    this.applyAudioState({ allowPlayback: false });
+    if (
+      typeof this.player.playVideo === "function"
+      && state !== window.YT?.PlayerState?.PLAYING
+      && state !== window.YT?.PlayerState?.BUFFERING
+    ) {
       this.player.playVideo();
     }
   }
 
   getTargetVideoTime(round) {
-    const track = round?.track || {};
-    const startOffset = Math.max(0, Number(track.start_offset_seconds || 0));
+    const duration = this.getPlayerDurationSeconds();
+    const startOffset = this.getTrackStartOffsetSeconds(round?.track, duration);
     const startedAt = Number(round?.started_at_unix || 0);
     if (!startedAt) return startOffset;
 
-    return Math.max(0, startOffset + (this.getServerNowUnix() - startedAt));
+    if (this.isRoundPendingStart(round)) {
+      return startOffset;
+    }
+
+    const elapsedSeconds = Math.max(0, this.getServerNowUnix() - startedAt);
+    const playableDuration = duration - startOffset;
+    if (playableDuration > 1) {
+      return startOffset + (elapsedSeconds % playableDuration);
+    }
+
+    return Math.max(0, startOffset + elapsedSeconds);
+  }
+
+  getPlayerDurationSeconds() {
+    if (!this.playerReady || !this.player || typeof this.player.getDuration !== "function") {
+      return 0;
+    }
+
+    const duration = Number(this.player.getDuration() || 0);
+    return Number.isFinite(duration) && duration > 0 ? duration : 0;
+  }
+
+  getTrackStartOffsetSeconds(track = this.snapshot?.round?.round?.track, duration = 0) {
+    const offset = Math.max(0, Number(track?.start_offset_seconds || 0));
+    if (duration > 1 && offset >= duration) {
+      return Math.max(0, duration - 0.5);
+    }
+
+    return offset;
+  }
+
+  computePlaybackDriftSeconds(currentTime, expectedTime, duration) {
+    const rawDrift = Math.abs(Number(currentTime || 0) - Number(expectedTime || 0));
+    if (!(duration > 1)) {
+      return rawDrift;
+    }
+
+    return Math.min(
+      rawDrift,
+      Math.abs((currentTime + duration) - expectedTime),
+      Math.abs(currentTime - (expectedTime + duration))
+    );
   }
 
   activateAudio() {
@@ -561,7 +755,7 @@ export class TvController {
     this.setStageStatus("Son activé sur cette TV.", true);
   }
 
-  applyAudioState() {
+  applyAudioState({ allowPlayback = true } = {}) {
     const button = document.getElementById("btn-tv-activate-audio");
     if (button) {
       button.textContent = this.soundEnabled ? "Son activé" : "Activer le son";
@@ -574,9 +768,13 @@ export class TvController {
     if (typeof this.player.setVolume === "function") {
       this.player.setVolume(this.playerVolume);
     }
-    if (this.soundEnabled) {
-      if (typeof this.player.unMute === "function") this.player.unMute();
-      if (typeof this.player.playVideo === "function") this.player.playVideo();
+
+    const pendingStart = this.isRoundPendingStart(this.snapshot?.round?.round);
+    if (this.soundEnabled && !pendingStart) {
+      if (typeof this.player.unMute === "function") {
+        this.player.unMute();
+      }
+      if (allowPlayback && typeof this.player.playVideo === "function") this.player.playVideo();
     } else if (typeof this.player.mute === "function") {
       this.player.mute();
     }
