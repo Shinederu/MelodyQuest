@@ -1,4 +1,4 @@
-import { UserModel } from "../model/UserModel.js?v=20260609-tv-sync";
+import { UserModel } from "../model/UserModel.js?v=20260609-tv-fit";
 
 export class PublicController {
   constructor() {

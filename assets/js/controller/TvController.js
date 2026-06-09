@@ -1,11 +1,10 @@
-import { renderQrSvg } from "../utils/qr.js?v=20260609-tv-sync";
+import { renderQrSvg } from "../utils/qr.js?v=20260609-tv-fit";
 
 const TV_TOKEN_STORAGE_KEY = "mq_tv_device_token";
 const TV_PAIRING_POLL_INTERVAL_MS = 1000;
 const TV_STATE_POLL_INTERVAL_MS = 650;
 const TV_TIMER_INTERVAL_MS = 250;
-const TV_PLAYER_VOLUME_KEY = "mq_tv_volume";
-const TV_SOUND_ENABLED_KEY = "mq_tv_sound_enabled";
+const TV_PLAYER_VOLUME = 100;
 const PLAYER_SYNC_DRIFT_SECONDS = 0.45;
 const PLAYER_SYNC_COOLDOWN_MS = 900;
 const TV_ROUND_START_PLAY_LEAD_MS = 90;
@@ -66,15 +65,10 @@ export class TvController {
     this.playerRequestedVideoId = "";
     this.playerLastSeekAtMs = 0;
     this.playerPrimingUntilMs = 0;
-    this.playerVolume = this.loadVolume();
-    this.soundEnabled = localStorage.getItem(TV_SOUND_ENABLED_KEY) === "1";
 
     document.getElementById("btn-tv-new-pairing")?.addEventListener("click", () => this.resetPairing());
     document.getElementById("btn-tv-stage-new-pairing")?.addEventListener("click", () => this.resetPairing());
-    document.getElementById("btn-tv-activate-audio")?.addEventListener("click", () => this.activateAudio());
-    document.getElementById("tv-volume")?.addEventListener("input", (event) => this.handleVolumeInput(event));
 
-    this.updateVolumeUi();
     this.bootstrap();
   }
 
@@ -748,29 +742,15 @@ export class TvController {
     );
   }
 
-  activateAudio() {
-    this.soundEnabled = true;
-    localStorage.setItem(TV_SOUND_ENABLED_KEY, "1");
-    this.applyAudioState();
-    this.setStageStatus("Son activé sur cette TV.", true);
-  }
-
   applyAudioState({ allowPlayback = true } = {}) {
-    const button = document.getElementById("btn-tv-activate-audio");
-    if (button) {
-      button.textContent = this.soundEnabled ? "Son activé" : "Activer le son";
-      button.hidden = this.soundEnabled;
-      button.disabled = this.soundEnabled;
-    }
-
     if (!this.player) return;
 
     if (typeof this.player.setVolume === "function") {
-      this.player.setVolume(this.playerVolume);
+      this.player.setVolume(TV_PLAYER_VOLUME);
     }
 
     const pendingStart = this.isRoundPendingStart(this.snapshot?.round?.round);
-    if (this.soundEnabled && !pendingStart) {
+    if (!pendingStart) {
       if (typeof this.player.unMute === "function") {
         this.player.unMute();
       }
@@ -778,28 +758,6 @@ export class TvController {
     } else if (typeof this.player.mute === "function") {
       this.player.mute();
     }
-  }
-
-  handleVolumeInput(event) {
-    const value = Math.max(0, Math.min(100, Number(event?.target?.value || this.playerVolume)));
-    this.playerVolume = value;
-    localStorage.setItem(TV_PLAYER_VOLUME_KEY, String(value));
-    this.updateVolumeUi();
-    if (typeof this.player?.setVolume === "function") {
-      this.player.setVolume(value);
-    }
-  }
-
-  loadVolume() {
-    const stored = Number(localStorage.getItem(TV_PLAYER_VOLUME_KEY));
-    return Number.isFinite(stored) ? Math.max(0, Math.min(100, stored)) : 75;
-  }
-
-  updateVolumeUi() {
-    const input = document.getElementById("tv-volume");
-    const label = document.getElementById("tv-volume-value");
-    if (input) input.value = String(this.playerVolume);
-    if (label) label.textContent = `${this.playerVolume}%`;
   }
 
   showPairing() {

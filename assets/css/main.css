@@ -1983,6 +1983,7 @@ input[type="range"] {
 
 body:has(.mq-tv-page) {
   padding: 0;
+  height: 100dvh;
   overflow: hidden;
   overflow-x: hidden;
   background:
@@ -1998,17 +1999,25 @@ body:has(.mq-tv-page) #footer {
   margin: 0;
 }
 
+body:has(.mq-tv-page) #app {
+  height: 100dvh;
+  overflow: hidden;
+}
+
 body:has(.mq-tv-page) #header,
 body:has(.mq-tv-page) #footer {
   display: none;
 }
 
 .mq-tv-page {
-  min-height: 100vh;
+  min-height: 100dvh;
+  height: 100dvh;
+  overflow: hidden;
 }
 
 .mq-tv-pairing {
-  min-height: 100vh;
+  min-height: 100dvh;
+  height: 100dvh;
   display: grid;
   place-items: center;
   padding: clamp(18px, 4vw, 48px);
@@ -2077,40 +2086,63 @@ body:has(.mq-tv-page) #footer {
 }
 
 .mq-tv-stage {
-  min-height: 100vh;
+  --tv-pad: clamp(8px, 1.4vmin, 22px);
+  --tv-gap: clamp(7px, 1.1vmin, 14px);
+  --tv-card-pad: clamp(8px, 1.2vmin, 14px);
+  min-height: 0;
+  height: 100dvh;
   display: grid;
   grid-template-rows: minmax(0, 1fr);
   gap: 0;
-  padding: clamp(12px, 2vw, 24px);
+  padding: var(--tv-pad);
+  overflow: hidden;
 }
 
 .mq-tv-layout {
+  height: 100%;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
-  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, clamp(250px, 24vw, 380px));
+  gap: var(--tv-gap);
   align-items: stretch;
+  overflow: hidden;
 }
 
 .mq-tv-video-card {
+  min-width: 0;
   min-height: 0;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
-  gap: 12px;
-  padding: 14px;
+  gap: var(--tv-gap);
+  padding: var(--tv-card-pad);
+  overflow: hidden;
 }
 
 .mq-tv-round-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--tv-gap);
+  min-height: 0;
+}
+
+.mq-tv-round-head .mq-section-label {
+  font-size: clamp(0.68rem, 1vmin, 0.9rem);
+}
+
+.mq-tv-round-head .mq-muted {
+  font-size: clamp(0.76rem, 1.1vmin, 0.95rem);
+  line-height: 1.2;
 }
 
 .mq-tv-video-shell {
   height: auto;
   min-height: 0;
+  width: clamp(220px, calc((100dvh - (var(--tv-pad) * 2) - (var(--tv-card-pad) * 2) - 148px) * 16 / 9), 100%);
+  max-height: 100%;
   aspect-ratio: 16 / 9;
+  align-self: center;
+  justify-self: center;
 }
 
 .mq-tv-video-shell .mq-video-overlay {
@@ -2128,24 +2160,30 @@ body:has(.mq-tv-page) #footer {
 
 .mq-tv-timer-readout strong {
   color: var(--mq-primary-strong);
-  font-size: clamp(2rem, 5vw, 4rem);
+  font-size: clamp(1.55rem, 6vmin, 4rem);
   line-height: 1;
 }
 
 .mq-tv-timer-readout span {
   color: var(--mq-text-soft);
-  font-size: clamp(0.9rem, 1.4vw, 1.25rem);
+  font-size: clamp(0.78rem, 1.55vmin, 1.25rem);
+}
+
+.mq-tv-solution {
+  max-height: min(150px, 18dvh);
+  overflow: hidden;
 }
 
 .mq-tv-solution strong {
-  font-size: clamp(2rem, 4.4vw, 5rem);
+  font-size: clamp(1.35rem, 5.6vmin, 5rem);
 }
 
 .mq-tv-solution span:not(.mq-chip) {
-  font-size: clamp(1rem, 1.6vw, 1.45rem);
+  font-size: clamp(0.82rem, 1.85vmin, 1.45rem);
 }
 
 .mq-tv-side {
+  min-width: 0;
   min-height: 0;
 }
 
@@ -2160,10 +2198,25 @@ body:has(.mq-tv-page) #footer {
   min-height: 0;
   overflow: auto;
   padding-right: 4px;
+  gap: clamp(5px, 0.8vmin, 10px);
+  scrollbar-width: thin;
 }
 
 .mq-tv-scoreboard .mq-list-row {
-  padding: 10px;
+  gap: 8px;
+  padding: clamp(6px, 0.95vmin, 10px);
+}
+
+.mq-tv-scoreboard .mq-avatar {
+  width: clamp(30px, 4vmin, 38px);
+  height: clamp(30px, 4vmin, 38px);
+  flex-basis: clamp(30px, 4vmin, 38px);
+}
+
+.mq-tv-scoreboard strong,
+.mq-tv-scoreboard .mq-muted,
+.mq-tv-scoreboard .mq-chip {
+  font-size: clamp(0.72rem, 1.25vmin, 0.95rem);
 }
 
 .mq-tv-empty {
@@ -2175,18 +2228,67 @@ body:has(.mq-tv-page) #footer {
   background: rgba(255, 255, 255, 0.035);
 }
 
-.mq-tv-audio-button {
-  position: fixed;
-  top: 14px;
-  right: 14px;
-  z-index: 30;
-  min-height: 34px;
-  padding: 0 12px;
-  border-color: rgba(120, 183, 255, 0.24);
-  color: var(--mq-text-soft);
-  font-size: 0.82rem;
-  background: rgba(4, 7, 12, 0.72);
-  backdrop-filter: blur(8px);
+@media (max-aspect-ratio: 1.15), (max-width: 760px) {
+  .mq-tv-stage {
+    --tv-pad: clamp(6px, 1.6vmin, 12px);
+    --tv-gap: clamp(6px, 1.4vmin, 10px);
+    --tv-card-pad: clamp(7px, 1.5vmin, 11px);
+  }
+
+  .mq-tv-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 1fr) minmax(120px, 30dvh);
+  }
+
+  .mq-tv-side .mq-card {
+    height: 100%;
+  }
+
+  .mq-tv-side .mq-card-heading {
+    margin-bottom: 7px;
+  }
+
+  .mq-tv-scoreboard {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 6px;
+  }
+
+  .mq-tv-video-shell {
+    width: clamp(190px, calc((70dvh - (var(--tv-pad) * 2) - (var(--tv-card-pad) * 2) - 116px) * 16 / 9), 100%);
+  }
+}
+
+@media (max-height: 620px) {
+  .mq-tv-stage {
+    --tv-pad: 7px;
+    --tv-gap: 6px;
+    --tv-card-pad: 7px;
+  }
+
+  .mq-tv-round-head .mq-muted {
+    display: none;
+  }
+
+  .mq-tv-video-overlay {
+    padding: 10px;
+  }
+
+  .mq-tv-video-overlay .mq-video-overlay__content {
+    gap: 8px;
+  }
+
+  .mq-tv-video-overlay .mq-timer-ring {
+    width: 68px;
+    height: 68px;
+  }
+
+  .mq-tv-solution {
+    padding-block: 7px;
+  }
+
+  .mq-tv-side .mq-card-heading h2 {
+    font-size: clamp(1rem, 3vmin, 1.35rem);
+  }
 }
 
 @media (min-width: 1180px) {
@@ -2298,7 +2400,7 @@ body:has(.mq-tv-page) #footer {
 
   body:has(.mq-tv-page) {
     padding: 0;
-    overflow: auto;
+    overflow: hidden;
     overflow-x: hidden;
   }
 
@@ -2338,13 +2440,6 @@ body:has(.mq-tv-page) #footer {
     aspect-ratio: 16 / 9;
   }
 
-  .mq-tv-layout {
-    grid-template-columns: 1fr;
-  }
-
-  .mq-tv-side .mq-card {
-    height: auto;
-  }
 }
 
 @media (max-width: 760px) {
