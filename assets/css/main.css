@@ -1929,6 +1929,58 @@ input[type="range"] {
   font-size: 1.05rem;
 }
 
+.mq-tv-scanner-panel {
+  width: min(680px, 100%);
+}
+
+.mq-tv-scanner {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  border: 1px solid var(--mq-line-strong);
+  border-radius: var(--mq-radius);
+  background: #03060b;
+}
+
+.mq-tv-scanner video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mq-tv-scanner__frame {
+  position: absolute;
+  inset: 12%;
+  border: 2px solid rgba(120, 183, 255, 0.95);
+  border-radius: var(--mq-radius);
+  box-shadow:
+    0 0 0 999px rgba(3, 6, 11, 0.34),
+    0 0 28px rgba(120, 183, 255, 0.2);
+  pointer-events: none;
+}
+
+.mq-tv-scanner__frame::before,
+.mq-tv-scanner__frame::after {
+  content: "";
+  position: absolute;
+  width: 36px;
+  height: 36px;
+  border-color: var(--mq-accent-strong);
+  border-style: solid;
+}
+
+.mq-tv-scanner__frame::before {
+  top: -2px;
+  left: -2px;
+  border-width: 4px 0 0 4px;
+}
+
+.mq-tv-scanner__frame::after {
+  right: -2px;
+  bottom: -2px;
+  border-width: 0 4px 4px 0;
+}
+
 body:has(.mq-tv-page) {
   padding: 0;
   overflow: hidden;
@@ -2485,6 +2537,10 @@ body:has(.mq-tv-page) #footer {
 
   .mq-tv-qr {
     width: min(72vw, 360px);
+  }
+
+  .mq-tv-scanner {
+    aspect-ratio: 1;
   }
 }
 

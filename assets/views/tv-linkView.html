@@ -20,10 +20,33 @@
       <p id="tv-link-status" class="status"></p>
 
       <div class="mq-actions">
+        <button id="btn-tv-link-scan" type="button" class="mq-secondary">Scanner le QR</button>
         <button id="btn-tv-link-submit" type="button">Lier la TV</button>
         <button id="btn-tv-link-back" type="button" class="mq-secondary">Retour au salon</button>
         <button id="btn-tv-link-open-tv" type="button" class="mq-secondary">Ouvrir le mode TV</button>
       </div>
     </div>
   </section>
+
+  <div id="tv-scanner-modal" class="mq-modal" hidden>
+    <div class="mq-modal__backdrop" data-tv-scanner-close></div>
+    <section class="mq-card mq-card--accent mq-modal__panel mq-tv-scanner-panel" role="dialog" aria-modal="true" aria-labelledby="tv-scanner-title">
+      <div class="mq-modal__header">
+        <div class="mq-card-heading mq-card-heading--compact">
+          <div class="mq-kicker">Caméra</div>
+          <h2 id="tv-scanner-title">Scanner le QR de la TV</h2>
+          <p class="mq-card-copy">Place le QR code affiché sur la télévision dans le cadre.</p>
+        </div>
+        <button id="btn-tv-scanner-close" type="button" class="mq-secondary mq-icon-button" aria-label="Fermer">X</button>
+      </div>
+
+      <div class="mq-tv-scanner">
+        <video id="tv-scanner-video" autoplay muted playsinline></video>
+        <canvas id="tv-scanner-canvas" hidden></canvas>
+        <div class="mq-tv-scanner__frame" aria-hidden="true"></div>
+      </div>
+
+      <p id="tv-scanner-status" class="status"></p>
+    </section>
+  </div>
 </section>
