@@ -1836,6 +1836,14 @@ input[type="range"] {
   box-shadow: none;
 }
 
+.mq-game-note[hidden],
+.mq-game-reveal-vote[hidden],
+.mq-game-missed-panel[hidden],
+#game-answer-locked[hidden],
+#game-next-panel[hidden] {
+  display: none;
+}
+
 #game-scoreboard {
   gap: 8px;
 }
@@ -2654,6 +2662,36 @@ body:has(.mq-tv-page) #footer {
     padding-top: 10px;
   }
 
+  .mq-lobby-action-bar {
+    gap: 10px;
+    padding: 14px;
+  }
+
+  .mq-lobby-action-bar .mq-card-copy {
+    display: none;
+  }
+
+  .mq-lobby-action-bar .mq-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 0;
+  }
+
+  .mq-lobby-action-bar .mq-actions button {
+    width: 100%;
+    min-height: 38px;
+    padding-inline: 8px;
+  }
+
+  .mq-lobby-action-bar .mq-actions .mq-danger {
+    grid-column: 1 / -1;
+  }
+
+  .mq-lobby-action-bar .status:empty {
+    display: none;
+  }
+
   .mq-page-header--hero {
     min-height: 0;
   }
@@ -2860,11 +2898,17 @@ body:has(.mq-tv-page) #footer {
     grid-column: 1 / -1;
   }
 
+  body:has(.mq-game-page) #game-answer-feedback:empty {
+    display: none;
+  }
+
   body:has(.mq-game-page) #game-answer-shell input {
     min-height: 48px;
   }
 
   body:has(.mq-game-page) #game-answer-shell .mq-actions {
+    grid-column: 2;
+    grid-row: 2;
     margin-top: 0;
     flex-direction: row;
   }

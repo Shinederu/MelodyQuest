@@ -1,4 +1,4 @@
-import { UserModel } from "../model/UserModel.js?v=20260609-mobile-ui";
+import { UserModel } from "../model/UserModel.js?v=20260609-mobile-ui-v2";
 
 export class PublicController {
   constructor() {
