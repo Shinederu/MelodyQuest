@@ -1,4 +1,4 @@
-import { UserModel } from "../model/UserModel.js?v=20260609-tv-fit";
+import { UserModel } from "../model/UserModel.js?v=20260609-round-preload";
 
 export class PublicController {
   constructor() {

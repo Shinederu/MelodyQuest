@@ -8,6 +8,8 @@ const PLAYER_SYNC_DRIFT_SECONDS = 0.65;
 const PLAYER_SYNC_INTERVAL_MS = 2500;
 const PLAYER_SYNC_COOLDOWN_MS = 1000;
 const ROUND_START_PLAY_LEAD_MS = 60;
+const PRELOAD_PRIME_MS = 1400;
+const YOUTUBE_PREFERRED_QUALITY = "hd1080";
 
 let youtubeIframeApiPromise = null;
 
@@ -89,6 +91,12 @@ export class GameController {
     this.playerVideoId = "";
     this.playerRequestedVideoId = "";
     this.playerVisible = false;
+    this.preloadPlayer = null;
+    this.preloadPlayerReady = false;
+    this.preloadPlayerHostId = "game-video-preload-player";
+    this.preloadPlayerVideoId = "";
+    this.preloadPlayerRequestedVideoId = "";
+    this.preloadPrimeTimeout = null;
     this.playerVolume = this.loadStoredVolume();
     this.isLobbyCodeHidden = false;
     this.suggestionModalOpen = false;
@@ -455,6 +463,7 @@ export class GameController {
         this.finishToResult(this.scoreboard || []);
         return;
       }
+      this.destroyPreloadPlayer();
       if (String(this.currentLobby?.status || "").toLowerCase() === "waiting") {
         window.appCtrl.changeView("lobby");
       }
@@ -471,6 +480,7 @@ export class GameController {
 
     this.renderTimer(round, answerClosed, nextVoteAvailable);
     this.renderVideo(round?.track, revealVisible, round);
+    this.ensureUpcomingPlayer(this.roundState?.next_track, round);
     this.renderAnswerPhase(round, userAnswer, hasCorrectAnswer, answerClosed);
     this.renderMissedAnswerPhase(round);
     this.renderRevealVotePhase(round, earlyRevealAvailable);
@@ -547,12 +557,12 @@ export class GameController {
     if (!title || !copy || !hint || !ring) return;
 
     if (this.isRoundPendingStart(round)) {
-      const totalMs = Math.max(1000, Number(round?.preload_seconds || 4) * 1000);
+      const totalMs = Math.max(1000, Number(round?.preload_seconds || 1) * 1000);
       const remainingMs = Math.max(0, this.getMsUntilRoundStart(round));
       const remaining = Math.max(0, Math.ceil(remainingMs / 1000));
-      title.textContent = "Préparation";
+      title.textContent = "Synchronisation";
       copy.textContent = `Départ dans ${remaining}s.`;
-      hint.textContent = "La vidéo se charge pour démarrer tout le monde ensemble.";
+      hint.textContent = "Prépare-toi, la manche démarre.";
       this.renderTimerRing(ring, 1 - (remainingMs / totalMs));
       return;
     }
@@ -1423,12 +1433,14 @@ export class GameController {
           start: previewStartOffset,
           playsinline: 1,
           rel: 0,
+          vq: YOUTUBE_PREFERRED_QUALITY,
         },
         events: {
           onReady: () => {
             this.playerReady = true;
             this.playerVideoId = videoId;
             this.applyPlayerVolume();
+            this.requestPlayerQuality(this.player);
             this.schedulePlayerSync(true, pendingStart ? 100 : 250);
           },
           onStateChange: (event) => this.handlePlayerStateChange(event),
@@ -1447,14 +1459,17 @@ export class GameController {
         this.safePlayerCall(() => this.player.cueVideoById({
           videoId,
           startSeconds: previewStartOffset,
+          suggestedQuality: YOUTUBE_PREFERRED_QUALITY,
         }));
       } else {
         this.safePlayerCall(() => this.player.loadVideoById({
           videoId,
           startSeconds: previewStartOffset,
+          suggestedQuality: YOUTUBE_PREFERRED_QUALITY,
         }));
       }
       this.applyPlayerVolume();
+      this.requestPlayerQuality(this.player);
       this.schedulePlayerSync(true, pendingStart ? 100 : 400);
       return;
     }
@@ -1465,6 +1480,109 @@ export class GameController {
     } else {
       this.ensurePlayerIsPlaying();
     }
+  }
+
+  async ensureUpcomingPlayer(track, currentRound = this.roundState?.round) {
+    const videoId = String(track?.youtube_video_id || "").trim();
+    const currentVideoId = String(currentRound?.track?.youtube_video_id || "").trim();
+    if (!videoId || videoId === currentVideoId) {
+      this.destroyPreloadPlayer();
+      return;
+    }
+
+    this.preloadPlayerRequestedVideoId = videoId;
+    const startOffset = this.getTrackStartOffsetSeconds(track);
+
+    let host = document.getElementById(this.preloadPlayerHostId);
+    if (!host) {
+      const shell = document.getElementById("game-video") || document.body;
+      host = document.createElement("div");
+      host.id = this.preloadPlayerHostId;
+      host.className = "mq-video-preload-player";
+      shell.appendChild(host);
+    }
+
+    try {
+      await loadYouTubeIframeApi();
+    } catch {
+      return;
+    }
+
+    if (this.isDestroyed || this.preloadPlayerRequestedVideoId !== videoId) {
+      return;
+    }
+
+    if (!this.preloadPlayer) {
+      this.preloadPlayer = new window.YT.Player(this.preloadPlayerHostId, {
+        videoId,
+        playerVars: {
+          autoplay: 1,
+          controls: 0,
+          disablekb: 1,
+          fs: 0,
+          iv_load_policy: 3,
+          modestbranding: 1,
+          mute: 1,
+          playsinline: 1,
+          rel: 0,
+          start: Math.floor(startOffset),
+          vq: YOUTUBE_PREFERRED_QUALITY,
+        },
+        events: {
+          onReady: () => {
+            this.preloadPlayerReady = true;
+            this.preloadPlayerVideoId = videoId;
+            this.primeUpcomingPlayer(startOffset);
+          },
+        },
+      });
+      return;
+    }
+
+    if (!this.preloadPlayerReady) {
+      return;
+    }
+
+    if (this.preloadPlayerVideoId === videoId) {
+      this.requestPlayerQuality(this.preloadPlayer);
+      return;
+    }
+
+    this.preloadPlayerVideoId = videoId;
+    this.safePreloadPlayerCall(() => this.preloadPlayer.loadVideoById({
+      videoId,
+      startSeconds: Math.floor(startOffset),
+      suggestedQuality: YOUTUBE_PREFERRED_QUALITY,
+    }));
+    this.primeUpcomingPlayer(startOffset);
+  }
+
+  primeUpcomingPlayer(startOffset = 0) {
+    if (!this.preloadPlayer || !this.preloadPlayerReady) {
+      return;
+    }
+
+    if (this.preloadPrimeTimeout) {
+      window.clearTimeout(this.preloadPrimeTimeout);
+      this.preloadPrimeTimeout = null;
+    }
+
+    const safeOffset = Math.floor(Math.max(0, Number(startOffset || 0)));
+    this.safePreloadPlayerCall(() => {
+      if (typeof this.preloadPlayer.mute === "function") this.preloadPlayer.mute();
+      if (typeof this.preloadPlayer.setVolume === "function") this.preloadPlayer.setVolume(0);
+      this.requestPlayerQuality(this.preloadPlayer);
+      if (typeof this.preloadPlayer.seekTo === "function") this.preloadPlayer.seekTo(safeOffset, true);
+      if (typeof this.preloadPlayer.playVideo === "function") this.preloadPlayer.playVideo();
+    });
+
+    this.preloadPrimeTimeout = window.setTimeout(() => {
+      this.preloadPrimeTimeout = null;
+      this.safePreloadPlayerCall(() => {
+        if (typeof this.preloadPlayer.pauseVideo === "function") this.preloadPlayer.pauseVideo();
+        if (typeof this.preloadPlayer.seekTo === "function") this.preloadPlayer.seekTo(safeOffset, true);
+      });
+    }, PRELOAD_PRIME_MS);
   }
 
   handlePlayerStateChange(event) {
@@ -1606,6 +1724,18 @@ export class GameController {
     });
   }
 
+  requestPlayerQuality(player) {
+    if (!player || typeof player.setPlaybackQuality !== "function") {
+      return;
+    }
+
+    try {
+      player.setPlaybackQuality(YOUTUBE_PREFERRED_QUALITY);
+    } catch {
+      // noop
+    }
+  }
+
   safePlayerCall(fn) {
     if (!this.player || typeof fn !== "function") {
       return;
@@ -1630,6 +1760,18 @@ export class GameController {
     }
   }
 
+  safePreloadPlayerCall(fn) {
+    if (!this.preloadPlayer || typeof fn !== "function") {
+      return;
+    }
+
+    try {
+      fn();
+    } catch {
+      // noop
+    }
+  }
+
   destroyPlayer() {
     if (this.player) {
       this.safePlayerCall(() => this.player.stopVideo());
@@ -1639,6 +1781,23 @@ export class GameController {
     this.player = null;
     this.playerReady = false;
     this.playerVideoId = "";
+  }
+
+  destroyPreloadPlayer() {
+    if (this.preloadPrimeTimeout) {
+      window.clearTimeout(this.preloadPrimeTimeout);
+      this.preloadPrimeTimeout = null;
+    }
+
+    if (this.preloadPlayer) {
+      this.safePreloadPlayerCall(() => this.preloadPlayer.stopVideo());
+      this.safePreloadPlayerCall(() => this.preloadPlayer.destroy());
+    }
+
+    this.preloadPlayer = null;
+    this.preloadPlayerReady = false;
+    this.preloadPlayerVideoId = "";
+    this.preloadPlayerRequestedVideoId = "";
   }
 
   clearAnswerInput() {
@@ -1803,6 +1962,7 @@ export class GameController {
     this.stopHeartbeat();
     this.stopPlayerSyncLoop();
     this.destroyPlayer();
+    this.destroyPreloadPlayer();
     document.removeEventListener("visibilitychange", this.visibilityHandler);
     if (this.roundRefreshTimeout) {
       clearTimeout(this.roundRefreshTimeout);
