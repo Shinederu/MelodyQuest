@@ -88,6 +88,7 @@ Les flux `login/register/logout/me` passent par ce client auth partage.
 - Les pages joueur privilegient les actions utiles: creer un salon, rejoindre par code, choisir un salon public, inviter les joueurs, regler rapidement la partie et relancer depuis les resultats.
 - Les en-tetes de pages restent compacts par defaut afin de garder les actions principales visibles sans defilement inutile.
 - Layout desktop de la page jeu concu pour tenir sur un ecran PC courant: scene video a gauche, actions et classement a droite.
+- La page jeu possede des paliers responsive intermediaires pour les tailles laptop/tablette large, avec une colonne de droite densifiee quand la hauteur disponible est limitee.
 - Layout mobile compact: header reduit, lecteur en ratio 16:9, actions de reponse proches de la video, controles de partage/TV et classement densifies pour limiter le defilement pendant une partie.
 - La solution affiche l'oeuvre en grand sous la video, puis les infos de musique/artiste en plus petit; la categorie apparait uniquement si l'option du lobby est activee.
 - L'option "suivant automatique" n'est plus persistee en stockage navigateur: elle repart desactivee a chaque nouvelle session de jeu.

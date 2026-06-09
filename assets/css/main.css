@@ -2380,6 +2380,35 @@ body:has(.mq-tv-page) #footer {
   }
 }
 
+@media (min-width: 1041px) and (max-width: 1179px) {
+  body:has(.mq-game-page) {
+    padding: 10px;
+  }
+
+  body:has(.mq-game-page) #header {
+    margin-bottom: 10px;
+  }
+
+  body:has(.mq-game-page) .mq-game-shell {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  body:has(.mq-game-page) .mq-game-side {
+    display: contents;
+  }
+
+  body:has(.mq-game-page) .mq-game-stage {
+    padding: 12px;
+  }
+
+  body:has(.mq-game-page) .mq-video-shell {
+    height: auto;
+    max-height: min(52dvh, 420px);
+    aspect-ratio: 16 / 9;
+  }
+}
+
 @media (min-width: 1180px) {
   body:has(.mq-game-page) {
     padding: 12px;
@@ -2393,6 +2422,11 @@ body:has(.mq-tv-page) #footer {
 
   body:has(.mq-game-page) #header {
     margin-bottom: 10px;
+  }
+
+  body:has(.mq-game-page) .mq-game-shell {
+    gap: 12px;
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 400px);
   }
 
   body:has(.mq-game-page) .mq-topbar {
@@ -2411,7 +2445,7 @@ body:has(.mq-tv-page) #footer {
 
   body:has(.mq-game-page) .mq-game-stage,
   body:has(.mq-game-page) .mq-game-side {
-    max-height: calc(100vh - 86px);
+    max-height: calc(100dvh - 86px);
     overflow: auto;
   }
 
@@ -2425,7 +2459,7 @@ body:has(.mq-tv-page) #footer {
   }
 
   body:has(.mq-game-page) .mq-video-shell {
-    height: clamp(280px, calc(100vh - 410px), 560px);
+    height: clamp(280px, calc(100dvh - 410px), 560px);
   }
 
   body:has(.mq-game-page) .mq-game-answer-card,
@@ -2479,6 +2513,256 @@ body:has(.mq-tv-page) #footer {
 
   body:has(.mq-game-page) #game-scoreboard .mq-list-row {
     padding: 8px 10px;
+  }
+}
+
+@media (min-width: 1180px) and (max-height: 880px) {
+  body:has(.mq-game-page) {
+    padding: 8px;
+  }
+
+  body:has(.mq-game-page) #header {
+    margin-bottom: 8px;
+  }
+
+  body:has(.mq-game-page) #header,
+  body:has(.mq-game-page) #app {
+    width: min(1480px, 100%);
+  }
+
+  body:has(.mq-game-page) .mq-topbar {
+    min-height: 46px;
+    padding: 6px 8px 6px 12px;
+  }
+
+  body:has(.mq-game-page) .mq-topbar__page-eyebrow {
+    display: none;
+  }
+
+  body:has(.mq-game-page) .mq-topbar__page-title strong {
+    font-size: 1rem;
+  }
+
+  body:has(.mq-game-page) .mq-topbar__page-chips .mq-chip {
+    min-height: 22px;
+    padding: 2px 7px;
+    font-size: 0.72rem;
+  }
+
+  body:has(.mq-game-page) .mq-topbar__actions button,
+  body:has(.mq-game-page) .mq-topbar__role {
+    min-height: 30px;
+    padding-inline: 9px;
+    font-size: 0.78rem;
+  }
+
+  body:has(.mq-game-page) .mq-game-shell {
+    gap: 8px;
+    grid-template-columns: minmax(0, 1fr) minmax(310px, 390px);
+  }
+
+  body:has(.mq-game-page) .mq-game-stage,
+  body:has(.mq-game-page) .mq-game-side {
+    max-height: calc(100dvh - 70px);
+  }
+
+  body:has(.mq-game-page) .mq-game-stage {
+    gap: 8px;
+    padding: 9px;
+  }
+
+  body:has(.mq-game-page) .mq-game-stage__head {
+    gap: 8px;
+  }
+
+  body:has(.mq-game-page) .mq-game-stage__head .status {
+    min-height: 0;
+    margin: 0;
+    font-size: 0.82rem;
+  }
+
+  body:has(.mq-game-page) .mq-game-stage__head button {
+    min-height: 32px;
+    padding-inline: 9px;
+    font-size: 0.78rem;
+  }
+
+  body:has(.mq-game-page) .mq-video-shell {
+    height: clamp(250px, calc(100dvh - 390px), 520px);
+  }
+
+  body:has(.mq-game-page) .mq-video-overlay {
+    padding: 16px;
+  }
+
+  body:has(.mq-game-page) .mq-video-overlay__content {
+    gap: 10px;
+  }
+
+  body:has(.mq-game-page) .mq-video-overlay__timer {
+    gap: 12px;
+  }
+
+  body:has(.mq-game-page) .mq-video-overlay__timer-copy strong {
+    font-size: clamp(1.35rem, 2vw, 2rem);
+  }
+
+  body:has(.mq-game-page) .mq-video-overlay__hint {
+    display: none;
+  }
+
+  body:has(.mq-game-page) .mq-timer-ring {
+    width: 70px;
+    height: 70px;
+  }
+
+  body:has(.mq-game-page) .mq-video-toolbar {
+    margin-top: 8px;
+  }
+
+  body:has(.mq-game-page) .mq-game-category {
+    padding: 5px 9px;
+    font-size: 0.78rem;
+  }
+
+  body:has(.mq-game-page) .mq-game-solution {
+    gap: 2px;
+    padding: 7px 10px;
+  }
+
+  body:has(.mq-game-page) .mq-game-solution strong {
+    font-size: clamp(1.2rem, 2vw, 1.75rem);
+  }
+
+  body:has(.mq-game-page) .mq-game-solution span:not(.mq-chip) {
+    font-size: 0.86rem;
+  }
+
+  body:has(.mq-game-page) .mq-game-side {
+    gap: 8px;
+  }
+
+  body:has(.mq-game-page) .mq-game-answer-card,
+  body:has(.mq-game-page) .mq-game-info-card,
+  body:has(.mq-game-page) .mq-game-vote-panel {
+    padding: 10px;
+  }
+
+  body:has(.mq-game-page) .mq-card-heading {
+    gap: 4px;
+    margin-bottom: 6px;
+  }
+
+  body:has(.mq-game-page) .mq-game-answer-card .mq-kicker,
+  body:has(.mq-game-page) .mq-game-answer-card .mq-card-copy,
+  body:has(.mq-game-page) .mq-game-info-card .mq-card-heading,
+  body:has(.mq-game-page) .mq-game-vote-panel .mq-section-label {
+    display: none;
+  }
+
+  body:has(.mq-game-page) .mq-game-answer-card h2 {
+    font-size: 1rem;
+  }
+
+  body:has(.mq-game-page) #game-answer-shell {
+    gap: 6px;
+  }
+
+  body:has(.mq-game-page) #game-answer-shell label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  body:has(.mq-game-page) .mq-game-answer-card input,
+  body:has(.mq-game-page) .mq-game-answer-card button,
+  body:has(.mq-game-page) .mq-game-vote-panel button {
+    min-height: 36px;
+  }
+
+  body:has(.mq-game-page) .mq-game-reveal-vote,
+  body:has(.mq-game-page) .mq-game-missed-panel {
+    margin-top: 8px;
+    padding: 9px;
+  }
+
+  body:has(.mq-game-page) .mq-game-reveal-vote p,
+  body:has(.mq-game-page) .mq-game-missed-panel p,
+  body:has(.mq-game-page) .mq-game-vote-panel p {
+    margin: 0;
+  }
+
+  body:has(.mq-game-page) .mq-game-info-grid {
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+
+  body:has(.mq-game-page) .mq-game-fact {
+    min-height: 48px;
+    gap: 2px;
+    padding: 6px 8px;
+  }
+
+  body:has(.mq-game-page) .mq-game-fact span,
+  body:has(.mq-game-page) .mq-game-code small {
+    font-size: 0.66rem;
+  }
+
+  body:has(.mq-game-page) .mq-game-fact strong,
+  body:has(.mq-game-page) .mq-game-code span {
+    font-size: 0.92rem;
+  }
+
+  body:has(.mq-game-page) .mq-game-info-card .mq-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    margin-top: 6px;
+  }
+
+  body:has(.mq-game-page) .mq-game-info-card .mq-actions button {
+    width: 100%;
+    min-height: 32px;
+    padding-inline: 6px;
+    font-size: 0.72rem;
+  }
+
+  body:has(.mq-game-page) #game-scoreboard {
+    gap: 5px;
+  }
+
+  body:has(.mq-game-page) #game-scoreboard .mq-list-row {
+    min-height: 38px;
+    padding: 5px 7px;
+  }
+
+  body:has(.mq-game-page) #game-scoreboard .mq-avatar {
+    width: 28px;
+    height: 28px;
+    flex-basis: 28px;
+  }
+
+  body:has(.mq-game-page) #game-scoreboard .mq-chip {
+    min-height: 22px;
+    padding: 3px 7px;
+    font-size: 0.74rem;
+  }
+
+  body:has(.mq-game-page) .mq-game-vote-panel {
+    display: grid;
+    gap: 7px;
+  }
+
+  body:has(.mq-game-page) .mq-game-vote-panel .mq-muted {
+    font-size: 0.84rem;
+    line-height: 1.25;
+  }
+
+  body:has(.mq-game-page) .mq-game-vote-panel .mq-check {
+    min-height: 34px;
+    padding: 7px 9px;
   }
 }
 

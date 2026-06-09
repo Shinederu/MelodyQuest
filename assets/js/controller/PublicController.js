@@ -1,4 +1,4 @@
-import { UserModel } from "../model/UserModel.js?v=20260609-player-mode";
+import { UserModel } from "../model/UserModel.js?v=20260609-responsive-safe";
 
 export class PublicController {
   constructor() {
