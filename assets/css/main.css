@@ -1932,6 +1932,7 @@ input[type="range"] {
 body:has(.mq-tv-page) {
   padding: 0;
   overflow: hidden;
+  overflow-x: hidden;
   background:
     linear-gradient(120deg, rgba(120, 183, 255, 0.12), transparent 38%),
     linear-gradient(250deg, rgba(233, 130, 189, 0.1), transparent 42%),
@@ -2008,7 +2009,9 @@ body:has(.mq-tv-page) #footer {
 }
 
 .mq-tv-link-url {
+  width: 100%;
   max-width: 100%;
+  min-width: 0;
   overflow: hidden;
   color: var(--mq-text-faint);
   font-size: 0.86rem;
@@ -2274,6 +2277,7 @@ body:has(.mq-tv-page) #footer {
   body:has(.mq-tv-page) {
     padding: 0;
     overflow: auto;
+    overflow-x: hidden;
   }
 
   .mq-hero-grid,
