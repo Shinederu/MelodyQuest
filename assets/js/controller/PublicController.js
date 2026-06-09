@@ -1,4 +1,4 @@
-import { UserModel } from "../model/UserModel.js?v=20260609-round-preload";
+import { UserModel } from "../model/UserModel.js?v=20260609-mobile-ui";
 
 export class PublicController {
   constructor() {

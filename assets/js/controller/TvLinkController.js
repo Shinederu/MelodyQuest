@@ -1,4 +1,4 @@
-import { getCurrentLobby } from "../utils/LobbyState.js?v=20260609-round-preload";
+import { getCurrentLobby } from "../utils/LobbyState.js?v=20260609-mobile-ui";
 
 function getRouteParams() {
   const query = String(window.location.hash || "").split("?")[1] || "";

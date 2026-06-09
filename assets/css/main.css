@@ -2549,10 +2549,109 @@ body:has(.mq-tv-page) #footer {
     width: 100%;
   }
 
+  .mq-topbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 6px 10px;
+    min-height: 0;
+    padding: 9px 10px;
+  }
+
+  .mq-topbar__brand {
+    width: auto;
+    flex-basis: auto;
+  }
+
+  .mq-topbar__eyebrow,
+  .mq-topbar__page-eyebrow,
+  .mq-topbar__page-copy {
+    display: none;
+  }
+
+  .mq-topbar__user {
+    font-size: 0.9rem;
+  }
+
+  .mq-topbar__page {
+    grid-column: 1 / -1;
+    width: auto;
+    min-width: 0;
+    padding: 0;
+  }
+
+  .mq-topbar__page-title {
+    gap: 6px;
+  }
+
+  .mq-topbar__page-title strong {
+    font-size: 0.98rem;
+    white-space: nowrap;
+  }
+
+  .mq-topbar__page-chips {
+    gap: 5px;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 2px;
+  }
+
+  .mq-topbar__page-chips .mq-chip {
+    flex: 0 0 auto;
+  }
+
+  .mq-topbar__actions {
+    width: auto;
+    align-items: center;
+    justify-content: flex-end;
+    flex-direction: row;
+    flex-wrap: nowrap;
+  }
+
+  .mq-topbar__role {
+    display: none;
+  }
+
+  .mq-topbar__actions button {
+    width: auto;
+    min-height: 32px;
+    padding: 0 10px;
+    font-size: 0.78rem;
+  }
+
   .mq-page-header,
   .mq-card,
   .mq-admin-pane {
     padding: 16px;
+  }
+
+  .mq-card-heading {
+    gap: 5px;
+    margin-bottom: 12px;
+  }
+
+  .mq-player-dashboard {
+    gap: 10px;
+  }
+
+  .mq-play-card {
+    padding: 14px;
+  }
+
+  .mq-play-card .mq-card-copy {
+    display: none;
+  }
+
+  .mq-main-action-stack {
+    gap: 10px;
+  }
+
+  .mq-main-action-block {
+    gap: 9px;
+  }
+
+  .mq-main-action-block + .mq-main-action-block {
+    padding-top: 10px;
   }
 
   .mq-page-header--hero {
@@ -2597,6 +2696,230 @@ body:has(.mq-tv-page) #footer {
   .mq-timer-ring {
     width: 76px;
     height: 76px;
+  }
+
+  body:has(.mq-game-page) {
+    padding: 8px;
+  }
+
+  body:has(.mq-game-page) #header {
+    margin-bottom: 8px;
+  }
+
+  body:has(.mq-game-page) .mq-topbar__brand {
+    display: none;
+  }
+
+  body:has(.mq-game-page) .mq-topbar__page {
+    grid-column: 1;
+  }
+
+  body:has(.mq-game-page) .mq-topbar__actions {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  body:has(.mq-game-page) .mq-game-shell {
+    gap: 8px;
+  }
+
+  body:has(.mq-game-page) .mq-game-stage {
+    order: 1;
+    gap: 8px;
+    padding: 10px;
+  }
+
+  body:has(.mq-game-page) .mq-game-stage__head {
+    align-items: center;
+    flex-direction: row;
+    gap: 8px;
+  }
+
+  body:has(.mq-game-page) .mq-game-stage__head .status {
+    min-height: 0;
+    margin: 0;
+    flex: 1 1 auto;
+    font-size: 0.82rem;
+  }
+
+  body:has(.mq-game-page) .mq-game-stage__head .mq-actions {
+    width: auto;
+    margin-top: 0;
+    flex: 0 0 auto;
+    flex-direction: row;
+  }
+
+  body:has(.mq-game-page) .mq-game-stage__head button {
+    width: auto;
+    min-height: 34px;
+    padding: 0 10px;
+  }
+
+  body:has(.mq-game-page) .mq-video-shell {
+    max-height: min(42dvh, 260px);
+    width: 100%;
+  }
+
+  body:has(.mq-game-page) .mq-video-overlay {
+    padding: 12px;
+  }
+
+  body:has(.mq-game-page) .mq-video-overlay__content {
+    gap: 8px;
+  }
+
+  body:has(.mq-game-page) .mq-video-overlay__timer {
+    flex-direction: row;
+    gap: 10px;
+  }
+
+  body:has(.mq-game-page) .mq-video-overlay__timer-copy {
+    text-align: left;
+  }
+
+  body:has(.mq-game-page) .mq-video-overlay__timer-copy strong {
+    font-size: 1.15rem;
+  }
+
+  body:has(.mq-game-page) .mq-video-overlay__hint {
+    display: none;
+  }
+
+  body:has(.mq-game-page) .mq-timer-ring {
+    width: 54px;
+    height: 54px;
+  }
+
+  body:has(.mq-game-page) .mq-video-toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  body:has(.mq-game-page) .mq-volume-control {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    min-width: 0;
+  }
+
+  body:has(.mq-game-page) .mq-volume-control input {
+    width: 100%;
+  }
+
+  body:has(.mq-game-page) .mq-game-category {
+    padding: 5px 9px;
+    font-size: 0.78rem;
+  }
+
+  body:has(.mq-game-page) .mq-game-solution {
+    gap: 2px;
+    padding: 8px 10px;
+  }
+
+  body:has(.mq-game-page) .mq-game-solution strong {
+    font-size: clamp(1.2rem, 6vw, 1.65rem);
+  }
+
+  body:has(.mq-game-page) .mq-game-answer-card {
+    order: 2;
+    padding: 12px;
+  }
+
+  body:has(.mq-game-page) .mq-game-answer-card:has(#game-answer-shell:not([hidden])) {
+    position: sticky;
+    bottom: 8px;
+    z-index: 15;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02)),
+      rgba(11, 17, 27, 0.98);
+    backdrop-filter: blur(16px);
+  }
+
+  body:has(.mq-game-page) .mq-game-answer-card .mq-kicker,
+  body:has(.mq-game-page) .mq-game-answer-card .mq-card-copy {
+    display: none;
+  }
+
+  body:has(.mq-game-page) .mq-game-answer-card .mq-card-heading {
+    margin-bottom: 8px;
+  }
+
+  body:has(.mq-game-page) .mq-game-answer-card h2 {
+    font-size: 1rem;
+  }
+
+  body:has(.mq-game-page) #game-answer-shell {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+  }
+
+  body:has(.mq-game-page) #game-answer-shell label,
+  body:has(.mq-game-page) #game-answer-feedback {
+    grid-column: 1 / -1;
+  }
+
+  body:has(.mq-game-page) #game-answer-shell input {
+    min-height: 48px;
+  }
+
+  body:has(.mq-game-page) #game-answer-shell .mq-actions {
+    margin-top: 0;
+    flex-direction: row;
+  }
+
+  body:has(.mq-game-page) #game-answer-shell .mq-actions button {
+    width: auto;
+    min-height: 48px;
+    padding: 0 14px;
+  }
+
+  body:has(.mq-game-page) .mq-game-info-card {
+    order: 3;
+    padding: 12px;
+  }
+
+  body:has(.mq-game-page) .mq-game-info-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  body:has(.mq-game-page) .mq-game-fact {
+    min-height: 66px;
+    padding: 9px;
+  }
+
+  body:has(.mq-game-page) .mq-game-info-card .mq-actions {
+    flex-direction: row;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  body:has(.mq-game-page) .mq-game-info-card .mq-actions button {
+    width: auto;
+    min-width: 0;
+    flex: 1 1 0;
+    min-height: 40px;
+    padding-inline: 8px;
+  }
+
+  body:has(.mq-game-page) #game-scoreboard .mq-list-row {
+    align-items: center;
+    flex-direction: row;
+    padding: 8px 9px;
+  }
+
+  body:has(.mq-game-page) .mq-game-vote-panel {
+    order: 4;
+    padding: 12px;
+  }
+
+  body:has(.mq-game-page) #game-next-panel:not([hidden]) {
+    position: sticky;
+    bottom: 8px;
+    z-index: 14;
   }
 
   .mq-tv-stage {
