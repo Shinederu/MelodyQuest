@@ -1,20 +1,22 @@
-import { HttpService } from "../utils/HttpService.js?v=20260608-playtest-notes";
-import { HeaderModel } from "../model/HeaderModel.js?v=20260608-playtest-notes";
-import { PublicController } from "./PublicController.js?v=20260608-playtest-notes";
-import { SuggestTrackController } from "./SuggestTrackController.js?v=20260608-playtest-notes";
-import { MainController } from "./MainController.js?v=20260608-playtest-notes";
-import { LobbyController } from "./LobbyController.js?v=20260608-playtest-notes";
-import { LobbyListController } from "./LobbyListController.js?v=20260607-game-options";
-import { GameController } from "./GameController.js?v=20260608-playtest-notes";
-import { ResultController } from "./ResultController.js?v=20260606-player-flow";
-import { ManagementController } from "./ManagementController.js?v=20260608-playtest-notes";
-import { ManagementCategoriesController } from "./ManagementCategoriesController.js?v=20260606-clean-status";
-import { ManagementFamiliesController } from "./ManagementFamiliesController.js?v=20260606-clean-status";
-import { ManagementTracksController } from "./ManagementTracksController.js?v=20260606-clean-status";
-import { ManagementValidationController } from "./ManagementValidationController.js?v=20260607-validation-aliases";
-import { ManagementSuggestionsController } from "./ManagementSuggestionsController.js?v=20260608-playtest-notes";
+import { HttpService } from "../utils/HttpService.js?v=20260609-tv-mode";
+import { HeaderModel } from "../model/HeaderModel.js?v=20260609-tv-mode";
+import { PublicController } from "./PublicController.js?v=20260609-tv-mode";
+import { SuggestTrackController } from "./SuggestTrackController.js?v=20260609-tv-mode";
+import { MainController } from "./MainController.js?v=20260609-tv-mode";
+import { LobbyController } from "./LobbyController.js?v=20260609-tv-mode";
+import { LobbyListController } from "./LobbyListController.js?v=20260609-tv-mode";
+import { GameController } from "./GameController.js?v=20260609-tv-mode";
+import { ResultController } from "./ResultController.js?v=20260609-tv-mode";
+import { TvController } from "./TvController.js?v=20260609-tv-mode";
+import { TvLinkController } from "./TvLinkController.js?v=20260609-tv-mode";
+import { ManagementController } from "./ManagementController.js?v=20260609-tv-mode";
+import { ManagementCategoriesController } from "./ManagementCategoriesController.js?v=20260609-tv-mode";
+import { ManagementFamiliesController } from "./ManagementFamiliesController.js?v=20260609-tv-mode";
+import { ManagementTracksController } from "./ManagementTracksController.js?v=20260609-tv-mode";
+import { ManagementValidationController } from "./ManagementValidationController.js?v=20260609-tv-mode";
+import { ManagementSuggestionsController } from "./ManagementSuggestionsController.js?v=20260609-tv-mode";
 
-const ASSET_VERSION = "20260608-playtest-notes";
+const ASSET_VERSION = "20260609-tv-mode";
 
 let currentUser = null;
 let headerManager = null;
@@ -22,6 +24,8 @@ let headerManager = null;
 const ROUTES = {
   public: { auth: false, admin: false, controller: PublicController },
   "suggest-track": { auth: false, admin: false, allowAuthed: true, controller: SuggestTrackController },
+  tv: { auth: false, admin: false, allowAuthed: true, controller: TvController },
+  "tv-link": { auth: true, admin: false, controller: TvLinkController },
   main: { auth: true, admin: false, controller: MainController },
   "lobby-list": { auth: true, admin: false, controller: LobbyListController },
   lobby: { auth: true, admin: false, controller: LobbyController },
@@ -96,11 +100,20 @@ export class AppController {
     return false;
   }
 
+  resolvePathRoute() {
+    const path = String(window.location.pathname || "").replace(/\/+$/, "").toLowerCase();
+    if (path.endsWith("/tv")) {
+      return "tv";
+    }
+
+    return "";
+  }
+
   async selectView() {
     const runId = ++this.selectViewRunId;
     const rawRequested = window.location.hash.replace(/^#\/?/, "");
     const [requestedPath, requestedQuery = ""] = rawRequested.split("?");
-    let requested = requestedPath.toLowerCase();
+    let requested = requestedPath.toLowerCase() || this.resolvePathRoute();
     const routeParams = new URLSearchParams(requestedQuery);
     if (!requested) requested = "public";
 
@@ -123,8 +136,12 @@ export class AppController {
     const route = ROUTES[requested];
     if (route.auth && !session) {
       const sharedLobbyCode = requested === "lobby" ? String(routeParams.get("code") || "").trim().toUpperCase() : "";
+      const sharedTvCode = requested === "tv-link" ? String(routeParams.get("code") || "").trim().toUpperCase() : "";
       if (sharedLobbyCode) {
         sessionStorage.setItem("mq_pending_lobby_code", sharedLobbyCode);
+      }
+      if (sharedTvCode) {
+        sessionStorage.setItem("mq_pending_tv_code", sharedTvCode);
       }
       requested = "public";
     } else if (route.admin && !isAdmin) {
@@ -167,7 +184,7 @@ export class AppController {
     const app = document.getElementById("app");
     if (!app) return;
 
-    const res = await fetch(`assets/views/${view}View.html?v=${ASSET_VERSION}`, { cache: "no-cache" });
+    const res = await fetch(`/assets/views/${view}View.html?v=${ASSET_VERSION}`, { cache: "no-cache" });
     app.innerHTML = await res.text();
 
     const head = document.getElementById("header");

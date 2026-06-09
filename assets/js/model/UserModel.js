@@ -7,6 +7,12 @@
     const response = await window.httpClient.submitLogin({ username, password });
 
     if (response.success) {
+      const pendingTvCode = sessionStorage.getItem("mq_pending_tv_code");
+      if (pendingTvCode) {
+        window.appCtrl.changeView(`tv-link?code=${encodeURIComponent(pendingTvCode)}`);
+        return;
+      }
+
       window.appCtrl.changeView("main");
     } else {
       alert("Login failed: " + response.error);

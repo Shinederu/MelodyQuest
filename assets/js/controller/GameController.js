@@ -100,6 +100,7 @@ export class GameController {
     document.getElementById("btn-game-leave")?.addEventListener("click", () => this.leaveLobby());
     document.getElementById("btn-game-toggle-code")?.addEventListener("click", () => this.toggleLobbyCodeVisibility());
     document.getElementById("btn-game-share-lobby")?.addEventListener("click", () => this.shareLobby());
+    document.getElementById("btn-game-link-tv")?.addEventListener("click", () => this.linkTv());
     document.getElementById("btn-game-suggest-correction")?.addEventListener("click", () => this.openSuggestionModal());
     document.getElementById("btn-game-suggestion-submit")?.addEventListener("click", () => this.submitSuggestion());
     document.getElementById("btn-game-suggestion-close")?.addEventListener("click", () => this.closeSuggestionModal());
@@ -388,6 +389,10 @@ export class GameController {
     } catch {
       this.setStatus(url, null);
     }
+  }
+
+  linkTv() {
+    window.appCtrl.changeView("tv-link?from=game");
   }
 
   renderScoreboard() {

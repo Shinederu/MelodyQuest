@@ -41,6 +41,7 @@ L'API `auth` utilise aussi ce meme schema partage avec ses variables (`DB_*`).
 - Lecture synchronisee entre tous les joueurs d'un lobby
 - Images de profil exposees par l'API MelodyQuest avec URL d'avatar normalisee depuis l'API Auth, affichees dans les listes de joueurs et le classement
 - Partage direct d'un salon via URL `#/lobby?code=...`, utilisable depuis le lobby et depuis la partie
+- Mode TV via `https://melodyquest.shinederu.ch/tv`: une TV genere un QR code/code court, puis un joueur connecte dans un salon peut la lier depuis `#/tv-link`; la TV suit ensuite le salon, joue le son, affiche la video/solution au moment de la revelation et garde le classement visible
 - Suggestions joueurs: correction/alias/URL pendant une partie, avec verrou temporaire de manche pendant la saisie, et page publique `#/suggest-track` pour proposer une nouvelle musique
 - Administrateurs de catalogue definis par le droit central `melodyquest.catalog.manage` (`core_*`) ou par le super-admin global
 - Administrateurs: gestion du catalogue (categories, familles, musiques) et suivi des suggestions joueurs
@@ -60,11 +61,14 @@ Les flux `login/register/logout/me` passent par ce client auth partage.
 - fallback de transition: SSE historique sur `api.shinederu.ch/melodyquest`
 - les ecrans `main`, `lobby-list`, `lobby` et `game` consomment `data.realtime` renvoye par l'API
 - les topics Mercure MelodyQuest sont derives de `https://api.shinederu.ch/melodyquest/topics/...`
+- l'ecran `tv` reste public et utilise un polling leger `getTvPairing` / `getTvState` avec un `device_token` temporaire, afin de ne pas exiger de session auth sur une television
 
 ## Etat client actuel
 
 - Vue `public`: login/register
 - Vue `suggest-track`: page publique de proposition de nouvelle musique, accessible avec ou sans session
+- Vue `tv`: ecran public pour television/ecran dedie; genere un QR code et bascule en affichage de partie une fois lie a un salon
+- Vue `tv-link`: liaison d'une TV au salon courant depuis le QR code ou un code manuel, accessible depuis le lobby et la partie
 - Vue `main`: menu principal (creer un salon public/prive, rejoindre par code, salons publics)
 - Vue `lobby-list`: lobbies publics en cours + rejoindre par code
 - Vue `lobby`: page lobby (joueurs avec avatars, reglages owner regroupes par salon/rythme/options/validation/categories, visibilite public/prive, categorie visible, vote de revelation, seuil de precision des reponses, presence maintenue pendant le chargement initial)
@@ -85,6 +89,7 @@ Les flux `login/register/logout/me` passent par ce client auth partage.
 - Layout mobile empile les sections et conserve le lecteur en ratio 16:9.
 - La solution affiche l'oeuvre en grand sous la video, puis les infos de musique/artiste en plus petit; la categorie apparait uniquement si l'option du lobby est activee.
 - L'option "suivant automatique" n'est plus persistee en stockage navigateur: elle repart desactivee a chaque nouvelle session de jeu.
+- Le mode TV est pense pour une soiree IRL: QR code/code lisible a distance, activation manuelle du son pour contourner les blocages d'autoplay navigateur, grand timer, solution et classement visibles sur un ecran partage.
 
 ## Lancer en local
 
@@ -94,7 +99,8 @@ Servir le dossier statique avec un serveur HTTP (ex: nginx, caddy, vite static, 
 
 ## Adaptation hebergement actuel
 
-- Front route en hash (`#/main`, `#/lobby-list`, etc.) pour eviter toute dependance au rewrite Nginx.
+- Front route principalement en hash (`#/main`, `#/lobby-list`, etc.) pour eviter toute dependance au rewrite Nginx.
+- Route lisible speciale `https://melodyquest.shinederu.ch/tv` pour le mode TV; le fallback Nginx vers `index.html` reste necessaire.
 - API auth: `https://api.shinederu.ch/auth/`
 - API MelodyQuest: `https://api.shinederu.ch/melodyquest/`
 - Hub Mercure: `https://mercure.shinederu.ch/.well-known/mercure`
@@ -134,6 +140,8 @@ Avec le routage hash, les pages sont accessibles via:
 
 - `https://melodyquest.shinederu.ch/#/public`
 - `https://melodyquest.shinederu.ch/#/suggest-track`
+- `https://melodyquest.shinederu.ch/tv`
+- `https://melodyquest.shinederu.ch/#/tv-link?code=ABC123`
 - `https://melodyquest.shinederu.ch/#/main`
 - `https://melodyquest.shinederu.ch/#/lobby-list`
 - `https://melodyquest.shinederu.ch/#/lobby?code=ABCDEFGH`

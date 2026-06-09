@@ -1,4 +1,4 @@
-﻿import { UserModel } from "../model/UserModel.js";
+import { UserModel } from "../model/UserModel.js?v=20260609-tv-mode";
 
 export class PublicController {
   constructor() {

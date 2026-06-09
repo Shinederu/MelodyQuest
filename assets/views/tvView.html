@@ -1,0 +1,92 @@
+<section class="mq-tv-page">
+  <section id="tv-pairing" class="mq-tv-pairing">
+    <div class="mq-tv-pairing__content">
+      <div class="mq-kicker">MelodyQuest TV</div>
+      <h1>Mode TV</h1>
+      <p>Affiche cette page sur une télévision ou un écran dédié, puis scanne le QR code depuis un appareil déjà dans le salon.</p>
+
+      <div id="tv-qr" class="mq-tv-qr" aria-live="polite"></div>
+      <div id="tv-code" class="mq-tv-code">------</div>
+      <p id="tv-pairing-status" class="status"></p>
+      <p id="tv-link-url" class="mq-tv-link-url"></p>
+
+      <div class="mq-actions mq-tv-pairing__actions">
+        <button id="btn-tv-new-pairing" type="button" class="mq-secondary">Nouveau code</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="tv-stage" class="mq-tv-stage" hidden>
+    <header class="mq-tv-stage__header">
+      <div class="mq-tv-stage__title">
+        <div class="mq-kicker">MelodyQuest TV</div>
+        <h1 id="tv-stage-title">Salon lié</h1>
+        <p id="tv-stage-code">Synchronisation...</p>
+      </div>
+
+      <div class="mq-tv-stage__meta">
+        <span id="tv-stage-round" class="mq-chip">Salon en attente</span>
+        <span id="tv-stage-status" class="mq-chip">Synchronisation</span>
+        <button id="btn-tv-activate-audio" type="button" class="mq-secondary">Activer le son</button>
+        <button id="btn-tv-stage-new-pairing" type="button" class="mq-secondary">Changer de salon</button>
+      </div>
+    </header>
+
+    <main class="mq-tv-layout">
+      <section class="mq-card mq-card--soft mq-tv-video-card">
+        <div class="mq-tv-round-head">
+          <div>
+            <p id="tv-round-phase" class="mq-section-label">En attente</p>
+            <p id="tv-round-hint" class="mq-muted">Lance une manche pour démarrer l'écran TV.</p>
+          </div>
+          <div id="tv-round-category" class="mq-game-category" hidden></div>
+        </div>
+
+        <div id="tv-video" class="mq-video-shell mq-tv-video-shell is-concealed">
+          <div id="tv-video-player" class="mq-video-player"></div>
+          <div id="tv-video-overlay" class="mq-video-overlay">
+            <div class="mq-video-overlay__content">
+              <div class="mq-video-overlay__timer">
+                <svg class="mq-timer-ring" viewBox="0 0 120 120" aria-hidden="true">
+                  <circle class="mq-timer-ring__track" cx="60" cy="60" r="44"></circle>
+                  <circle id="tv-timer-ring-progress" class="mq-timer-ring__progress" cx="60" cy="60" r="44"></circle>
+                </svg>
+                <div class="mq-video-overlay__timer-copy">
+                  <strong id="tv-video-overlay-title">Salon prêt</strong>
+                  <p id="tv-video-overlay-copy">La musique apparaîtra ici.</p>
+                </div>
+              </div>
+              <div class="mq-tv-timer-readout">
+                <strong id="tv-timer-value">--</strong>
+                <span id="tv-timer-label">En attente</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mq-video-toolbar mq-tv-toolbar">
+          <label class="mq-volume-control" for="tv-volume">
+            <span>Volume TV</span>
+            <input id="tv-volume" type="range" min="0" max="100" step="1" value="75" />
+          </label>
+          <span id="tv-volume-value" class="mq-chip">75%</span>
+        </div>
+
+        <div id="tv-solution" class="mq-game-solution mq-tv-solution" hidden>
+          <strong id="tv-solution-family"></strong>
+          <span id="tv-solution-track"></span>
+        </div>
+      </section>
+
+      <aside class="mq-tv-side">
+        <section class="mq-card mq-card--accent">
+          <div class="mq-card-heading mq-card-heading--compact">
+            <div class="mq-kicker">Joueurs</div>
+            <h2>Classement</h2>
+          </div>
+          <ul id="tv-scoreboard" class="mq-clean-list mq-tv-scoreboard"></ul>
+        </section>
+      </aside>
+    </main>
+  </section>
+</section>

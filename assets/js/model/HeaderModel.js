@@ -1,6 +1,6 @@
 export class HeaderModel {
   refresh(headerElement, view, role, username, isAdmin = false) {
-    if (view === "public") {
+    if (view === "public" || view === "tv") {
       headerElement.innerHTML = "";
       return;
     }
@@ -59,6 +59,11 @@ export class HeaderModel {
         eyebrow: "Contribution",
         title: "Proposer une musique",
         description: "Envoie une piste ou une correction à vérifier.",
+      },
+      "tv-link": {
+        eyebrow: "Mode TV",
+        title: "Lier un écran",
+        description: "Associe une télévision au salon en cours.",
       },
       "lobby-list": {
         eyebrow: "Rejoindre",

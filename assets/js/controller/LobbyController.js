@@ -35,6 +35,7 @@ export class LobbyController {
     document.getElementById("btn-lobby-delete")?.addEventListener("click", () => this.deleteLobby());
     document.getElementById("btn-lobby-start")?.addEventListener("click", () => this.startGame());
     document.getElementById("btn-lobby-share")?.addEventListener("click", () => this.shareLobby());
+    document.getElementById("btn-lobby-link-tv")?.addEventListener("click", () => this.linkTv());
 
     document.addEventListener("visibilitychange", this.visibilityHandler);
 
@@ -562,6 +563,10 @@ export class LobbyController {
       this.pendingConfigSave = false;
       this.queueConfigSave(150);
     }
+  }
+
+  linkTv() {
+    window.appCtrl.changeView("tv-link?from=lobby");
   }
 
   async startGame() {

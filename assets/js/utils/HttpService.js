@@ -244,6 +244,29 @@ export class HttpService {
     return this.request(MELODY_BASE_URL, "POST", "submitSuggestion", data);
   }
 
+  async createTvPairing() {
+    return this.request(MELODY_BASE_URL, "POST", "createTvPairing", {});
+  }
+
+  async getTvPairing(deviceToken) {
+    return this.request(MELODY_BASE_URL, "GET", "getTvPairing", {
+      device_token: deviceToken,
+    });
+  }
+
+  async getTvState(deviceToken) {
+    return this.request(MELODY_BASE_URL, "GET", "getTvState", {
+      device_token: deviceToken,
+    });
+  }
+
+  async linkTvPairing(pairingCode, lobbyId) {
+    return this.request(MELODY_BASE_URL, "POST", "linkTvPairing", {
+      pairing_code: pairingCode,
+      lobby_id: lobbyId,
+    });
+  }
+
   async holdSuggestion(lobbyId, roundId) {
     return this.request(MELODY_BASE_URL, "POST", "holdSuggestion", {
       lobby_id: lobbyId,
