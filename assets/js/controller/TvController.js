@@ -228,7 +228,9 @@ export class TvController {
     try {
       const response = await window.httpClient.getTvState(this.deviceToken);
       if (!response.success || !response.data?.snapshot) {
-        this.setStageStatus(response.error || "Impossible de synchroniser le salon.", false);
+        if (this.shouldResetAfterStateError(response.error || response.message || "")) {
+          await this.createPairing();
+        }
         return;
       }
 
@@ -239,6 +241,14 @@ export class TvController {
     } finally {
       this.stateInFlight = false;
     }
+  }
+
+  shouldResetAfterStateError(message) {
+    const value = String(message || "").toLowerCase();
+    return value.includes("expir")
+      || value.includes("introuvable")
+      || value.includes("non li")
+      || value.includes("salon");
   }
 
   applySnapshot(snapshot) {
@@ -552,6 +562,13 @@ export class TvController {
   }
 
   applyAudioState() {
+    const button = document.getElementById("btn-tv-activate-audio");
+    if (button) {
+      button.textContent = this.soundEnabled ? "Son activé" : "Activer le son";
+      button.hidden = this.soundEnabled;
+      button.disabled = this.soundEnabled;
+    }
+
     if (!this.player) return;
 
     if (typeof this.player.setVolume === "function") {
@@ -562,12 +579,6 @@ export class TvController {
       if (typeof this.player.playVideo === "function") this.player.playVideo();
     } else if (typeof this.player.mute === "function") {
       this.player.mute();
-    }
-
-    const button = document.getElementById("btn-tv-activate-audio");
-    if (button) {
-      button.textContent = this.soundEnabled ? "Son activé" : "Activer le son";
-      button.disabled = this.soundEnabled;
     }
   }
 

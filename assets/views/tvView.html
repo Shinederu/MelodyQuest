@@ -1,37 +1,13 @@
 <section class="mq-tv-page">
   <section id="tv-pairing" class="mq-tv-pairing">
     <div class="mq-tv-pairing__content">
-      <div class="mq-kicker">MelodyQuest TV</div>
-      <h1>Mode TV</h1>
-      <p>Affiche cette page sur une télévision ou un écran dédié, puis scanne le QR code depuis un appareil déjà dans le salon.</p>
-
       <div id="tv-qr" class="mq-tv-qr" aria-live="polite"></div>
       <div id="tv-code" class="mq-tv-code">------</div>
       <p id="tv-pairing-status" class="status"></p>
-      <p id="tv-link-url" class="mq-tv-link-url"></p>
-
-      <div class="mq-actions mq-tv-pairing__actions">
-        <button id="btn-tv-new-pairing" type="button" class="mq-secondary">Nouveau code</button>
-      </div>
     </div>
   </section>
 
   <section id="tv-stage" class="mq-tv-stage" hidden>
-    <header class="mq-tv-stage__header">
-      <div class="mq-tv-stage__title">
-        <div class="mq-kicker">MelodyQuest TV</div>
-        <h1 id="tv-stage-title">Salon lié</h1>
-        <p id="tv-stage-code">Synchronisation...</p>
-      </div>
-
-      <div class="mq-tv-stage__meta">
-        <span id="tv-stage-round" class="mq-chip">Salon en attente</span>
-        <span id="tv-stage-status" class="mq-chip">Synchronisation</span>
-        <button id="btn-tv-activate-audio" type="button" class="mq-secondary">Activer le son</button>
-        <button id="btn-tv-stage-new-pairing" type="button" class="mq-secondary">Changer de salon</button>
-      </div>
-    </header>
-
     <main class="mq-tv-layout">
       <section class="mq-card mq-card--soft mq-tv-video-card">
         <div class="mq-tv-round-head">
@@ -64,14 +40,6 @@
           </div>
         </div>
 
-        <div class="mq-video-toolbar mq-tv-toolbar">
-          <label class="mq-volume-control" for="tv-volume">
-            <span>Volume TV</span>
-            <input id="tv-volume" type="range" min="0" max="100" step="1" value="75" />
-          </label>
-          <span id="tv-volume-value" class="mq-chip">75%</span>
-        </div>
-
         <div id="tv-solution" class="mq-game-solution mq-tv-solution" hidden>
           <strong id="tv-solution-family"></strong>
           <span id="tv-solution-track"></span>
@@ -88,5 +56,7 @@
         </section>
       </aside>
     </main>
+
+    <button id="btn-tv-activate-audio" type="button" class="mq-secondary mq-tv-audio-button">Activer le son</button>
   </section>
 </section>

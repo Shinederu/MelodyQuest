@@ -89,7 +89,7 @@ Les flux `login/register/logout/me` passent par ce client auth partage.
 - Layout mobile empile les sections et conserve le lecteur en ratio 16:9.
 - La solution affiche l'oeuvre en grand sous la video, puis les infos de musique/artiste en plus petit; la categorie apparait uniquement si l'option du lobby est activee.
 - L'option "suivant automatique" n'est plus persistee en stockage navigateur: elle repart desactivee a chaque nouvelle session de jeu.
-- Le mode TV est pense pour une soiree IRL: QR code/code lisible a distance, activation manuelle du son pour contourner les blocages d'autoplay navigateur, grand timer, solution et classement visibles sur un ecran partage.
+- Le mode TV est pense pour une soiree IRL: pas de header/footer ni navigation visible, QR code/code lisible a distance au demarrage, activation manuelle du son uniquement si necessaire pour contourner les blocages d'autoplay navigateur, puis grand timer, solution et classement visibles sur un ecran partage.
 - Le scan camera de `tv-link` utilise d'abord `BarcodeDetector` quand disponible, puis le decodeur local vendore `assets/js/vendor/jsqr/` en fallback; le champ code reste toujours disponible.
 
 ## Lancer en local

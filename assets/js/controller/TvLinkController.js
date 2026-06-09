@@ -1,4 +1,4 @@
-import { getCurrentLobby } from "../utils/LobbyState.js?v=20260609-tv-scan";
+import { getCurrentLobby } from "../utils/LobbyState.js?v=20260609-tv-minimal";
 
 function getRouteParams() {
   const query = String(window.location.hash || "").split("?")[1] || "";

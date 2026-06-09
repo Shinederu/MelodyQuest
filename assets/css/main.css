@@ -1991,11 +1991,16 @@ body:has(.mq-tv-page) {
     #04070c;
 }
 
-body:has(.mq-tv-page) #header,
 body:has(.mq-tv-page) #app,
+body:has(.mq-tv-page) #header,
 body:has(.mq-tv-page) #footer {
   width: 100%;
   margin: 0;
+}
+
+body:has(.mq-tv-page) #header,
+body:has(.mq-tv-page) #footer {
+  display: none;
 }
 
 .mq-tv-page {
@@ -2012,8 +2017,8 @@ body:has(.mq-tv-page) #footer {
 .mq-tv-pairing__content {
   display: grid;
   justify-items: center;
-  gap: 18px;
-  width: min(760px, 100%);
+  gap: 16px;
+  width: min(560px, 100%);
   padding: clamp(18px, 4vw, 42px);
   border: 1px solid var(--mq-line-strong);
   border-radius: var(--mq-radius);
@@ -2022,10 +2027,6 @@ body:has(.mq-tv-page) #footer {
     linear-gradient(145deg, rgba(120, 183, 255, 0.12), rgba(233, 130, 189, 0.08)),
     rgba(9, 14, 23, 0.94);
   box-shadow: var(--mq-shadow);
-}
-
-.mq-tv-pairing h1 {
-  font-size: clamp(2.4rem, 7vw, 5.7rem);
 }
 
 .mq-tv-pairing p {
@@ -2078,50 +2079,9 @@ body:has(.mq-tv-page) #footer {
 .mq-tv-stage {
   min-height: 100vh;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  gap: 12px;
+  grid-template-rows: minmax(0, 1fr);
+  gap: 0;
   padding: clamp(12px, 2vw, 24px);
-}
-
-.mq-tv-stage__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18px;
-  padding: 14px 16px;
-  border: 1px solid var(--mq-line);
-  border-radius: var(--mq-radius);
-  background: rgba(10, 15, 24, 0.9);
-  box-shadow: var(--mq-shadow-soft);
-}
-
-.mq-tv-stage__title {
-  min-width: 0;
-}
-
-.mq-tv-stage__title h1 {
-  overflow: hidden;
-  font-size: clamp(1.7rem, 3vw, 3.8rem);
-  line-height: 1.02;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.mq-tv-stage__title p {
-  color: var(--mq-text-faint);
-}
-
-.mq-tv-stage__meta {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 9px;
-  flex-wrap: wrap;
-}
-
-.mq-tv-stage__meta button,
-.mq-tv-stage__meta .mq-chip {
-  min-height: 38px;
 }
 
 .mq-tv-layout {
@@ -2135,7 +2095,7 @@ body:has(.mq-tv-page) #footer {
 .mq-tv-video-card {
   min-height: 0;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   gap: 12px;
   padding: 14px;
 }
@@ -2177,10 +2137,6 @@ body:has(.mq-tv-page) #footer {
   font-size: clamp(0.9rem, 1.4vw, 1.25rem);
 }
 
-.mq-tv-toolbar {
-  margin-top: 0;
-}
-
 .mq-tv-solution strong {
   font-size: clamp(2rem, 4.4vw, 5rem);
 }
@@ -2217,6 +2173,20 @@ body:has(.mq-tv-page) #footer {
   color: var(--mq-text-faint);
   text-align: center;
   background: rgba(255, 255, 255, 0.035);
+}
+
+.mq-tv-audio-button {
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  z-index: 30;
+  min-height: 34px;
+  padding: 0 12px;
+  border-color: rgba(120, 183, 255, 0.24);
+  color: var(--mq-text-soft);
+  font-size: 0.82rem;
+  background: rgba(4, 7, 12, 0.72);
+  backdrop-filter: blur(8px);
 }
 
 @media (min-width: 1180px) {
