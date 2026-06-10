@@ -1,4 +1,5 @@
-import { extractYouTubeVideoId } from "../utils/youtube.js";
+import { extractYouTubeVideoId } from "../utils/youtube.js?v=20260610-shared-utils";
+import { escapeAttribute, escapeHtml, normalizeSearch } from "../utils/ui.js?v=20260610-shared-utils";
 
 export class ManagementTracksController {
   constructor() {
@@ -641,21 +642,14 @@ export class ManagementTracksController {
   }
 
   normalizeSearch(value) {
-    return String(value || "")
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase()
-      .trim();
+    return normalizeSearch(value);
   }
 
   escapeHtml(value) {
-    return String(value)
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;");
+    return escapeHtml(value);
   }
 
   escapeAttribute(value) {
-    return this.escapeHtml(value).replaceAll('"', "&quot;");
+    return escapeAttribute(value);
   }
 }

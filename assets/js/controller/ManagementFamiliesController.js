@@ -1,11 +1,4 @@
-function slugify(value) {
-  return String(value || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
+import { escapeHtml, normalizeSearch, slugify } from "../utils/ui.js?v=20260610-shared-utils";
 
 export class ManagementFamiliesController {
   constructor() {
@@ -397,19 +390,10 @@ export class ManagementFamiliesController {
   }
 
   normalizeSearch(value) {
-    return String(value || "")
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase()
-      .trim();
+    return normalizeSearch(value);
   }
 
   escapeHtml(value) {
-    return String(value)
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#39;");
+    return escapeHtml(value);
   }
 }

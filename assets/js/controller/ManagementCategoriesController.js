@@ -1,11 +1,4 @@
-function slugify(value) {
-  return String(value || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
+import { escapeHtml, slugify } from "../utils/ui.js?v=20260610-shared-utils";
 
 export class ManagementCategoriesController {
   constructor() {
@@ -163,9 +156,6 @@ export class ManagementCategoriesController {
   }
 
   escapeHtml(value) {
-    return String(value)
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;");
+    return escapeHtml(value);
   }
 }

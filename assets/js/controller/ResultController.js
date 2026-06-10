@@ -1,4 +1,5 @@
 import { getCurrentLobby, setCurrentLobby, clearCurrentLobby } from "../utils/LobbyState.js";
+import { escapeHtml } from "../utils/ui.js?v=20260610-shared-utils";
 
 const AUTO_RETURN_DELAY_SECONDS = 15;
 
@@ -154,10 +155,7 @@ export class ResultController {
   }
 
   escapeHtml(value) {
-    return String(value)
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;");
+    return escapeHtml(value);
   }
 
   setStatus(text, ok = null) {

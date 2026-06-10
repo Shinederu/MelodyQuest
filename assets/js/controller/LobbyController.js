@@ -1,4 +1,5 @@
 import { getCurrentLobby, setCurrentLobby, clearCurrentLobby } from "../utils/LobbyState.js";
+import { escapeAttribute, escapeHtml, formatPlayerRole, renderAvatar } from "../utils/ui.js?v=20260610-shared-utils";
 
 const MIN_TOTAL_ROUNDS = 1;
 const MAX_TOTAL_ROUNDS = 1000;
@@ -682,26 +683,11 @@ export class LobbyController {
   }
 
   renderAvatar(player) {
-    const username = String(player?.username || "joueur");
-    const avatarUrl = String(player?.avatar_url || "").trim();
-    if (avatarUrl) {
-      return `<img class="mq-avatar" src="${this.escapeAttr(avatarUrl)}" alt="" loading="lazy" />`;
-    }
-
-    return `<span class="mq-avatar mq-avatar--fallback" aria-hidden="true">${this.escapeHtml(this.getInitials(username))}</span>`;
-  }
-
-  getInitials(username) {
-    const parts = String(username || "joueur").trim().split(/\s+/).filter(Boolean);
-    const letters = parts.length > 1
-      ? `${parts[0][0] || ""}${parts[1][0] || ""}`
-      : String(parts[0] || "j").slice(0, 2);
-
-    return letters.toUpperCase();
+    return renderAvatar(player);
   }
 
   formatPlayerRole(role) {
-    return String(role || "").toLowerCase() === "owner" ? "créateur" : "joueur";
+    return formatPlayerRole(role);
   }
 
   toBool(value) {
@@ -711,14 +697,11 @@ export class LobbyController {
   }
 
   escapeHtml(value) {
-    return String(value)
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;");
+    return escapeHtml(value);
   }
 
   escapeAttr(value) {
-    return this.escapeHtml(value).replaceAll('"', "&quot;");
+    return escapeAttribute(value);
   }
 
   setStatus(text, ok) {

@@ -1,4 +1,5 @@
-import { buildYouTubeEmbedUrl, buildYouTubeWatchUrl, extractYouTubeVideoId } from "../utils/youtube.js";
+import { buildYouTubeEmbedUrl, buildYouTubeWatchUrl, extractYouTubeVideoId } from "../utils/youtube.js?v=20260610-shared-utils";
+import { escapeAttribute, escapeHtml, formatDate, normalizeSearch } from "../utils/ui.js?v=20260610-shared-utils";
 
 export class ManagementValidationController {
   constructor() {
@@ -510,23 +511,11 @@ export class ManagementValidationController {
   }
 
   formatDate(value) {
-    const date = value ? new Date(value) : null;
-    if (!date || Number.isNaN(date.getTime())) {
-      return "date inconnue";
-    }
-
-    return new Intl.DateTimeFormat("fr-CH", {
-      dateStyle: "medium",
-      timeStyle: "short",
-    }).format(date);
+    return formatDate(value);
   }
 
   normalizeSearch(value) {
-    return String(value || "")
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase()
-      .trim();
+    return normalizeSearch(value);
   }
 
   setStatus(text, ok) {
@@ -537,15 +526,10 @@ export class ManagementValidationController {
   }
 
   escapeHtml(value) {
-    return String(value)
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#39;");
+    return escapeHtml(value);
   }
 
   escapeAttribute(value) {
-    return this.escapeHtml(value).replaceAll('"', "&quot;");
+    return escapeAttribute(value);
   }
 }

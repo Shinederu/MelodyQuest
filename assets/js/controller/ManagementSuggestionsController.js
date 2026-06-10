@@ -1,3 +1,5 @@
+import { escapeHtml, formatDate } from "../utils/ui.js?v=20260610-shared-utils";
+
 export class ManagementSuggestionsController {
   constructor() {
     this.items = [];
@@ -199,15 +201,7 @@ export class ManagementSuggestionsController {
   }
 
   formatDate(value) {
-    const date = value ? new Date(value) : null;
-    if (!date || Number.isNaN(date.getTime())) {
-      return "date inconnue";
-    }
-
-    return new Intl.DateTimeFormat("fr-CH", {
-      dateStyle: "medium",
-      timeStyle: "short",
-    }).format(date);
+    return formatDate(value);
   }
 
   setStatus(text, ok = null) {
@@ -226,11 +220,6 @@ export class ManagementSuggestionsController {
   }
 
   escapeHtml(value) {
-    return String(value)
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#39;");
+    return escapeHtml(value);
   }
 }

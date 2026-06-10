@@ -1,4 +1,5 @@
 import { setCurrentLobby } from "../utils/LobbyState.js";
+import { escapeAttribute, escapeHtml } from "../utils/ui.js?v=20260610-shared-utils";
 
 export class MainController {
   constructor() {
@@ -244,14 +245,11 @@ export class MainController {
   }
 
   escapeHtml(value) {
-    return String(value)
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;");
+    return escapeHtml(value);
   }
 
   escapeAttr(value) {
-    return this.escapeHtml(value).replaceAll('"', "&quot;");
+    return escapeAttribute(value);
   }
 
   normalizeLobbyName(value, fallback = "Nouveau salon") {

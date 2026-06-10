@@ -1,4 +1,6 @@
-import { renderQrSvg } from "../utils/qr.js?v=20260610-agent-audit";
+import { renderQrSvg } from "../utils/qr.js?v=20260610-shared-utils";
+import { loadYouTubeIframeApi } from "../utils/youtube.js?v=20260610-shared-utils";
+import { escapeHtml, renderAvatar } from "../utils/ui.js?v=20260610-shared-utils";
 
 const TV_TOKEN_STORAGE_KEY = "mq_tv_device_token";
 const TV_PAIRING_POLL_INTERVAL_MS = 1000;
@@ -10,45 +12,6 @@ const PLAYER_SYNC_COOLDOWN_MS = 900;
 const TV_ROUND_START_PLAY_LEAD_MS = 90;
 const TV_PRELOAD_PRIME_MS = 1600;
 const YOUTUBE_PREFERRED_QUALITY = "hd1080";
-
-let youtubeIframeApiPromise = null;
-
-function loadYouTubeIframeApi() {
-  if (window.YT?.Player) {
-    return Promise.resolve(window.YT);
-  }
-
-  if (youtubeIframeApiPromise) {
-    return youtubeIframeApiPromise;
-  }
-
-  youtubeIframeApiPromise = new Promise((resolve, reject) => {
-    const previousReady = window.onYouTubeIframeAPIReady;
-    const timeoutId = window.setTimeout(() => reject(new Error("YouTube iframe API timeout")), 15000);
-
-    window.onYouTubeIframeAPIReady = () => {
-      window.clearTimeout(timeoutId);
-      if (typeof previousReady === "function") {
-        previousReady();
-      }
-      resolve(window.YT);
-    };
-
-    const existing = document.querySelector('script[src="https://www.youtube.com/iframe_api"]');
-    if (existing) return;
-
-    const script = document.createElement("script");
-    script.src = "https://www.youtube.com/iframe_api";
-    script.async = true;
-    script.onerror = () => {
-      window.clearTimeout(timeoutId);
-      reject(new Error("Unable to load YouTube iframe API"));
-    };
-    document.head.appendChild(script);
-  });
-
-  return youtubeIframeApiPromise;
-}
 
 export class TvController {
   constructor() {
@@ -943,27 +906,15 @@ export class TvController {
   }
 
   renderAvatar(player) {
-    const url = String(player?.avatar_url || "").trim();
-    const name = String(player?.username || "Joueur").trim();
-    if (url) {
-      return `<img class="mq-avatar" src="${this.escapeHtml(url)}" alt="">`;
-    }
-
-    const initials = name
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => part[0]?.toUpperCase() || "")
-      .join("") || "?";
-
-    return `<span class="mq-avatar mq-avatar--fallback">${this.escapeHtml(initials)}</span>`;
+    return renderAvatar(player, {
+      fallbackName: "Joueur",
+      fallbackInitials: "?",
+      lazy: false,
+      ariaHiddenFallback: false,
+    });
   }
 
   escapeHtml(value) {
-    return String(value)
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;");
+    return escapeHtml(value);
   }
 }

@@ -1,4 +1,6 @@
 import { getCurrentLobby, setCurrentLobby, clearCurrentLobby } from "../utils/LobbyState.js";
+import { loadYouTubeIframeApi } from "../utils/youtube.js?v=20260610-shared-utils";
+import { escapeAttribute, escapeHtml, formatPlayerRole, formatRank, renderAvatar } from "../utils/ui.js?v=20260610-shared-utils";
 
 const PLAYER_VOLUME_STORAGE_KEY = "mq_game_volume";
 const PLAYER_ONLY_MODE_STORAGE_KEY = "mq_game_player_only_mode";
@@ -11,47 +13,6 @@ const PLAYER_SYNC_COOLDOWN_MS = 1000;
 const ROUND_START_PLAY_LEAD_MS = 60;
 const PRELOAD_PRIME_MS = 1400;
 const YOUTUBE_PREFERRED_QUALITY = "hd1080";
-
-let youtubeIframeApiPromise = null;
-
-function loadYouTubeIframeApi() {
-  if (window.YT?.Player) {
-    return Promise.resolve(window.YT);
-  }
-
-  if (youtubeIframeApiPromise) {
-    return youtubeIframeApiPromise;
-  }
-
-  youtubeIframeApiPromise = new Promise((resolve, reject) => {
-    const previousReady = window.onYouTubeIframeAPIReady;
-    const timeoutId = window.setTimeout(() => reject(new Error("YouTube iframe API timeout")), 15000);
-
-    window.onYouTubeIframeAPIReady = () => {
-      window.clearTimeout(timeoutId);
-      if (typeof previousReady === "function") {
-        previousReady();
-      }
-      resolve(window.YT);
-    };
-
-    const existing = document.querySelector('script[src="https://www.youtube.com/iframe_api"]');
-    if (existing) {
-      return;
-    }
-
-    const script = document.createElement("script");
-    script.src = "https://www.youtube.com/iframe_api";
-    script.async = true;
-    script.onerror = () => {
-      window.clearTimeout(timeoutId);
-      reject(new Error("Unable to load YouTube iframe API"));
-    };
-    document.head.appendChild(script);
-  });
-
-  return youtubeIframeApiPromise;
-}
 
 export class GameController {
   constructor() {
@@ -2032,31 +1993,15 @@ export class GameController {
   }
 
   formatRank(rank) {
-    if (rank === 1) return "1er";
-    return `${rank}e`;
+    return formatRank(rank);
   }
 
   renderAvatar(player) {
-    const username = String(player?.username || "joueur");
-    const avatarUrl = String(player?.avatar_url || "").trim();
-    if (avatarUrl) {
-      return `<img class="mq-avatar" src="${this.escapeAttr(avatarUrl)}" alt="" loading="lazy" />`;
-    }
-
-    return `<span class="mq-avatar mq-avatar--fallback" aria-hidden="true">${this.escapeHtml(this.getInitials(username))}</span>`;
-  }
-
-  getInitials(username) {
-    const parts = String(username || "joueur").trim().split(/\s+/).filter(Boolean);
-    const letters = parts.length > 1
-      ? `${parts[0][0] || ""}${parts[1][0] || ""}`
-      : String(parts[0] || "j").slice(0, 2);
-
-    return letters.toUpperCase();
+    return renderAvatar(player);
   }
 
   formatPlayerRole(role) {
-    return String(role || "").toLowerCase() === "owner" ? "créateur" : "joueur";
+    return formatPlayerRole(role);
   }
 
   toBool(value) {
@@ -2066,14 +2011,11 @@ export class GameController {
   }
 
   escapeHtml(value) {
-    return String(value)
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;");
+    return escapeHtml(value);
   }
 
   escapeAttr(value) {
-    return this.escapeHtml(value).replaceAll('"', "&quot;");
+    return escapeAttribute(value);
   }
 
   setStatus(text, ok = null) {

@@ -36,8 +36,15 @@ rg -n "console\.|alert\(|debugger" assets
 - `assets/views/*View.html`: fragments HTML charges par route.
 - `assets/js/controller/*Controller.js`: logique de chaque vue.
 - `assets/js/model/`: modeles UI transverses.
-- `assets/js/utils/`: helpers HTTP, etat lobby, YouTube et QR.
+- `assets/js/utils/`: helpers HTTP, etat lobby, UI commune, YouTube et QR.
 - `assets/js/vendor/`: dependances vendorees pour navigateur (`shinederu-auth-core`, `jsQR`).
+
+Les helpers reutilisables doivent rester dans `assets/js/utils/`:
+
+- `ui.js`: echappement HTML/attribut, recherche normalisee, slug, dates, rangs, roles joueurs et avatars.
+- `youtube.js`: extraction/build d'URL YouTube et chargement partage de l'API iframe.
+
+Eviter de recopier ces helpers dans les controleurs.
 
 Il n'y a plus de dossier `client/` ou `backend/` actif dans ce repo. L'API MelodyQuest est centralisee dans le repo `API`.
 

@@ -1,4 +1,4 @@
-import { UserModel } from "../model/UserModel.js?v=20260610-agent-audit";
+import { UserModel } from "../model/UserModel.js?v=20260610-shared-utils";
 
 export class PublicController {
   constructor() {

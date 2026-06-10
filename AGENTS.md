@@ -30,6 +30,11 @@ Le repo MelodyQuest actuel ne contient pas de dossier `client/` ou `backend/` ac
 - `assets/js/utils/`: helpers HTTP, lobby, YouTube et QR.
 - `assets/js/vendor/`: bibliotheques vendorees necessaires au navigateur.
 
+Helpers partages a reutiliser avant de creer une logique locale:
+
+- `assets/js/utils/ui.js`: HTML/attribut escaping, normalisation de recherche, slugs, dates, rangs, roles joueurs et avatars.
+- `assets/js/utils/youtube.js`: extraction/build d'URL YouTube et chargement unique de l'API iframe.
+
 Le dossier `output/` n'est pas requis par l'application. S'il reapparait vide, le supprimer.
 
 ## Routes frontend

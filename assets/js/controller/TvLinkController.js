@@ -1,4 +1,4 @@
-import { getCurrentLobby } from "../utils/LobbyState.js?v=20260610-agent-audit";
+import { getCurrentLobby } from "../utils/LobbyState.js?v=20260610-shared-utils";
 
 function getRouteParams() {
   const query = String(window.location.hash || "").split("?")[1] || "";

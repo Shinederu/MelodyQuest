@@ -1,3 +1,5 @@
+import { escapeHtml } from "../utils/ui.js?v=20260610-shared-utils";
+
 const PAGE_META = {
   main: {
     eyebrow: "Blindtest entre amis",
@@ -168,10 +170,6 @@ export class HeaderModel {
   }
 
   escapeHtml(value) {
-    return String(value)
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;");
+    return escapeHtml(value);
   }
 }

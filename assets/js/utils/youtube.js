@@ -1,3 +1,44 @@
+let youtubeIframeApiPromise = null;
+
+export function loadYouTubeIframeApi(timeoutMs = 15000) {
+  if (window.YT?.Player) {
+    return Promise.resolve(window.YT);
+  }
+
+  if (youtubeIframeApiPromise) {
+    return youtubeIframeApiPromise;
+  }
+
+  youtubeIframeApiPromise = new Promise((resolve, reject) => {
+    const previousReady = window.onYouTubeIframeAPIReady;
+    const timeoutId = window.setTimeout(() => reject(new Error("YouTube iframe API timeout")), timeoutMs);
+
+    window.onYouTubeIframeAPIReady = () => {
+      window.clearTimeout(timeoutId);
+      if (typeof previousReady === "function") {
+        previousReady();
+      }
+      resolve(window.YT);
+    };
+
+    const existing = document.querySelector('script[src="https://www.youtube.com/iframe_api"]');
+    if (existing) {
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://www.youtube.com/iframe_api";
+    script.async = true;
+    script.onerror = () => {
+      window.clearTimeout(timeoutId);
+      reject(new Error("YouTube iframe API load failed"));
+    };
+    document.head.appendChild(script);
+  });
+
+  return youtubeIframeApiPromise;
+}
+
 export function extractYouTubeVideoId(value) {
   const input = String(value || "").trim();
   if (!input) return "";
