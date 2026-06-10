@@ -1587,18 +1587,22 @@ input[type="range"] {
 .mq-video-player {
   position: absolute;
   inset: 0;
+  z-index: 1;
 }
 
 .mq-video-preload-player,
 .mq-video-preload-player iframe {
   position: absolute;
-  right: 0;
-  bottom: 0;
-  width: 2px;
-  height: 2px;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   border: 0;
   opacity: 0;
   pointer-events: none;
+}
+
+.mq-video-preload-player {
+  z-index: 0;
 }
 
 .mq-video-guard {
