@@ -1790,6 +1790,10 @@ input[type="range"] {
   overflow-wrap: anywhere;
 }
 
+.mq-game-player-summary .mq-chip {
+  justify-self: start;
+}
+
 .mq-game-page.is-player-only-mode .mq-game-shell {
   grid-template-columns: minmax(0, 720px);
   justify-content: center;
@@ -2222,6 +2226,19 @@ body:has(.mq-tv-page) #footer {
 .mq-tv-round-head .mq-muted {
   font-size: clamp(0.76rem, 1.1vmin, 0.95rem);
   line-height: 1.2;
+}
+
+.mq-tv-round-meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.mq-tv-round-meta .mq-chip {
+  white-space: nowrap;
 }
 
 .mq-tv-video-shell {

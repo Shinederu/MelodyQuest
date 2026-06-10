@@ -656,8 +656,15 @@ export class GameController {
       copy = "Le groupe peut passer à la manche suivante.";
     }
 
+    const currentRoundNumber = Number(round?.round_number || this.currentLobby?.current_round_number || 0);
+    const totalRounds = Number(this.currentLobby?.total_rounds || 0);
+    const roundLabel = currentRoundNumber && totalRounds
+      ? `Manche ${currentRoundNumber} / ${totalRounds}`
+      : "Manche en cours";
+
     summary.hidden = false;
     summary.innerHTML = `
+      <span class="mq-chip">${this.escapeHtml(roundLabel)}</span>
       <strong>${this.escapeHtml(title)}</strong>
       <span>${this.escapeHtml(copy)}</span>
     `;
