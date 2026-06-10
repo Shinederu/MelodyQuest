@@ -1,6 +1,6 @@
-import { renderQrSvg } from "../utils/qr.js?v=20260610-tv-stable-player";
-import { loadYouTubeIframeApi } from "../utils/youtube.js?v=20260610-tv-stable-player";
-import { escapeHtml, renderAvatar } from "../utils/ui.js?v=20260610-tv-stable-player";
+import { renderQrSvg } from "../utils/qr.js?v=20260610-tv-buffer-warmup";
+import { loadYouTubeIframeApi } from "../utils/youtube.js?v=20260610-tv-buffer-warmup";
+import { escapeHtml, renderAvatar } from "../utils/ui.js?v=20260610-tv-buffer-warmup";
 
 const TV_TOKEN_STORAGE_KEY = "mq_tv_device_token";
 const TV_PAIRING_POLL_INTERVAL_MS = 1000;
@@ -12,6 +12,7 @@ const PLAYER_SYNC_COOLDOWN_MS = 2500;
 const PLAYER_BUFFERING_SEEK_GRACE_MS = 5000;
 const PLAYER_BUFFERING_HARD_DRIFT_SECONDS = 8;
 const PLAYER_PLAY_RETRY_COOLDOWN_MS = 1500;
+const PLAYER_WARMUP_LOOP_SECONDS = 1.8;
 const TV_ROUND_START_PLAY_LEAD_MS = 90;
 const YOUTUBE_PREFERRED_QUALITY = "hd1080";
 
@@ -33,7 +34,7 @@ export class TvController {
     this.playerLastSeekAtMs = 0;
     this.playerLastLoadAtMs = 0;
     this.playerLastPlayAttemptAtMs = 0;
-    this.playerPrimingUntilMs = 0;
+    this.playerAudioReleasedRoundId = 0;
     this.preloadPlayer = null;
     this.preloadPlayerReady = false;
     this.preloadPlayerVideoId = "";
@@ -238,6 +239,7 @@ export class TvController {
     if (roundId !== this.currentRoundId) {
       this.currentRoundId = roundId;
       this.playerRequestedVideoId = "";
+      this.playerAudioReleasedRoundId = 0;
     }
 
     this.renderLobby();
@@ -553,7 +555,7 @@ export class TvController {
         this.player = new YT.Player("tv-video-player", {
           videoId,
           playerVars: {
-            autoplay: pendingStart ? 0 : 1,
+            autoplay: 1,
             controls: 0,
             disablekb: 1,
             modestbranding: 1,
@@ -574,9 +576,9 @@ export class TvController {
               }
               this.playerVideoId = videoId;
               this.requestPlaybackQuality(this.player);
-              this.applyAudioState({ allowPlayback: false });
+              this.preparePlayerForRoundSync(round);
               if (this.isRoundPendingStart(round)) {
-                this.primePlayerForPendingStart(round);
+                this.warmupPlayerForPendingStart(round);
               } else {
                 this.syncPlayer(round, true);
               }
@@ -606,16 +608,16 @@ export class TvController {
           suggestedQuality: YOUTUBE_PREFERRED_QUALITY,
         });
         this.requestPlaybackQuality(this.player);
-        this.applyAudioState({ allowPlayback: false });
+        this.preparePlayerForRoundSync(round);
         if (pendingStart) {
-          this.primePlayerForPendingStart(round);
+          this.warmupPlayerForPendingStart(round);
         } else {
           this.syncPlayer(round, true);
         }
         return;
       }
 
-      this.applyAudioState({ allowPlayback: false });
+      this.preparePlayerForRoundSync(round);
       this.syncPlayer(round);
     } catch {
       this.setStageStatus("Impossible de charger le lecteur YouTube.", false);
@@ -724,26 +726,60 @@ export class TvController {
     this.playerRequestedVideoId = "";
     this.playerLastLoadAtMs = 0;
     this.playerLastPlayAttemptAtMs = 0;
-    this.playerPrimingUntilMs = 0;
+    this.playerAudioReleasedRoundId = 0;
   }
 
-  primePlayerForPendingStart(round) {
+  warmupPlayerForPendingStart(round) {
     if (!this.playerReady || !this.player || !this.isRoundPendingStart(round)) {
       return;
     }
 
-    this.playerPrimingUntilMs = Date.now() + 350;
-    if (typeof this.player.mute === "function") {
-      this.player.mute();
-    }
-    if (typeof this.player.playVideo === "function") {
-      this.player.playVideo();
-    }
-    window.setTimeout(() => {
-      if (this.isRoundPendingStart(round)) {
-        this.syncPlayer(round, true);
+    const nowMs = Date.now();
+    const state = typeof this.player.getPlayerState === "function" ? Number(this.player.getPlayerState()) : -1;
+    const startOffset = this.getTrackStartOffsetSeconds(round?.track, this.getPlayerDurationSeconds());
+    const current = typeof this.player.getCurrentTime === "function"
+      ? Number(this.player.getCurrentTime() || 0)
+      : startOffset;
+
+    try {
+      if (typeof this.player.mute === "function") this.player.mute();
+      if (typeof this.player.setVolume === "function") this.player.setVolume(0);
+      this.requestPlaybackQuality(this.player);
+
+      if (
+        Number.isFinite(current)
+        && current > startOffset + PLAYER_WARMUP_LOOP_SECONDS
+        && typeof this.player.seekTo === "function"
+        && (nowMs - this.playerLastSeekAtMs) >= PLAYER_SYNC_COOLDOWN_MS
+      ) {
+        this.player.seekTo(startOffset, true);
+        this.playerLastSeekAtMs = nowMs;
       }
-    }, 380);
+
+      if (
+        typeof this.player.playVideo === "function"
+        && state !== window.YT?.PlayerState?.PLAYING
+        && state !== window.YT?.PlayerState?.BUFFERING
+        && (nowMs - this.playerLastPlayAttemptAtMs) >= PLAYER_PLAY_RETRY_COOLDOWN_MS
+      ) {
+        this.playerLastPlayAttemptAtMs = nowMs;
+        this.player.playVideo();
+      }
+    } catch {
+      // YouTube may reject transient calls while the iframe is still booting.
+    }
+  }
+
+  preparePlayerForRoundSync(round) {
+    if (!this.player) return;
+
+    const roundId = Number(round?.id || 0);
+    if (this.isRoundPendingStart(round) || this.playerAudioReleasedRoundId !== roundId) {
+      this.mutePlayer();
+      return;
+    }
+
+    this.applyAudioState({ allowPlayback: false });
   }
 
   syncPlayer(round, force = false) {
@@ -758,23 +794,22 @@ export class TvController {
     const state = typeof this.player.getPlayerState === "function" ? Number(this.player.getPlayerState()) : -1;
     const drift = this.computePlaybackDriftSeconds(current, wanted, this.getPlayerDurationSeconds());
 
+    if (pendingStart) {
+      this.warmupPlayerForPendingStart(round);
+      return;
+    }
+
+    if (this.playerAudioReleasedRoundId !== Number(round.id || 0)) {
+      this.releaseRoundAudioWhenReady(round, state, drift, nowMs);
+      return;
+    }
+
     if (
       this.shouldSeekPlayer({ force, drift, state, nowMs })
       && typeof this.player.seekTo === "function"
     ) {
       this.player.seekTo(wanted, true);
       this.playerLastSeekAtMs = nowMs;
-    }
-
-    if (pendingStart) {
-      if (
-        state === window.YT?.PlayerState?.PLAYING
-        && nowMs >= this.playerPrimingUntilMs
-        && typeof this.player.pauseVideo === "function"
-      ) {
-        this.player.pauseVideo();
-      }
-      return;
     }
 
     this.applyAudioState({ allowPlayback: false });
@@ -787,6 +822,53 @@ export class TvController {
       this.playerLastPlayAttemptAtMs = nowMs;
       this.player.playVideo();
     }
+  }
+
+  releaseRoundAudioWhenReady(round, state, drift, nowMs) {
+    const roundId = Number(round?.id || 0);
+    if (!roundId) return false;
+    if (this.playerAudioReleasedRoundId === roundId) {
+      this.applyAudioState({ allowPlayback: false });
+      return true;
+    }
+
+    const playerState = window.YT?.PlayerState || {};
+    if (state === playerState.BUFFERING || state === playerState.UNSTARTED || state === playerState.CUED) {
+      if (typeof this.player.mute === "function") this.player.mute();
+      if (typeof this.player.setVolume === "function") this.player.setVolume(0);
+      if (
+        typeof this.player.playVideo === "function"
+        && (nowMs - this.playerLastPlayAttemptAtMs) >= PLAYER_PLAY_RETRY_COOLDOWN_MS
+      ) {
+        this.playerLastPlayAttemptAtMs = nowMs;
+        this.player.playVideo();
+      }
+      this.setStageStatus("Synchronisation du son...", true);
+      return false;
+    }
+
+    if (state !== playerState.PLAYING) {
+      if (typeof this.player.mute === "function") this.player.mute();
+      if (
+        typeof this.player.playVideo === "function"
+        && (nowMs - this.playerLastPlayAttemptAtMs) >= PLAYER_PLAY_RETRY_COOLDOWN_MS
+      ) {
+        this.playerLastPlayAttemptAtMs = nowMs;
+        this.player.playVideo();
+      }
+      return false;
+    }
+
+    if (drift > PLAYER_SYNC_DRIFT_SECONDS && typeof this.player.seekTo === "function") {
+      this.player.seekTo(this.getTargetVideoTime(round), true);
+      this.playerLastSeekAtMs = nowMs;
+      this.setStageStatus("Synchronisation du son...", true);
+      return false;
+    }
+
+    this.playerAudioReleasedRoundId = roundId;
+    this.applyAudioState({ allowPlayback: true });
+    return true;
   }
 
   shouldSeekPlayer({ force, drift, state, nowMs }) {
@@ -871,6 +953,17 @@ export class TvController {
 
     try {
       player.setPlaybackQuality(YOUTUBE_PREFERRED_QUALITY);
+    } catch {
+      // noop
+    }
+  }
+
+  mutePlayer() {
+    if (!this.player) return;
+
+    try {
+      if (typeof this.player.mute === "function") this.player.mute();
+      if (typeof this.player.setVolume === "function") this.player.setVolume(0);
     } catch {
       // noop
     }
