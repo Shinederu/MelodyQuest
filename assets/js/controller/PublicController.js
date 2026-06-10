@@ -1,4 +1,4 @@
-import { UserModel } from "../model/UserModel.js?v=20260609-audit-polish";
+import { UserModel } from "../model/UserModel.js?v=20260610-agent-audit";
 
 export class PublicController {
   constructor() {

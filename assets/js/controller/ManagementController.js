@@ -1,10 +1,16 @@
+const MANAGEMENT_NAVIGATION = [
+  ["btn-mgmt-main", "main"],
+  ["btn-mgmt-categories", "management-categories"],
+  ["btn-mgmt-families", "management-families"],
+  ["btn-mgmt-tracks", "management-tracks"],
+  ["btn-mgmt-validation", "management-validation"],
+  ["btn-mgmt-suggestions", "management-suggestions"],
+];
+
 export class ManagementController {
   constructor() {
-    document.getElementById("btn-mgmt-main")?.addEventListener("click", () => window.appCtrl.changeView("main"));
-    document.getElementById("btn-mgmt-categories")?.addEventListener("click", () => window.appCtrl.changeView("management-categories"));
-    document.getElementById("btn-mgmt-families")?.addEventListener("click", () => window.appCtrl.changeView("management-families"));
-    document.getElementById("btn-mgmt-tracks")?.addEventListener("click", () => window.appCtrl.changeView("management-tracks"));
-    document.getElementById("btn-mgmt-validation")?.addEventListener("click", () => window.appCtrl.changeView("management-validation"));
-    document.getElementById("btn-mgmt-suggestions")?.addEventListener("click", () => window.appCtrl.changeView("management-suggestions"));
+    MANAGEMENT_NAVIGATION.forEach(([buttonId, route]) => {
+      document.getElementById(buttonId)?.addEventListener("click", () => window.appCtrl.changeView(route));
+    });
   }
 }

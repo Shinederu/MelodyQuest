@@ -1,22 +1,22 @@
-import { HttpService } from "../utils/HttpService.js?v=20260609-audit-polish";
-import { HeaderModel } from "../model/HeaderModel.js?v=20260609-audit-polish";
-import { PublicController } from "./PublicController.js?v=20260609-audit-polish";
-import { SuggestTrackController } from "./SuggestTrackController.js?v=20260609-audit-polish";
-import { MainController } from "./MainController.js?v=20260609-audit-polish";
-import { LobbyController } from "./LobbyController.js?v=20260609-audit-polish";
-import { LobbyListController } from "./LobbyListController.js?v=20260609-audit-polish";
-import { GameController } from "./GameController.js?v=20260609-audit-polish";
-import { ResultController } from "./ResultController.js?v=20260609-audit-polish";
-import { TvController } from "./TvController.js?v=20260609-audit-polish";
-import { TvLinkController } from "./TvLinkController.js?v=20260609-audit-polish";
-import { ManagementController } from "./ManagementController.js?v=20260609-audit-polish";
-import { ManagementCategoriesController } from "./ManagementCategoriesController.js?v=20260609-audit-polish";
-import { ManagementFamiliesController } from "./ManagementFamiliesController.js?v=20260609-audit-polish";
-import { ManagementTracksController } from "./ManagementTracksController.js?v=20260609-audit-polish";
-import { ManagementValidationController } from "./ManagementValidationController.js?v=20260609-audit-polish";
-import { ManagementSuggestionsController } from "./ManagementSuggestionsController.js?v=20260609-audit-polish";
+import { HttpService } from "../utils/HttpService.js?v=20260610-agent-audit";
+import { HeaderModel } from "../model/HeaderModel.js?v=20260610-agent-audit";
+import { PublicController } from "./PublicController.js?v=20260610-agent-audit";
+import { SuggestTrackController } from "./SuggestTrackController.js?v=20260610-agent-audit";
+import { MainController } from "./MainController.js?v=20260610-agent-audit";
+import { LobbyController } from "./LobbyController.js?v=20260610-agent-audit";
+import { LobbyListController } from "./LobbyListController.js?v=20260610-agent-audit";
+import { GameController } from "./GameController.js?v=20260610-agent-audit";
+import { ResultController } from "./ResultController.js?v=20260610-agent-audit";
+import { TvController } from "./TvController.js?v=20260610-agent-audit";
+import { TvLinkController } from "./TvLinkController.js?v=20260610-agent-audit";
+import { ManagementController } from "./ManagementController.js?v=20260610-agent-audit";
+import { ManagementCategoriesController } from "./ManagementCategoriesController.js?v=20260610-agent-audit";
+import { ManagementFamiliesController } from "./ManagementFamiliesController.js?v=20260610-agent-audit";
+import { ManagementTracksController } from "./ManagementTracksController.js?v=20260610-agent-audit";
+import { ManagementValidationController } from "./ManagementValidationController.js?v=20260610-agent-audit";
+import { ManagementSuggestionsController } from "./ManagementSuggestionsController.js?v=20260610-agent-audit";
 
-const ASSET_VERSION = "20260609-audit-polish";
+const ASSET_VERSION = "20260610-agent-audit";
 
 let currentUser = null;
 let headerManager = null;
@@ -191,13 +191,45 @@ export class AppController {
     const app = document.getElementById("app");
     if (!app) return;
 
-    const res = await fetch(`/assets/views/${view}View.html?v=${ASSET_VERSION}`, { cache: "no-cache" });
+    const viewUrl = `/assets/views/${view}View.html?v=${ASSET_VERSION}`;
+    let res;
+    try {
+      res = await fetch(viewUrl, { cache: "no-cache" });
+    } catch {
+      this.renderViewLoadError(app, view);
+      return;
+    }
+
+    if (!res.ok) {
+      this.renderViewLoadError(app, view);
+      return;
+    }
+
     app.innerHTML = await res.text();
 
     const head = document.getElementById("header");
     if (!head || !headerManager) return;
 
     headerManager.refresh(head, view, currentUser?.role ?? "", currentUser?.username ?? "", Boolean(currentUser?.is_admin));
+  }
+
+  renderViewLoadError(app, view) {
+    app.innerHTML = `
+      <section class="mq-page">
+        <section class="mq-card mq-card--soft">
+          <div class="mq-card-heading">
+            <div class="mq-kicker">Erreur</div>
+            <h2>Vue indisponible</h2>
+            <p class="mq-card-copy">Impossible de charger la vue "${view}".</p>
+          </div>
+          <button id="btn-view-load-fallback" type="button">Retour au menu</button>
+        </section>
+      </section>
+    `;
+
+    document.getElementById("btn-view-load-fallback")?.addEventListener("click", () => {
+      window.appCtrl.changeView("main", { force: true });
+    });
   }
 }
 

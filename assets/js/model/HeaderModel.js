@@ -1,3 +1,78 @@
+const PAGE_META = {
+  main: {
+    eyebrow: "Blindtest entre amis",
+    title: "Jouer maintenant",
+    description: "Créer un salon, partager le code, lancer la musique.",
+  },
+  "suggest-track": {
+    eyebrow: "Contribution",
+    title: "Proposer une musique",
+    description: "Envoie une piste ou une correction à vérifier.",
+  },
+  "tv-link": {
+    eyebrow: "Mode TV",
+    title: "Lier un écran",
+    description: "Associe une télévision au salon en cours.",
+  },
+  "lobby-list": {
+    eyebrow: "Rejoindre",
+    title: "Trouver une partie",
+    description: "Entre un code ou choisis un salon public.",
+  },
+  lobby: {
+    eyebrow: "Salon d'attente",
+    title: "Salon",
+    titleId: "lobby-title",
+    description: "Chargement du salon...",
+    descriptionId: "lobby-meta",
+    chips: [
+      { id: "lobby-rounds", text: "--" },
+      { id: "lobby-timer", text: "--" },
+    ],
+  },
+  game: {
+    eyebrow: "Session en cours",
+    title: "Partie en cours",
+    titleId: "game-title",
+  },
+  result: {
+    eyebrow: "Fin de partie",
+    title: "Partie terminée",
+    titleId: "result-title",
+    description: "Les scores sont posés. Le salon se prépare pour une revanche.",
+  },
+  management: {
+    eyebrow: "Administration",
+    title: "Management",
+    description: "Gestion du catalogue MelodyQuest.",
+  },
+  "management-categories": {
+    eyebrow: "Catalogue",
+    title: "Gestion des catégories",
+    description: "Sélectionne une catégorie ou crée-en une nouvelle.",
+  },
+  "management-families": {
+    eyebrow: "Catalogue",
+    title: "Gestion des œuvres",
+    description: "Regroupe les musiques par réponse attendue.",
+  },
+  "management-tracks": {
+    eyebrow: "Catalogue",
+    title: "Gestion des musiques",
+    description: "Ajoute et corrige les pistes jouables.",
+  },
+  "management-validation": {
+    eyebrow: "Administration",
+    title: "Vérification / validation",
+    description: "Contrôle les nouvelles musiques avant de les rendre jouables.",
+  },
+  "management-suggestions": {
+    eyebrow: "Administration",
+    title: "Suggestions joueurs",
+    description: "Trie les corrections, alias et nouvelles musiques proposés.",
+  },
+};
+
 export class HeaderModel {
   refresh(headerElement, view, role, username, isAdmin = false) {
     if (view === "public" || view === "tv") {
@@ -34,107 +109,11 @@ export class HeaderModel {
 
     headerElement.innerHTML = headerHtml;
 
-    if (canLogout) {
-      const logoutButton = document.getElementById("header-btn-logout");
-      logoutButton?.addEventListener("click", async () => {
-        logoutButton.disabled = true;
-        logoutButton.textContent = "Déconnexion...";
-        const response = await window.httpClient.logout();
-        if (response.success) {
-          localStorage.removeItem("user");
-          window.appCtrl.changeView("public");
-        } else {
-          logoutButton.disabled = false;
-          logoutButton.textContent = "Erreur";
-          logoutButton.title = response.error || "Déconnexion impossible";
-          window.setTimeout(() => {
-            if (document.body.contains(logoutButton)) {
-              logoutButton.textContent = "Déconnexion";
-              logoutButton.title = "";
-            }
-          }, 2200);
-        }
-      });
-    }
+    if (canLogout) this.bindLogout();
   }
 
   getPageMeta(view) {
-    const pages = {
-      main: {
-        eyebrow: "Blindtest entre amis",
-        title: "Jouer maintenant",
-        description: "Créer un salon, partager le code, lancer la musique.",
-      },
-      "suggest-track": {
-        eyebrow: "Contribution",
-        title: "Proposer une musique",
-        description: "Envoie une piste ou une correction à vérifier.",
-      },
-      "tv-link": {
-        eyebrow: "Mode TV",
-        title: "Lier un écran",
-        description: "Associe une télévision au salon en cours.",
-      },
-      "lobby-list": {
-        eyebrow: "Rejoindre",
-        title: "Trouver une partie",
-        description: "Entre un code ou choisis un salon public.",
-      },
-      lobby: {
-        eyebrow: "Salon d'attente",
-        title: "Salon",
-        titleId: "lobby-title",
-        description: "Chargement du salon...",
-        descriptionId: "lobby-meta",
-        chips: [
-          { id: "lobby-rounds", text: "--" },
-          { id: "lobby-timer", text: "--" },
-        ],
-      },
-      game: {
-        eyebrow: "Session en cours",
-        title: "Partie en cours",
-        titleId: "game-title",
-      },
-      result: {
-        eyebrow: "Fin de partie",
-        title: "Partie terminée",
-        titleId: "result-title",
-        description: "Les scores sont posés. Le salon se prépare pour une revanche.",
-      },
-      management: {
-        eyebrow: "Administration",
-        title: "Management",
-        description: "Gestion du catalogue MelodyQuest.",
-      },
-      "management-categories": {
-        eyebrow: "Catalogue",
-        title: "Gestion des catégories",
-        description: "Sélectionne une catégorie ou crée-en une nouvelle.",
-      },
-      "management-families": {
-        eyebrow: "Catalogue",
-        title: "Gestion des œuvres",
-        description: "Regroupe les musiques par réponse attendue.",
-      },
-      "management-tracks": {
-        eyebrow: "Catalogue",
-        title: "Gestion des musiques",
-        description: "Ajoute et corrige les pistes jouables.",
-      },
-      "management-validation": {
-        eyebrow: "Administration",
-        title: "Vérification / validation",
-        description: "Contrôle les nouvelles musiques avant de les rendre jouables.",
-      },
-      "management-suggestions": {
-        eyebrow: "Administration",
-        title: "Suggestions joueurs",
-        description: "Trie les corrections, alias et nouvelles musiques proposés.",
-      },
-    };
-
-    return pages[view] || null;
+    return PAGE_META[view] || null;
   }
 
   renderPageMeta(page) {
@@ -161,6 +140,31 @@ export class HeaderModel {
         ${description}
       </div>
     `;
+  }
+
+  bindLogout() {
+    const logoutButton = document.getElementById("header-btn-logout");
+    logoutButton?.addEventListener("click", async () => {
+      logoutButton.disabled = true;
+      logoutButton.textContent = "Déconnexion...";
+
+      const response = await window.httpClient.logout();
+      if (response.success) {
+        localStorage.removeItem("user");
+        window.appCtrl.changeView("public");
+        return;
+      }
+
+      logoutButton.disabled = false;
+      logoutButton.textContent = "Erreur";
+      logoutButton.title = response.error || "Déconnexion impossible";
+      window.setTimeout(() => {
+        if (document.body.contains(logoutButton)) {
+          logoutButton.textContent = "Déconnexion";
+          logoutButton.title = "";
+        }
+      }, 2200);
+    });
   }
 
   escapeHtml(value) {
