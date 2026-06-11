@@ -90,7 +90,7 @@ Les routes principales sont gerees par `assets/js/controller/AppController.js`.
 - Validation souple des reponses geree cote API selon le seuil du lobby.
 - Jeu responsive desktop/mobile avec lecteur YouTube cache avant revelation.
 - Mode joueur de salon: interface reponse seule quand une TV est liee.
-- Mode TV: QR code, liaison depuis mobile, affichage plein ecran sans navigation, son actif, double-buffer YouTube avec prechauffage muet de la prochaine video puis permutation des lecteurs au changement de manche.
+- Mode TV: QR code, liaison depuis mobile, affichage plein ecran sans navigation, son actif, prechargement YouTube en attente de lobby, double-buffer muet de la prochaine video, permutation des lecteurs au changement de manche et signal "TV prete" vers l'API pour raccourcir le depart quand YouTube a effectivement commence a buffer.
 - Suggestions joueurs: alias, correction URL/libelle/artiste/licence, proposition publique de nouvelle musique.
 - Administration catalogue: categories, oeuvres, musiques, validation, suggestions.
 
