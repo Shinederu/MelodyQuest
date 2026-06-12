@@ -267,14 +267,6 @@ export class HttpService {
     });
   }
 
-  async markTvRoundReady(deviceToken, roundId, trackId) {
-    return this.request(MELODY_BASE_URL, "POST", "markTvRoundReady", {
-      device_token: deviceToken,
-      round_id: roundId,
-      track_id: trackId,
-    });
-  }
-
   async holdSuggestion(lobbyId, roundId) {
     return this.request(MELODY_BASE_URL, "POST", "holdSuggestion", {
       lobby_id: lobbyId,
