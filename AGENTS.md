@@ -2,6 +2,16 @@
 
 Ce depot contient le frontend statique MelodyQuest. Il doit rester simple a reprendre: pas de build, pas de dependances Node obligatoires, et pas de backend local dans ce repo.
 
+## Etat courant avant pause
+
+MelodyQuest est volontairement mis en pause au 2026-06-12. Avant de reprendre:
+
+- lire la section `Etat de pause - 2026-06-12` dans `README.md`;
+- verifier les deux repos `MelodyQuest` et `API`;
+- comparer `P:\PROD` et `Z:\Nginx\www` si le site public ne reflete pas les fichiers deployes.
+
+Le mode TV est revenu a un lecteur YouTube iframe actif simple. Le double lecteur TV, le prechargement TV actif et l'action backend `markTvRoundReady` ont ete retires apres regressions video/son. Ne pas les restaurer par reflexe.
+
 ## Lecture de demarrage
 
 1. Lire `P:\AGENTS.md`.
@@ -59,7 +69,7 @@ Conserver les redirections existantes:
 - Reglages lobby: categories, timer, manches, visibilite, categorie visible, vote de revelation, seuil de precision.
 - Jeu desktop/mobile avec video cachee, reponse, classement, timer, partage, suggestions de correction.
 - Mode joueur de salon sans lecteur video local.
-- Mode TV avec QR code, liaison `tv-link`, son actif, prechargement de la prochaine video.
+- Mode TV avec QR code, liaison `tv-link`, son actif et lecteur YouTube simple. Les optimisations de prechargement TV precedentes sont abandonnees pour l'instant.
 - Administration catalogue et suggestions joueurs.
 
 ## Cache-bust
@@ -88,7 +98,7 @@ Smoke test recommande en production apres deploiement:
 2. `#/main`: salons publics et creation/rejoindre.
 3. `#/lobby`: chargement reglages/categories/joueurs.
 4. `#/game`: layout desktop/mobile, champ reponse, timer, video cachee.
-5. `/tv` + `#/tv-link`: QR/lien TV si le changement touche ces zones.
+5. `/tv` + `#/tv-link`: QR/lien TV et absence de conteneur `tv-video-preload-player` si le changement touche ces zones.
 6. Pages management si le changement touche catalogue ou suggestions.
 
 ## Deploiement

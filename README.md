@@ -4,6 +4,24 @@ Frontend statique du blindtest multijoueur MelodyQuest.
 
 Ce depot contient uniquement le client navigateur. Le backend actif vit dans `P:\DEV\GitHub\API\melodyquest` et expose `https://api.shinederu.ch/melodyquest/`.
 
+## Etat de pause - 2026-06-12
+
+Le projet est mis en pause dans un etat stable de reprise. Les derniers changements applicatifs avant cette pause ont restaure le mode TV sur un lecteur YouTube iframe simple:
+
+- cache-bust frontend courant: `20260612-tv-basic-player`;
+- commit frontend applicatif de reference: `295dd11 Restore basic MelodyQuest TV player`;
+- commit API applicatif de reference: `2f468a9 Remove MelodyQuest TV ready playback flow`;
+- fichiers deployes dans `P:\PROD\MelodyQuest`, `P:\PROD\API\melodyquest`, et synchronises avec `Z:\Nginx\www`.
+
+Point sensible a reprendre plus tard: le chargement YouTube sur TV peut encore avoir des delais ou coupures selon la video/le navigateur. Les essais avec double lecteur TV, prechargement TV actif et signal backend "TV prete" ont ete abandonnes car ils ont provoque des cas sans video/son. Ne pas les remettre sans nouvelle piste verifiee. L'hebergement local de fichiers audio a ete refuse; YouTube doit rester la source principale.
+
+Dernieres verifications connues:
+
+- `Get-ChildItem .\assets\js -Recurse -Filter *.js | % { node --check $_.FullName }`
+- `git -c safe.directory=* diff --check`
+- `rg -n "console\.|alert\(|debugger" assets`
+- smoke test `/tv`: QR affiche, script `20260612-tv-basic-player`, aucun conteneur `tv-video-preload-player`, aucune erreur console.
+
 ## Reprise rapide agent
 
 1. Lire `AGENTS.md`.
@@ -27,7 +45,8 @@ git -c safe.directory=* diff --check
 rg -n "console\.|alert\(|debugger" assets
 ```
 
-5. Copier les fichiers modifies vers `P:\PROD\MelodyQuest`, puis commit/push sur `main`.
+5. Si le changement touche l'API, lire aussi `P:\DEV\GitHub\API\melodyquest\README.md`.
+6. Copier les fichiers modifies vers `P:\PROD\MelodyQuest` et `Z:\Nginx\www\MelodyQuest` si le volume web est servi, puis commit/push sur `main`.
 
 ## Organisation du depot
 
@@ -127,6 +146,16 @@ Les assets sont servis avec cache long. En cas de changement frontend, mettre a 
 - imports directs des modules touches.
 
 Convention conseillee: `YYYYMMDD-sujet-court`, par exemple `20260610-agent-audit`.
+
+Le cache-bust `20260612-tv-basic-player` marque le rollback volontaire du mode TV vers un lecteur YouTube actif simple.
+
+## Points a surveiller a la reprise
+
+- Verifier que `P:\PROD` et `Z:\Nginx\www` restent alignes avant de conclure qu'un deploiement est live.
+- Tester un vrai salon avec au moins deux joueurs si le changement touche `#/lobby`, `#/game`, les votes, suggestions ou scores.
+- Tester `/tv` + `#/tv-link` uniquement avec le lecteur TV simple actuel, sans recreer de lecteur d'avance.
+- Garder `#/lobby-list` pour compatibilite, meme si la liste publique est maintenant visible depuis `#/main`.
+- Les optimisations de chargement YouTube TV restent ouvertes, mais doivent etre traitees comme une nouvelle recherche technique, pas comme une restauration du double lecteur precedent.
 
 ## Nginx attendu
 
