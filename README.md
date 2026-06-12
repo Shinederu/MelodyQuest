@@ -11,7 +11,7 @@ Le projet est mis en pause dans un etat stable de reprise. Les derniers changeme
 - cache-bust frontend courant: `20260612-tv-basic-player`;
 - commit frontend applicatif de reference: `295dd11 Restore basic MelodyQuest TV player`;
 - commit API applicatif de reference: `2f468a9 Remove MelodyQuest TV ready playback flow`;
-- fichiers deployes dans `P:\PROD\MelodyQuest`, `P:\PROD\API\melodyquest`, et synchronises avec `Z:\Nginx\www`.
+- fichiers deployes dans `P:\PROD\MelodyQuest` et `P:\PROD\API\melodyquest`.
 
 Point sensible a reprendre plus tard: le chargement YouTube sur TV peut encore avoir des delais ou coupures selon la video/le navigateur. Les essais avec double lecteur TV, prechargement TV actif et signal backend "TV prete" ont ete abandonnes car ils ont provoque des cas sans video/son. Ne pas les remettre sans nouvelle piste verifiee. L'hebergement local de fichiers audio a ete refuse; YouTube doit rester la source principale.
 
@@ -46,7 +46,7 @@ rg -n "console\.|alert\(|debugger" assets
 ```
 
 5. Si le changement touche l'API, lire aussi `P:\DEV\GitHub\App-MelodyQuest-API\README.md`.
-6. Copier les fichiers modifies vers `P:\PROD\MelodyQuest` et `Z:\Nginx\www\MelodyQuest` si le volume web est servi, puis commit/push sur `main`.
+6. Copier les fichiers modifies vers `P:\PROD\MelodyQuest`, puis commit/push sur `main`.
 
 ## Organisation du depot
 
@@ -151,7 +151,7 @@ Le cache-bust `20260612-tv-basic-player` marque le rollback volontaire du mode T
 
 ## Points a surveiller a la reprise
 
-- Verifier que `P:\PROD` et `Z:\Nginx\www` restent alignes avant de conclure qu'un deploiement est live.
+- Verifier que `P:\PROD` reflete bien le contenu servi par Nginx avant de conclure qu'un deploiement est live.
 - Tester un vrai salon avec au moins deux joueurs si le changement touche `#/lobby`, `#/game`, les votes, suggestions ou scores.
 - Tester `/tv` + `#/tv-link` uniquement avec le lecteur TV simple actuel, sans recreer de lecteur d'avance.
 - Garder `#/lobby-list` pour compatibilite, meme si la liste publique est maintenant visible depuis `#/main`.
