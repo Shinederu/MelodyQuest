@@ -1,6 +1,6 @@
-import { renderQrSvg } from "../utils/qr.js?v=20260611-tv-ready-preload";
-import { loadYouTubeIframeApi } from "../utils/youtube.js?v=20260611-tv-ready-preload";
-import { escapeHtml, renderAvatar } from "../utils/ui.js?v=20260611-tv-ready-preload";
+import { renderQrSvg } from "../utils/qr.js?v=20260612-tv-player-hotfix";
+import { loadYouTubeIframeApi } from "../utils/youtube.js?v=20260612-tv-player-hotfix";
+import { escapeHtml, renderAvatar } from "../utils/ui.js?v=20260612-tv-player-hotfix";
 
 const TV_TOKEN_STORAGE_KEY = "mq_tv_device_token";
 const TV_PAIRING_POLL_INTERVAL_MS = 1000;
@@ -341,7 +341,7 @@ export class TvController {
 
     if (!hasRound) {
       this.stopPlayer();
-      this.ensureUpcomingPlayer(this.getPrimaryUpcomingTrack(), null);
+      this.destroyPreloadPlayer();
       this.setVideoConcealed(true);
       this.renderSolution(null, false);
       if (phaseEl) phaseEl.textContent = "En attente";
@@ -655,6 +655,14 @@ export class TvController {
       || !this.preloadPlayerReady
       || this.preloadPlayerVideoId !== videoId
     ) {
+      return false;
+    }
+
+    const playerState = window.YT?.PlayerState || {};
+    const preloadState = typeof this.preloadPlayer.getPlayerState === "function"
+      ? Number(this.preloadPlayer.getPlayerState())
+      : -1;
+    if (preloadState !== playerState.PLAYING && preloadState !== playerState.BUFFERING) {
       return false;
     }
 
