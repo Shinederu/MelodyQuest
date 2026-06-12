@@ -7,7 +7,7 @@ Ce depot contient le frontend statique MelodyQuest. Il doit rester simple a repr
 MelodyQuest est volontairement mis en pause au 2026-06-12. Avant de reprendre:
 
 - lire la section `Etat de pause - 2026-06-12` dans `README.md`;
-- verifier les deux repos `MelodyQuest` et `API`;
+- verifier les deux repos `App-MelodyQuest` et `App-MelodyQuest-API`;
 - comparer `P:\PROD` et `Z:\Nginx\www` si le site public ne reflete pas les fichiers deployes.
 
 Le mode TV est revenu a un lecteur YouTube iframe actif simple. Le double lecteur TV, le prechargement TV actif et l'action backend `markTvRoundReady` ont ete retires apres regressions video/son. Ne pas les restaurer par reflexe.
@@ -18,13 +18,14 @@ Le mode TV est revenu a un lecteur YouTube iframe actif simple. Le double lecteu
 2. Lire `P:\DEV\GitHub\AGENTS.md`.
 3. Lire ce fichier.
 4. Lire `README.md`.
-5. Si le changement touche l'API ou la DB, lire aussi `P:\DEV\GitHub\API\melodyquest\README.md` et les migrations `P:\DEV\GitHub\API\melodyquest\sql\`.
+5. Si le changement touche l'API ou la DB, lire aussi `P:\DEV\GitHub\App-MelodyQuest-API\README.md` et les migrations `P:\DEV\GitHub\App-MelodyQuest-API\sql\`.
 
 ## Source de verite
 
-- Frontend DEV: `P:\DEV\GitHub\MelodyQuest`
+- Frontend DEV: `P:\DEV\GitHub\App-MelodyQuest`
 - Frontend PROD: `P:\PROD\MelodyQuest`
-- Backend actif: `P:\DEV\GitHub\API\melodyquest`
+- Backend DEV: `P:\DEV\GitHub\App-MelodyQuest-API`
+- Backend PROD: `P:\PROD\API\melodyquest`
 - Endpoint API: `https://api.shinederu.ch/melodyquest/`
 - Endpoint front: `https://melodyquest.shinederu.ch/`
 
@@ -64,7 +65,7 @@ Conserver les redirections existantes:
 
 ## Fonctionnalites a preserver
 
-- Login/register/logout via `shinederu-auth-core`.
+- Login/register/logout via le package `@shinederu/auth-core` fourni par `Module-Auth-Core`.
 - Creation/rejoindre lobby public ou prive.
 - Reglages lobby: categories, timer, manches, visibilite, categorie visible, vote de revelation, seuil de precision.
 - Jeu desktop/mobile avec video cachee, reponse, classement, timer, partage, suggestions de correction.
@@ -87,9 +88,9 @@ Utiliser une valeur lisible du type `YYYYMMDD-sujet`.
 Verification minimale frontend:
 
 ```powershell
-Get-ChildItem P:\DEV\GitHub\MelodyQuest\assets\js -Recurse -Filter *.js | % { node --check $_.FullName }
+Get-ChildItem P:\DEV\GitHub\App-MelodyQuest\assets\js -Recurse -Filter *.js | % { node --check $_.FullName }
 git -c safe.directory=* diff --check
-rg -n "console\.|alert\(|debugger" P:\DEV\GitHub\MelodyQuest\assets
+rg -n "console\.|alert\(|debugger" P:\DEV\GitHub\App-MelodyQuest\assets
 ```
 
 Smoke test recommande en production apres deploiement:

@@ -2,7 +2,7 @@
 
 Frontend statique du blindtest multijoueur MelodyQuest.
 
-Ce depot contient uniquement le client navigateur. Le backend actif vit dans `P:\DEV\GitHub\API\melodyquest` et expose `https://api.shinederu.ch/melodyquest/`.
+Ce depot contient uniquement le client navigateur. Le backend source vit dans `P:\DEV\GitHub\App-MelodyQuest-API` et expose `https://api.shinederu.ch/melodyquest/` une fois deploye sous `P:\PROD\API\melodyquest`.
 
 ## Etat de pause - 2026-06-12
 
@@ -45,7 +45,7 @@ git -c safe.directory=* diff --check
 rg -n "console\.|alert\(|debugger" assets
 ```
 
-5. Si le changement touche l'API, lire aussi `P:\DEV\GitHub\API\melodyquest\README.md`.
+5. Si le changement touche l'API, lire aussi `P:\DEV\GitHub\App-MelodyQuest-API\README.md`.
 6. Copier les fichiers modifies vers `P:\PROD\MelodyQuest` et `Z:\Nginx\www\MelodyQuest` si le volume web est servi, puis commit/push sur `main`.
 
 ## Organisation du depot
@@ -56,7 +56,7 @@ rg -n "console\.|alert\(|debugger" assets
 - `assets/js/controller/*Controller.js`: logique de chaque vue.
 - `assets/js/model/`: modeles UI transverses.
 - `assets/js/utils/`: helpers HTTP, etat lobby, UI commune, YouTube et QR.
-- `assets/js/vendor/`: dependances vendorees pour navigateur (`shinederu-auth-core`, `jsQR`).
+- `assets/js/vendor/`: dependances vendorees pour navigateur (`@shinederu/auth-core`, `jsQR`).
 
 Les helpers reutilisables doivent rester dans `assets/js/utils/`:
 
@@ -65,13 +65,13 @@ Les helpers reutilisables doivent rester dans `assets/js/utils/`:
 
 Eviter de recopier ces helpers dans les controleurs.
 
-Il n'y a plus de dossier `client/` ou `backend/` actif dans ce repo. L'API MelodyQuest est centralisee dans le repo `API`.
+Il n'y a plus de dossier `client/` ou `backend/` actif dans ce repo. L'API MelodyQuest est centralisee dans le repo `App-MelodyQuest-API`.
 
 Le dossier `output/` n'est pas utilise par l'application. S'il reapparait vide, il peut etre supprime.
 
 ## Mapping deploiement
 
-- Front DEV: `P:\DEV\GitHub\MelodyQuest`
+- Front DEV: `P:\DEV\GitHub\App-MelodyQuest`
 - Front PROD: `P:\PROD\MelodyQuest`
 - Front public: `https://melodyquest.shinederu.ch/`
 - API MelodyQuest: `https://api.shinederu.ch/melodyquest/`
@@ -103,7 +103,7 @@ Les routes principales sont gerees par `assets/js/controller/AppController.js`.
 ## Fonctionnalites produit
 
 - Blindtest multijoueur en ligne.
-- Authentification centralisee via `shinederu-auth-core`.
+- Authentification centralisee via le package `@shinederu/auth-core` fourni par `Module-Auth-Core`.
 - Salons publics ou prives, rejoignables par code ou URL partagee.
 - Reglages de lobby: nombre de manches, timer, categories, visibilite de la categorie, vote de revelation, precision de validation des reponses.
 - Validation souple des reponses geree cote API selon le seuil du lobby.
@@ -115,14 +115,14 @@ Les routes principales sont gerees par `assets/js/controller/AppController.js`.
 
 ## Backend et base de donnees
 
-Le backend actif est dans `P:\DEV\GitHub\API\melodyquest`.
+Le backend source est dans `P:\DEV\GitHub\App-MelodyQuest-API`.
 
 La DB partagee est `ShinedeCore`. MelodyQuest utilise les tables `mq_*`.
 
 Les migrations MelodyQuest sont dans:
 
 ```text
-P:\DEV\GitHub\API\melodyquest\sql\
+P:\DEV\GitHub\App-MelodyQuest-API\sql\
 ```
 
 Les droits admin catalogue passent par les tables `core_*`. La permission stable attendue est:
