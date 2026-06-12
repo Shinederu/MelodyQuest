@@ -1,5 +1,7 @@
 # MelodyQuest
 
+## Role
+
 Frontend statique du blindtest multijoueur MelodyQuest.
 
 Ce depot contient uniquement le client navigateur. Le backend source vit dans `P:\DEV\GitHub\App-MelodyQuest-API` et expose `https://api.shinederu.ch/melodyquest/` une fois deploye sous `P:\PROD\API\melodyquest`.
@@ -10,7 +12,7 @@ Le projet est mis en pause dans un etat stable de reprise. Les derniers changeme
 
 - cache-bust frontend courant: `20260612-tv-basic-player`;
 - commit frontend applicatif de reference: `295dd11 Restore basic MelodyQuest TV player`;
-- commit API applicatif de reference: `2f468a9 Remove MelodyQuest TV ready playback flow`;
+- commit API applicatif de reference: `28dbdda Remove MelodyQuest TV ready playback flow`;
 - fichiers deployes dans `P:\PROD\MelodyQuest` et `P:\PROD\API\melodyquest`.
 
 Point sensible a reprendre plus tard: le chargement YouTube sur TV peut encore avoir des delais ou coupures selon la video/le navigateur. Les essais avec double lecteur TV, prechargement TV actif et signal backend "TV prete" ont ete abandonnes car ils ont provoque des cas sans video/son. Ne pas les remettre sans nouvelle piste verifiee. L'hebergement local de fichiers audio a ete refuse; YouTube doit rester la source principale.
@@ -46,7 +48,7 @@ rg -n "console\.|alert\(|debugger" assets
 ```
 
 5. Si le changement touche l'API, lire aussi `P:\DEV\GitHub\App-MelodyQuest-API\README.md`.
-6. Copier les fichiers modifies vers `P:\PROD\MelodyQuest`, puis commit/push sur `main`.
+6. Deployer uniquement les fichiers runtime publics (`index.html` et `assets\`) vers `P:\PROD\MelodyQuest`, puis commit/push sur `main`.
 
 ## Organisation du depot
 
@@ -69,10 +71,24 @@ Il n'y a plus de dossier `client/` ou `backend/` actif dans ce repo. L'API Melod
 
 Le dossier `output/` n'est pas utilise par l'application. S'il reapparait vide, il peut etre supprime.
 
-## Mapping deploiement
+## Repo et deploiement
 
 - Front DEV: `P:\DEV\GitHub\App-MelodyQuest`
 - Front PROD: `P:\PROD\MelodyQuest`
+- Repo GitHub: `https://github.com/Shinederu/App-MelodyQuest.git`
+
+Le dossier PROD ne doit pas etre un clone du repo. Il ne doit contenir que:
+
+- `index.html`;
+- `assets\css\`;
+- `assets\views\`;
+- `assets\js\`;
+- les assets publics necessaires au navigateur.
+
+Ne pas deployer `README.md`, `AGENTS.md`, `.git`, `.github`, fichiers de test, caches, brouillons, dossiers `output\` ou autres documents internes.
+
+## Endpoints
+
 - Front public: `https://melodyquest.shinederu.ch/`
 - API MelodyQuest: `https://api.shinederu.ch/melodyquest/`
 - API Auth: `https://api.shinederu.ch/auth/`
@@ -113,7 +129,15 @@ Les routes principales sont gerees par `assets/js/controller/AppController.js`.
 - Suggestions joueurs: alias, correction URL/libelle/artiste/licence, proposition publique de nouvelle musique.
 - Administration catalogue: categories, oeuvres, musiques, validation, suggestions.
 
-## Backend et base de donnees
+## Authentification et permissions
+
+- Authentification navigateur via `@shinederu/auth-core`, vendore depuis `Module-Auth-Core`.
+- Base API auth: `https://api.shinederu.ch/auth/`.
+- Cookie session partage: `sid`, domaine `.shinederu.ch`.
+- Le frontend ne decide pas des droits. Les pages management s'appuient sur l'etat utilisateur renvoye par les APIs; les controles reels restent cote API.
+- Permission admin catalogue attendue cote backend: `melodyquest.catalog.manage`.
+
+## Base de donnees
 
 Le backend source est dans `P:\DEV\GitHub\App-MelodyQuest-API`.
 
@@ -137,6 +161,42 @@ En PHP, elle correspond a:
 hasPermission($userId, 'melodyquest', 'catalog.manage')
 ```
 
+## Dossiers runtime et fichiers partages
+
+- Le frontend ne possede aucun stockage persistant.
+- Les fichiers publics servis sont uniquement dans `P:\PROD\MelodyQuest`.
+- Aucun fichier utilisateur ne doit etre ecrit dans le dossier frontend public.
+- Les propositions de musiques, suggestions, lobbies, scores et liaisons TV sont stockes en DB via l'API `melodyquest`.
+
+## Temps reel et evenements
+
+- Le frontend consomme Mercure quand `data.realtime.transport=mercure` est fourni par l'API.
+- Topics documentes cote API:
+  - `https://api.shinederu.ch/melodyquest/topics/public-lobbies`
+  - `https://api.shinederu.ch/melodyquest/topics/lobbies/{LOBBY_CODE}`
+- Les anciens streams SSE restent un fallback de transition.
+- Apres une reconnexion ou une erreur temps reel, l'etat doit pouvoir etre reconstruit par API HTTP.
+
+## Dependances inter-projets
+
+- `App-MelodyQuest-API`: toutes les actions de jeu, catalogue, TV, suggestions et temps reel.
+- `Module-Auth-API`: login, logout, session, details compte.
+- `Module-Auth-Core`: client auth navigateur vendore.
+- Mercure: snapshots lobbies publics/prives.
+- YouTube iframe API: lecture des pistes, a partir d'identifiants video stockes par l'API.
+
+Le frontend n'ecrit jamais directement en DB et ne communique pas avec un autre projet autrement que par API HTTP documentee ou abonnement Mercure.
+
+## Configuration
+
+La configuration publique est dans `index.html`:
+
+```js
+window.__SHINEDERU_API_ROOT__ = "https://api.shinederu.ch";
+```
+
+Changer cette valeur uniquement si l'hote API public change. Aucun secret ne doit etre ajoute au frontend.
+
 ## Cache-bust
 
 Les assets sont servis avec cache long. En cas de changement frontend, mettre a jour la version dans:
@@ -148,6 +208,39 @@ Les assets sont servis avec cache long. En cas de changement frontend, mettre a 
 Convention conseillee: `YYYYMMDD-sujet-court`, par exemple `20260610-agent-audit`.
 
 Le cache-bust `20260612-tv-basic-player` marque le rollback volontaire du mode TV vers un lecteur YouTube actif simple.
+
+## Verifications
+
+```powershell
+Get-ChildItem P:\DEV\GitHub\App-MelodyQuest\assets\js -Recurse -Filter *.js | % { node --check $_.FullName }
+git -c safe.directory=* diff --check
+rg -n "console\.|alert\(|debugger" P:\DEV\GitHub\App-MelodyQuest\assets
+```
+
+Smoke test recommande:
+
+1. `#/public`: login/register.
+2. `#/main`: creation/rejoindre salon et liste publique.
+3. `#/lobby`: reglages, categories, joueurs.
+4. `#/game`: manche, champ reponse, timer, video cachee.
+5. `/tv` + `#/tv-link`: QR/lien TV si la zone TV est touchee.
+6. Pages `#/management*` si catalogue/suggestions sont touches.
+
+## Deploiement
+
+Copier uniquement le runtime public:
+
+```powershell
+Copy-Item P:\DEV\GitHub\App-MelodyQuest\index.html P:\PROD\MelodyQuest\index.html -Force
+Copy-Item P:\DEV\GitHub\App-MelodyQuest\assets\* P:\PROD\MelodyQuest\assets -Recurse -Force
+```
+
+Apres copie, verifier qu'aucun fichier interne n'est present en PROD:
+
+```powershell
+Get-ChildItem P:\PROD\MelodyQuest -Force |
+  Where-Object { $_.Name -in @('README.md','AGENTS.md','.git','.github','output') }
+```
 
 ## Points a surveiller a la reprise
 
@@ -196,5 +289,5 @@ server {
 - Pas de `console.log`, `alert()` ou `debugger` dans le code applicatif.
 - JS valide avec `node --check`.
 - Cache-bust mis a jour si un asset deploye change.
-- Fichiers modifies copies en PROD.
+- Fichiers runtime modifies copies en PROD, sans README/AGENTS/docs internes.
 - Commit et push effectues sur `main`.

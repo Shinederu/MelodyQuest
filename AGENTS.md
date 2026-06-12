@@ -16,10 +16,11 @@ Le mode TV est revenu a un lecteur YouTube iframe actif simple. Le double lecteu
 ## Lecture de demarrage
 
 1. Lire `P:\AGENTS.md`.
-2. Lire `P:\DEV\GitHub\AGENTS.md`.
-3. Lire ce fichier.
-4. Lire `README.md`.
-5. Si le changement touche l'API ou la DB, lire aussi `P:\DEV\GitHub\App-MelodyQuest-API\README.md` et les migrations `P:\DEV\GitHub\App-MelodyQuest-API\sql\`.
+2. Lire `P:\ECOSYSTEM.md`.
+3. Lire `P:\DEV\GitHub\AGENTS.md`.
+4. Lire ce fichier.
+5. Lire `README.md`.
+6. Si le changement touche l'API ou la DB, lire aussi `P:\DEV\GitHub\App-MelodyQuest-API\README.md`, `P:\DEV\GitHub\App-MelodyQuest-API\AGENTS.md` et les migrations `P:\DEV\GitHub\App-MelodyQuest-API\sql\`.
 
 ## Source de verite
 
@@ -105,9 +106,24 @@ Smoke test recommande en production apres deploiement:
 
 ## Deploiement
 
-Projet statique: copier les fichiers modifies depuis DEV vers `P:\PROD\MelodyQuest`.
+Projet statique: copier uniquement les fichiers runtime publics depuis DEV vers `P:\PROD\MelodyQuest`:
+
+- `index.html`;
+- `assets\css\`;
+- `assets\views\`;
+- `assets\js\`;
+- assets publics necessaires au navigateur.
+
+Ne pas copier `README.md`, `AGENTS.md`, `.git`, `.github`, docs internes, tests, caches, brouillons ou dossier `output\` en PROD.
 
 Ne pas supprimer massivement en PROD. Si un nettoyage est necessaire, verifier d'abord les references dans `index.html` et les imports JS.
+
+Commande type:
+
+```powershell
+Copy-Item P:\DEV\GitHub\App-MelodyQuest\index.html P:\PROD\MelodyQuest\index.html -Force
+Copy-Item P:\DEV\GitHub\App-MelodyQuest\assets\* P:\PROD\MelodyQuest\assets -Recurse -Force
+```
 
 ## Encodage
 
