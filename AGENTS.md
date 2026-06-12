@@ -8,7 +8,8 @@ MelodyQuest est volontairement mis en pause au 2026-06-12. Avant de reprendre:
 
 - lire la section `Etat de pause - 2026-06-12` dans `README.md`;
 - verifier les deux repos `App-MelodyQuest` et `App-MelodyQuest-API`;
-- comparer `P:\PROD` et `Z:\Nginx\www` si le site public ne reflete pas les fichiers deployes.
+- verifier que `P:\PROD` reflete bien le contenu servi par Nginx si le site
+  public ne montre pas les fichiers deployes.
 
 Le mode TV est revenu a un lecteur YouTube iframe actif simple. Le double lecteur TV, le prechargement TV actif et l'action backend `markTvRoundReady` ont ete retires apres regressions video/son. Ne pas les restaurer par reflexe.
 
