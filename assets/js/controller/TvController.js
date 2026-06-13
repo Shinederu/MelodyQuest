@@ -1,6 +1,6 @@
-import { renderQrSvg } from "../utils/qr.js?v=20260612-tv-basic-player";
-import { loadYouTubeIframeApi } from "../utils/youtube.js?v=20260612-tv-basic-player";
-import { escapeHtml, renderAvatar } from "../utils/ui.js?v=20260612-tv-basic-player";
+import { renderQrSvg } from "../utils/qr.js?v=20260613-player-warmup";
+import { loadYouTubeIframeApi } from "../utils/youtube.js?v=20260613-player-warmup";
+import { escapeHtml, renderAvatar } from "../utils/ui.js?v=20260613-player-warmup";
 
 const TV_TOKEN_STORAGE_KEY = "mq_tv_device_token";
 const TV_PAIRING_POLL_INTERVAL_MS = 1000;
@@ -14,7 +14,6 @@ const PLAYER_BUFFERING_HARD_DRIFT_SECONDS = 8;
 const PLAYER_PLAY_RETRY_COOLDOWN_MS = 1500;
 const PLAYER_WARMUP_LOOP_SECONDS = 1.8;
 const TV_ROUND_START_PLAY_LEAD_MS = 90;
-const YOUTUBE_PREFERRED_QUALITY = "hd1080";
 
 export class TvController {
   constructor() {
@@ -35,6 +34,8 @@ export class TvController {
     this.playerLastLoadAtMs = 0;
     this.playerLastPlayAttemptAtMs = 0;
     this.playerAudioReleasedRoundId = 0;
+    this.playerErrorVideoId = "";
+    this.playerErrorMessage = "";
 
     document.getElementById("btn-tv-new-pairing")?.addEventListener("click", () => this.resetPairing());
     document.getElementById("btn-tv-stage-new-pairing")?.addEventListener("click", () => this.resetPairing());
@@ -106,6 +107,8 @@ export class TvController {
     this.playerRequestedVideoId = "";
     this.playerLastLoadAtMs = 0;
     this.playerLastPlayAttemptAtMs = 0;
+    this.playerErrorVideoId = "";
+    this.playerErrorMessage = "";
     if (this.player && typeof this.player.stopVideo === "function") {
       this.player.stopVideo();
     }
@@ -206,7 +209,9 @@ export class TvController {
       }
 
       this.applySnapshot(response.data.snapshot);
-      this.setStageStatus("Synchronisé", true);
+      if (!this.playerErrorMessage) {
+        this.setStageStatus("Synchronisé", true);
+      }
     } catch {
       this.setStageStatus("Connexion temporairement indisponible.", false);
     } finally {
@@ -235,6 +240,8 @@ export class TvController {
       this.currentRoundId = roundId;
       this.playerRequestedVideoId = "";
       this.playerAudioReleasedRoundId = 0;
+      this.playerErrorVideoId = "";
+      this.playerErrorMessage = "";
     }
 
     this.renderLobby();
@@ -361,7 +368,18 @@ export class TvController {
       this.stopPlayer();
       return;
     }
-    this.ensurePlayer(track?.youtube_video_id || "", round);
+
+    const videoId = String(track.youtube_video_id || "");
+    if (this.playerErrorVideoId && this.playerErrorVideoId !== videoId) {
+      this.playerErrorVideoId = "";
+      this.playerErrorMessage = "";
+    }
+    if (videoId && this.playerErrorVideoId === videoId) {
+      this.renderPlayerError();
+      return;
+    }
+
+    this.ensurePlayer(videoId, round);
   }
 
   renderSolution(track, visible) {
@@ -557,7 +575,6 @@ export class TvController {
             rel: 0,
             start: Math.floor(this.getTargetVideoTime(round)),
             origin: window.location.origin,
-            vq: YOUTUBE_PREFERRED_QUALITY,
           },
           events: {
             onReady: () => {
@@ -568,7 +585,6 @@ export class TvController {
                 return;
               }
               this.playerVideoId = videoId;
-              this.requestPlaybackQuality(this.player);
               this.preparePlayerForRoundSync(round);
               if (this.isRoundPendingStart(round)) {
                 this.warmupPlayerForPendingStart(round);
@@ -576,6 +592,7 @@ export class TvController {
                 this.syncPlayer(round, true);
               }
             },
+            onError: (event) => this.handlePlayerError(event),
           },
         });
         return;
@@ -598,9 +615,7 @@ export class TvController {
         this.player.loadVideoById({
           videoId,
           startSeconds: Math.floor(this.getTargetVideoTime(round)),
-          suggestedQuality: YOUTUBE_PREFERRED_QUALITY,
         });
-        this.requestPlaybackQuality(this.player);
         this.preparePlayerForRoundSync(round);
         if (pendingStart) {
           this.warmupPlayerForPendingStart(round);
@@ -615,6 +630,40 @@ export class TvController {
     } catch {
       this.setStageStatus("Impossible de charger le lecteur YouTube.", false);
     }
+  }
+
+  handlePlayerError(event) {
+    const message = this.describeYouTubeError(event?.data);
+    this.playerErrorVideoId = String(this.playerVideoId || this.playerRequestedVideoId || "");
+    this.playerErrorMessage = message;
+    this.renderPlayerError();
+  }
+
+  renderPlayerError() {
+    this.setStageStatus(this.playerErrorMessage || "Impossible de lire cette piste YouTube.", false);
+    this.setVideoConcealed(true);
+    this.renderSolution(null, false);
+    const overlayTitle = document.getElementById("tv-video-overlay-title");
+    const overlayCopy = document.getElementById("tv-video-overlay-copy");
+    if (overlayTitle) overlayTitle.textContent = "Video indisponible";
+    if (overlayCopy) overlayCopy.textContent = "Cette piste ne peut pas etre lue par YouTube sur cet ecran.";
+  }
+
+  describeYouTubeError(code) {
+    const value = Number(code || 0);
+    if (value === 2) {
+      return "ID YouTube invalide pour cette piste.";
+    }
+    if (value === 5) {
+      return "Cette video ne peut pas etre lue par le lecteur HTML5.";
+    }
+    if (value === 100) {
+      return "Cette video YouTube est indisponible ou privee.";
+    }
+    if (value === 101 || value === 150) {
+      return "Cette video YouTube interdit la lecture integree.";
+    }
+    return "Impossible de lire cette piste YouTube.";
   }
 
   stopPlayer() {
@@ -643,7 +692,6 @@ export class TvController {
     try {
       if (typeof this.player.mute === "function") this.player.mute();
       if (typeof this.player.setVolume === "function") this.player.setVolume(0);
-      this.requestPlaybackQuality(this.player);
 
       if (
         Number.isFinite(current)
@@ -843,18 +891,6 @@ export class TvController {
       Math.abs((currentTime + duration) - expectedTime),
       Math.abs(currentTime - (expectedTime + duration))
     );
-  }
-
-  requestPlaybackQuality(player) {
-    if (!player || typeof player.setPlaybackQuality !== "function") {
-      return;
-    }
-
-    try {
-      player.setPlaybackQuality(YOUTUBE_PREFERRED_QUALITY);
-    } catch {
-      // noop
-    }
   }
 
   mutePlayer() {

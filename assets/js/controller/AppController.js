@@ -1,22 +1,24 @@
-import { HttpService } from "../utils/HttpService.js?v=20260612-tv-basic-player";
-import { HeaderModel } from "../model/HeaderModel.js?v=20260612-tv-basic-player";
-import { PublicController } from "./PublicController.js?v=20260612-tv-basic-player";
-import { SuggestTrackController } from "./SuggestTrackController.js?v=20260612-tv-basic-player";
-import { MainController } from "./MainController.js?v=20260612-tv-basic-player";
-import { LobbyController } from "./LobbyController.js?v=20260612-tv-basic-player";
-import { LobbyListController } from "./LobbyListController.js?v=20260612-tv-basic-player";
-import { GameController } from "./GameController.js?v=20260612-tv-basic-player";
-import { ResultController } from "./ResultController.js?v=20260612-tv-basic-player";
-import { TvController } from "./TvController.js?v=20260612-tv-basic-player";
-import { TvLinkController } from "./TvLinkController.js?v=20260612-tv-basic-player";
-import { ManagementController } from "./ManagementController.js?v=20260612-tv-basic-player";
-import { ManagementCategoriesController } from "./ManagementCategoriesController.js?v=20260612-tv-basic-player";
-import { ManagementFamiliesController } from "./ManagementFamiliesController.js?v=20260612-tv-basic-player";
-import { ManagementTracksController } from "./ManagementTracksController.js?v=20260612-tv-basic-player";
-import { ManagementValidationController } from "./ManagementValidationController.js?v=20260612-tv-basic-player";
-import { ManagementSuggestionsController } from "./ManagementSuggestionsController.js?v=20260612-tv-basic-player";
+import { HttpService } from "../utils/HttpService.js?v=20260613-player-warmup";
+import { HeaderModel } from "../model/HeaderModel.js?v=20260613-player-warmup";
+import { loadYouTubeIframeApi } from "../utils/youtube.js?v=20260613-player-warmup";
+import { PublicController } from "./PublicController.js?v=20260613-player-warmup";
+import { SuggestTrackController } from "./SuggestTrackController.js?v=20260613-player-warmup";
+import { MainController } from "./MainController.js?v=20260613-player-warmup";
+import { LobbyController } from "./LobbyController.js?v=20260613-player-warmup";
+import { LobbyListController } from "./LobbyListController.js?v=20260613-player-warmup";
+import { GameController } from "./GameController.js?v=20260613-player-warmup";
+import { ResultController } from "./ResultController.js?v=20260613-player-warmup";
+import { TvController } from "./TvController.js?v=20260613-player-warmup";
+import { TvLinkController } from "./TvLinkController.js?v=20260613-player-warmup";
+import { ManagementController } from "./ManagementController.js?v=20260613-player-warmup";
+import { ManagementCategoriesController } from "./ManagementCategoriesController.js?v=20260613-player-warmup";
+import { ManagementFamiliesController } from "./ManagementFamiliesController.js?v=20260613-player-warmup";
+import { ManagementTracksController } from "./ManagementTracksController.js?v=20260613-player-warmup";
+import { ManagementValidationController } from "./ManagementValidationController.js?v=20260613-player-warmup";
+import { ManagementSuggestionsController } from "./ManagementSuggestionsController.js?v=20260613-player-warmup";
 
-const ASSET_VERSION = "20260612-tv-basic-player";
+const ASSET_VERSION = "20260613-player-warmup";
+const YOUTUBE_PREWARM_ROUTES = new Set(["lobby", "game", "tv"]);
 
 let currentUser = null;
 let headerManager = null;
@@ -166,8 +168,20 @@ export class AppController {
       return;
     }
 
+    this.prewarmYouTubeForRoute(requested);
+
     const Controller = ROUTES[requested].controller;
     this.ctrl = new Controller();
+  }
+
+  prewarmYouTubeForRoute(view) {
+    if (!YOUTUBE_PREWARM_ROUTES.has(view)) {
+      return;
+    }
+
+    loadYouTubeIframeApi().catch(() => {
+      // Le lecteur affichera une erreur contextualisee si le chargement echoue plus tard.
+    });
   }
 
   async resolveSession() {

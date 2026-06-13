@@ -1,4 +1,4 @@
-import { extractYouTubeVideoId } from "../utils/youtube.js?v=20260610-shared-utils";
+import { extractYouTubeVideoId } from "../utils/youtube.js?v=20260613-player-warmup";
 import { escapeAttribute, escapeHtml, normalizeSearch } from "../utils/ui.js?v=20260610-shared-utils";
 
 export class ManagementTracksController {

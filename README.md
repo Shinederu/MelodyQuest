@@ -8,21 +8,21 @@ Ce depot contient uniquement le client navigateur. Le backend source vit dans `P
 
 ## Etat de pause - 2026-06-12
 
-Le projet est mis en pause dans un etat stable de reprise. Les derniers changements applicatifs avant cette pause ont restaure le mode TV sur un lecteur YouTube iframe simple:
+Le projet est mis en pause dans un etat stable de reprise. Les changements applicatifs de reference ont restaure le mode TV sur un lecteur YouTube iframe simple, puis une passe player a reduit le buffering sans retenter le double lecteur:
 
-- cache-bust frontend courant: `20260612-tv-basic-player`;
+- cache-bust frontend courant: `20260613-player-warmup`;
 - commit frontend applicatif de reference: `295dd11 Restore basic MelodyQuest TV player`;
 - commit API applicatif de reference: `28dbdda Remove MelodyQuest TV ready playback flow`;
 - fichiers deployes dans `P:\PROD\MelodyQuest` et `P:\PROD\API\melodyquest`.
 
-Point sensible a reprendre plus tard: le chargement YouTube sur TV peut encore avoir des delais ou coupures selon la video/le navigateur. Les essais avec double lecteur TV, prechargement TV actif et signal backend "TV prete" ont ete abandonnes car ils ont provoque des cas sans video/son. Ne pas les remettre sans nouvelle piste verifiee. L'hebergement local de fichiers audio a ete refuse; YouTube doit rester la source principale.
+Etat player 2026-06-13: la qualite YouTube n'est plus forcee en 1080p, les domaines YouTube sont preconnectes, l'API iframe est prechauffee en entrant dans le lobby/game/TV, les erreurs YouTube sont affichees clairement et la resynchronisation du player joueur est moins agressive. Point sensible a reprendre plus tard: le chargement YouTube sur TV peut encore avoir des delais ou coupures selon la video/le navigateur. Les essais avec double lecteur TV, prechargement TV actif et signal backend "TV prete" ont ete abandonnes car ils ont provoque des cas sans video/son. Ne pas les remettre sans nouvelle piste verifiee. L'hebergement local de fichiers audio a ete refuse; YouTube doit rester la source principale.
 
 Dernieres verifications connues:
 
 - `Get-ChildItem .\assets\js -Recurse -Filter *.js | % { node --check $_.FullName }`
 - `git -c safe.directory=* diff --check`
 - `rg -n "console\.|alert\(|debugger" assets`
-- smoke test `/tv`: QR affiche, script `20260612-tv-basic-player`, aucun conteneur `tv-video-preload-player`, aucune erreur console.
+- smoke test `/tv`: QR affiche, script `20260613-player-warmup`, aucun conteneur `tv-video-preload-player`, aucune erreur console.
 
 ## Reprise rapide agent
 
@@ -207,7 +207,7 @@ Les assets sont servis avec cache long. En cas de changement frontend, mettre a 
 
 Convention conseillee: `YYYYMMDD-sujet-court`, par exemple `20260610-agent-audit`.
 
-Le cache-bust `20260612-tv-basic-player` marque le rollback volontaire du mode TV vers un lecteur YouTube actif simple.
+Le cache-bust `20260612-tv-basic-player` marque le rollback volontaire du mode TV vers un lecteur YouTube actif simple. Le cache-bust `20260613-player-warmup` garde ce lecteur simple, retire le 1080p force, prechauffe YouTube et ajoute les erreurs player explicites.
 
 ## Verifications
 

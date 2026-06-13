@@ -49,16 +49,22 @@ export function extractYouTubeVideoId(value) {
 
   try {
     const url = new URL(input);
-    if (url.hostname.includes("youtu.be")) {
-      return url.pathname.replaceAll("/", "").trim();
+    const hostname = url.hostname.toLowerCase().replace(/^www\./, "");
+    if (hostname === "youtu.be") {
+      return url.pathname.split("/").filter(Boolean)[0]?.trim() || "";
     }
-    if (url.searchParams.get("v")) {
+    if (hostname === "youtube.com" || hostname.endsWith(".youtube.com")) {
+      if (url.searchParams.get("v")) {
+        return String(url.searchParams.get("v") || "").trim();
+      }
+      const segments = url.pathname.split("/").filter(Boolean);
+      const embedIndex = segments.findIndex((segment) => segment === "embed" || segment === "shorts");
+      if (embedIndex >= 0 && segments[embedIndex + 1]) {
+        return segments[embedIndex + 1].trim();
+      }
+    }
+    if (hostname === "music.youtube.com" && url.searchParams.get("v")) {
       return String(url.searchParams.get("v") || "").trim();
-    }
-    const segments = url.pathname.split("/").filter(Boolean);
-    const embedIndex = segments.findIndex((segment) => segment === "embed" || segment === "shorts");
-    if (embedIndex >= 0 && segments[embedIndex + 1]) {
-      return segments[embedIndex + 1].trim();
     }
   } catch {
     return "";
