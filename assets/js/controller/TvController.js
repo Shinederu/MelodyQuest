@@ -1,6 +1,6 @@
-import { renderQrSvg } from "../utils/qr.js?v=20260613-player-sync-tight";
-import { loadYouTubeIframeApi } from "../utils/youtube.js?v=20260613-player-sync-tight";
-import { escapeHtml, renderAvatar } from "../utils/ui.js?v=20260613-player-sync-tight";
+import { renderQrSvg } from "../utils/qr.js?v=20260613-tv-no-reveal-cue";
+import { loadYouTubeIframeApi } from "../utils/youtube.js?v=20260613-tv-no-reveal-cue";
+import { escapeHtml, renderAvatar } from "../utils/ui.js?v=20260613-tv-no-reveal-cue";
 
 const TV_TOKEN_STORAGE_KEY = "mq_tv_device_token";
 const TV_PAIRING_POLL_INTERVAL_MS = 1000;
@@ -9,12 +9,10 @@ const TV_STATE_POLL_SLOW_MS = 1800;
 const TV_STATE_POLL_IDLE_MS = 2400;
 const TV_TIMER_INTERVAL_MS = 500;
 const TV_PLAYER_VOLUME = 100;
-const PLAYER_SYNC_DRIFT_SECONDS = 0.55;
-const PLAYER_START_SYNC_DRIFT_SECONDS = 0.32;
-const PLAYER_START_SYNC_WINDOW_SECONDS = 6;
-const PLAYER_SYNC_COOLDOWN_MS = 650;
-const PLAYER_BUFFERING_SEEK_GRACE_MS = 2500;
-const PLAYER_BUFFERING_HARD_DRIFT_SECONDS = 3;
+const PLAYER_SYNC_DRIFT_SECONDS = 1.25;
+const PLAYER_SYNC_COOLDOWN_MS = 2500;
+const PLAYER_BUFFERING_SEEK_GRACE_MS = 5000;
+const PLAYER_BUFFERING_HARD_DRIFT_SECONDS = 8;
 const PLAYER_PLAY_RETRY_COOLDOWN_MS = 1500;
 const PLAYER_WARMUP_LOOP_SECONDS = 1.8;
 const TV_ROUND_START_PLAY_LEAD_MS = 90;
@@ -30,8 +28,6 @@ export class TvController {
     this.isDestroyed = false;
     this.snapshot = null;
     this.serverClockOffsetMs = 0;
-    this.serverClockOffsetInitialized = false;
-    this.serverClockOffsetRttMs = Number.POSITIVE_INFINITY;
     this.currentRoundId = 0;
     this.lastSnapshotRevision = "";
     this.lastRenderedLobbyKey = "";
@@ -229,10 +225,7 @@ export class TvController {
         return;
       }
 
-      this.applySnapshot(response.data.snapshot, {
-        roundTiming: response.meta?.timing,
-        clockSource: "http",
-      });
+      this.applySnapshot(response.data.snapshot);
       if (!this.playerErrorMessage) {
         this.setStageStatus("Synchronisé", true);
       }
@@ -276,11 +269,13 @@ export class TvController {
       || value.includes("salon");
   }
 
-  applySnapshot(snapshot, options = {}) {
+  applySnapshot(snapshot) {
     this.snapshot = snapshot;
 
     const serverTimeUnix = Number(snapshot?.round?.server_time_unix || 0);
-    this.updateServerClockOffset(serverTimeUnix, options.roundTiming ?? null, options.clockSource || "http");
+    if (serverTimeUnix > 0) {
+      this.serverClockOffsetMs = Date.now() - serverTimeUnix * 1000;
+    }
 
     const revision = String(snapshot?.revision ?? "");
     const revisionChanged = !revision || revision !== this.lastSnapshotRevision;
@@ -305,39 +300,6 @@ export class TvController {
     this.renderPlayers(revisionChanged || roundChanged);
     this.updateRoundPresentation(revisionChanged || roundChanged);
     this.startTimer();
-  }
-
-  updateServerClockOffset(serverTimeUnix, timing = null, source = "http") {
-    if (!(serverTimeUnix > 0)) {
-      return;
-    }
-
-    const timingMidpoint = Number(timing?.midpoint_at_ms || 0);
-    const rttMs = Number(timing?.rtt_ms || Number.POSITIVE_INFINITY);
-    const isHttpTiming = source === "http" && timingMidpoint > 0;
-
-    if (!isHttpTiming && this.serverClockOffsetInitialized) {
-      return;
-    }
-
-    const referenceClientTimeMs = isHttpTiming ? timingMidpoint : Date.now();
-    const nextOffsetMs = referenceClientTimeMs - (serverTimeUnix * 1000);
-
-    if (!this.serverClockOffsetInitialized) {
-      this.serverClockOffsetMs = nextOffsetMs;
-      this.serverClockOffsetInitialized = true;
-      this.serverClockOffsetRttMs = rttMs;
-      return;
-    }
-
-    if (!isHttpTiming) {
-      return;
-    }
-
-    const shouldTrustMore = rttMs <= this.serverClockOffsetRttMs + 80;
-    const smoothing = shouldTrustMore ? 0.35 : 0.12;
-    this.serverClockOffsetMs = (this.serverClockOffsetMs * (1 - smoothing)) + (nextOffsetMs * smoothing);
-    this.serverClockOffsetRttMs = Math.min(this.serverClockOffsetRttMs, rttMs);
   }
 
   renderLobby(force = false) {
@@ -1099,7 +1061,7 @@ export class TvController {
       return false;
     }
 
-    if (drift > this.getPlayerSyncDriftThreshold(round) && typeof this.player.seekTo === "function") {
+    if (drift > PLAYER_SYNC_DRIFT_SECONDS && typeof this.player.seekTo === "function") {
       this.player.seekTo(this.getTargetVideoTime(round), true);
       this.playerLastSeekAtMs = nowMs;
       this.setStageStatus("Synchronisation du son...", true);
@@ -1125,7 +1087,7 @@ export class TvController {
       return false;
     }
 
-    const threshold = isBuffering ? PLAYER_BUFFERING_HARD_DRIFT_SECONDS : this.getPlayerSyncDriftThreshold(this.snapshot?.round?.round);
+    const threshold = isBuffering ? PLAYER_BUFFERING_HARD_DRIFT_SECONDS : PLAYER_SYNC_DRIFT_SECONDS;
     return drift > threshold;
   }
 
@@ -1184,22 +1146,6 @@ export class TvController {
       Math.abs((currentTime + duration) - expectedTime),
       Math.abs(currentTime - (expectedTime + duration))
     );
-  }
-
-  getPlayerSyncDriftThreshold(round = this.snapshot?.round?.round) {
-    if (!round?.id) {
-      return PLAYER_SYNC_DRIFT_SECONDS;
-    }
-
-    const startedAtUnix = Number(round?.started_at_unix || 0);
-    if (startedAtUnix > 0) {
-      const elapsedSeconds = Math.max(0, this.getServerNowUnix() - startedAtUnix);
-      if (elapsedSeconds <= PLAYER_START_SYNC_WINDOW_SECONDS) {
-        return PLAYER_START_SYNC_DRIFT_SECONDS;
-      }
-    }
-
-    return PLAYER_SYNC_DRIFT_SECONDS;
   }
 
   mutePlayer() {
