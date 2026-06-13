@@ -1,6 +1,6 @@
-import { renderQrSvg } from "../utils/qr.js?v=20260613-tv-reveal-fix";
-import { loadYouTubeIframeApi } from "../utils/youtube.js?v=20260613-tv-reveal-fix";
-import { escapeHtml, renderAvatar } from "../utils/ui.js?v=20260613-tv-reveal-fix";
+import { renderQrSvg } from "../utils/qr.js?v=20260613-tv-no-reveal-cue";
+import { loadYouTubeIframeApi } from "../utils/youtube.js?v=20260613-tv-no-reveal-cue";
+import { escapeHtml, renderAvatar } from "../utils/ui.js?v=20260613-tv-no-reveal-cue";
 
 const TV_TOKEN_STORAGE_KEY = "mq_tv_device_token";
 const TV_PAIRING_POLL_INTERVAL_MS = 1000;
@@ -877,15 +877,9 @@ export class TvController {
       return true;
     }
 
-    if (this.isRoundPendingStart(round) || this.isRoundAnswerOpen(round)) {
-      return false;
-    }
-
-    if (this.isRoundRevealVisible(round) && !this.hasTrackSolution(round.track)) {
-      return false;
-    }
-
-    return this.isNextVoteAvailable(round);
+    // A single YouTube iframe cannot cue the next track without replacing the
+    // current revealed video. Keep the player untouched until the next round.
+    return false;
   }
 
   handlePlayerError(event) {
