@@ -1,6 +1,6 @@
-import { renderQrSvg } from "../utils/qr.js?v=20260613-tv-preload-loop";
-import { loadYouTubeIframeApi } from "../utils/youtube.js?v=20260613-tv-preload-loop";
-import { escapeHtml, renderAvatar } from "../utils/ui.js?v=20260613-tv-preload-loop";
+import { renderQrSvg } from "../utils/qr.js?v=20260613-tv-reveal-fix";
+import { loadYouTubeIframeApi } from "../utils/youtube.js?v=20260613-tv-reveal-fix";
+import { escapeHtml, renderAvatar } from "../utils/ui.js?v=20260613-tv-reveal-fix";
 
 const TV_TOKEN_STORAGE_KEY = "mq_tv_device_token";
 const TV_PAIRING_POLL_INTERVAL_MS = 1000;
@@ -392,6 +392,7 @@ export class TvController {
     const track = round?.track || null;
     const pendingStart = this.isRoundPendingStart(round);
     const revealVisible = this.isRoundRevealVisible(round);
+    const solutionVisible = revealVisible && this.hasTrackSolution(track);
     const acceptingAnswers = this.isRoundAnswerOpen(round);
     const hasRound = Boolean(round?.id);
     const presentationKey = this.buildRoundPresentationKey({
@@ -444,18 +445,28 @@ export class TvController {
       if (hintEl) {
         hintEl.textContent = acceptingAnswers
           ? "Les joueurs répondent sur leur téléphone ou ordinateur."
-          : "La solution est affichée pour tout le monde.";
+          : solutionVisible
+            ? "La solution est affichée pour tout le monde."
+            : "La solution arrive sur l'écran TV.";
       }
       if (overlayTitle) {
-        overlayTitle.textContent = acceptingAnswers ? "Vidéo cachée" : "Solution révélée";
+        overlayTitle.textContent = acceptingAnswers
+          ? "Vidéo cachée"
+          : solutionVisible
+            ? "Solution révélée"
+            : "Révélation en cours";
       }
       if (overlayCopy) {
-        overlayCopy.textContent = acceptingAnswers ? "Écoute l'extrait." : "Regarde la réponse.";
+        overlayCopy.textContent = acceptingAnswers
+          ? "Écoute l'extrait."
+          : solutionVisible
+            ? "Regarde la réponse."
+            : "La réponse va s'afficher.";
       }
     }
 
-    this.setVideoConcealed(!revealVisible);
-    this.renderSolution(track, revealVisible);
+    this.setVideoConcealed(!solutionVisible);
+    this.renderSolution(track, solutionVisible);
     if (!track?.youtube_video_id) {
       this.stopPlayer();
       this.maybeCueUpcomingTrack();
@@ -493,6 +504,9 @@ export class TvController {
       round.status,
       track?.youtube_video_id || "",
       track?.category_name || "",
+      track?.family_name || "",
+      track?.title || "",
+      track?.artist || "",
       pendingStart ? "pending" : "",
       pendingSeconds,
       acceptingAnswers ? "answers" : "",
@@ -513,6 +527,10 @@ export class TvController {
 
     family.textContent = track.family_name || "Réponse";
     detail.textContent = [track.title, track.artist].filter(Boolean).join(" - ");
+  }
+
+  hasTrackSolution(track) {
+    return Boolean(track?.family_name || track?.title || track?.artist);
   }
 
   startTimer() {
@@ -860,6 +878,10 @@ export class TvController {
     }
 
     if (this.isRoundPendingStart(round) || this.isRoundAnswerOpen(round)) {
+      return false;
+    }
+
+    if (this.isRoundRevealVisible(round) && !this.hasTrackSolution(round.track)) {
       return false;
     }
 
