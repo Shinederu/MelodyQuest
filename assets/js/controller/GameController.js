@@ -1,7 +1,7 @@
 import { getCurrentLobby, setCurrentLobby, clearCurrentLobby } from "../utils/LobbyState.js";
-import { loadYouTubeIframeApi } from "../utils/youtube.js?v=20260613-resync-lead";
-import { escapeAttribute, escapeHtml, formatPlayerRole, formatRank, renderAvatar } from "../utils/ui.js?v=20260613-resync-lead";
-import { ClockSync, recordSyncDiagnostic } from "../utils/ClockSync.js?v=20260613-resync-lead";
+import { loadYouTubeIframeApi } from "../utils/youtube.js?v=20260613-backend-late-sync";
+import { escapeAttribute, escapeHtml, formatPlayerRole, formatRank, renderAvatar } from "../utils/ui.js?v=20260613-backend-late-sync";
+import { ClockSync, recordSyncDiagnostic } from "../utils/ClockSync.js?v=20260613-backend-late-sync";
 
 const PLAYER_VOLUME_STORAGE_KEY = "mq_game_volume";
 const PLAYER_ONLY_MODE_STORAGE_KEY = "mq_game_player_only_mode";
@@ -11,7 +11,6 @@ const TIMER_RING_CIRCUMFERENCE = 2 * Math.PI * TIMER_RING_RADIUS;
 const PLAYER_START_SYNC_DRIFT_SECONDS = 0.65;
 const PLAYER_RECOVERY_DRIFT_SECONDS = 0.65;
 const PLAYER_LATE_HARD_CATCHUP_SECONDS = 0.65;
-const PLAYER_RESYNC_LEAD_SECONDS = 0.25;
 const PLAYER_SYNC_INTERVAL_MS = 500;
 const PLAYER_SYNC_COOLDOWN_MS = 1500;
 const PLAYER_PLAY_RETRY_COOLDOWN_MS = 1500;
@@ -1812,14 +1811,12 @@ export class GameController {
 
     const recoveryDecision = this.getPlayerRecoveryDecision({ force, drift, delta, state, nowMs, expectedTime, currentTime, duration });
     if (recoveryDecision.shouldSeek) {
-      const seekTime = this.getResyncTargetSeconds(expectedTime, duration);
-      this.safePlayerCall(() => this.player.seekTo(seekTime, true));
+      this.safePlayerCall(() => this.player.seekTo(expectedTime, true));
       this.playerLastSeekAtMs = nowMs;
       this.recordPlayerSyncDiagnostic(recoveryDecision.hard ? "seek-hard-catchup" : "seek-recovery", {
         drift,
         delta,
         expectedTime,
-        seekTime,
         currentTime,
         state,
       });
@@ -1879,14 +1876,12 @@ export class GameController {
       startRelease: true,
     });
     if (recoveryDecision.shouldSeek && typeof this.player.seekTo === "function") {
-      const seekTime = this.getResyncTargetSeconds(expectedTime, duration);
-      this.safePlayerCall(() => this.player.seekTo(seekTime, true));
+      this.safePlayerCall(() => this.player.seekTo(expectedTime, true));
       this.playerLastSeekAtMs = nowMs;
       this.recordPlayerSyncDiagnostic(recoveryDecision.hard ? "seek-hard-before-release" : "seek-before-release", {
         drift,
         delta,
         expectedTime,
-        seekTime,
         currentTime,
         state,
       });
@@ -1924,8 +1919,7 @@ export class GameController {
       return { shouldSeek: false, hard: false };
     }
 
-    const seekTime = this.getResyncTargetSeconds(expectedTime, duration);
-    if (this.isSeekTargetBuffered(seekTime, duration, currentTime)) {
+    if (this.isSeekTargetBuffered(expectedTime, duration, currentTime)) {
       return { shouldSeek: true, hard: false };
     }
 
@@ -1935,17 +1929,6 @@ export class GameController {
 
     this.recordPlayerSyncDiagnostic("skip-seek-unbuffered", { drift, delta, expectedTime, currentTime, state });
     return { shouldSeek: false, hard: false };
-  }
-
-  getResyncTargetSeconds(expectedTime, durationSeconds = this.getPlayerDurationSeconds()) {
-    const expected = Math.max(0, Number(expectedTime || 0));
-    const target = expected + PLAYER_RESYNC_LEAD_SECONDS;
-    const duration = Number(durationSeconds || 0);
-    if (duration > 1) {
-      return Math.min(Math.max(0, duration - 0.25), target);
-    }
-
-    return target;
   }
 
   isPlayerBufferingState(state) {

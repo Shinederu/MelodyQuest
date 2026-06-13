@@ -1,7 +1,7 @@
-import { renderQrSvg } from "../utils/qr.js?v=20260613-resync-lead";
-import { loadYouTubeIframeApi } from "../utils/youtube.js?v=20260613-resync-lead";
-import { escapeHtml, renderAvatar } from "../utils/ui.js?v=20260613-resync-lead";
-import { ClockSync, recordSyncDiagnostic } from "../utils/ClockSync.js?v=20260613-resync-lead";
+import { renderQrSvg } from "../utils/qr.js?v=20260613-backend-late-sync";
+import { loadYouTubeIframeApi } from "../utils/youtube.js?v=20260613-backend-late-sync";
+import { escapeHtml, renderAvatar } from "../utils/ui.js?v=20260613-backend-late-sync";
+import { ClockSync, recordSyncDiagnostic } from "../utils/ClockSync.js?v=20260613-backend-late-sync";
 
 const TV_TOKEN_STORAGE_KEY = "mq_tv_device_token";
 const TV_PAIRING_POLL_INTERVAL_MS = 1000;
@@ -12,7 +12,6 @@ const TV_TIMER_INTERVAL_MS = 500;
 const TV_PLAYER_VOLUME = 100;
 const PLAYER_START_SYNC_DRIFT_SECONDS = 0.65;
 const PLAYER_RECOVERY_DRIFT_SECONDS = 0.65;
-const PLAYER_RESYNC_LEAD_SECONDS = 0.25;
 const PLAYER_SYNC_COOLDOWN_MS = 2500;
 const PLAYER_BUFFERING_SEEK_GRACE_MS = 5000;
 const PLAYER_BUFFERING_HARD_DRIFT_SECONDS = 8;
@@ -997,8 +996,7 @@ export class TvController {
     const wanted = this.getTargetVideoTime(round);
     const current = Number(this.player.getCurrentTime() || 0);
     const state = typeof this.player.getPlayerState === "function" ? Number(this.player.getPlayerState()) : -1;
-    const duration = this.getPlayerDurationSeconds();
-    const drift = this.computePlaybackDriftSeconds(current, wanted, duration);
+    const drift = this.computePlaybackDriftSeconds(current, wanted, this.getPlayerDurationSeconds());
 
     if (pendingStart) {
       this.warmupPlayerForPendingStart(round);
@@ -1018,14 +1016,13 @@ export class TvController {
         nowMs,
         wanted,
         current,
-        duration,
+        duration: this.getPlayerDurationSeconds(),
       })
       && typeof this.player.seekTo === "function"
     ) {
-      const seekTime = this.getResyncTargetSeconds(wanted, duration);
-      this.player.seekTo(seekTime, true);
+      this.player.seekTo(wanted, true);
       this.playerLastSeekAtMs = nowMs;
-      this.recordPlayerSyncDiagnostic("seek-recovery", { drift, wanted, seekTime, current, state });
+      this.recordPlayerSyncDiagnostic("seek-recovery", { drift, wanted, current, state });
     }
 
     this.applyAudioState({ allowPlayback: false });
@@ -1078,17 +1075,16 @@ export class TvController {
     const wanted = this.getTargetVideoTime(round);
     const current = typeof this.player.getCurrentTime === "function" ? Number(this.player.getCurrentTime() || 0) : 0;
     const duration = this.getPlayerDurationSeconds();
-    const seekTime = this.getResyncTargetSeconds(wanted, duration);
     if (
       drift > PLAYER_START_SYNC_DRIFT_SECONDS
       && typeof this.player.seekTo === "function"
       && (nowMs - this.playerLastSeekAtMs) >= PLAYER_SYNC_COOLDOWN_MS
-      && this.isSeekTargetBuffered(seekTime, duration, current)
+      && this.isSeekTargetBuffered(wanted, duration, current)
     ) {
-      this.player.seekTo(seekTime, true);
+      this.player.seekTo(wanted, true);
       this.playerLastSeekAtMs = nowMs;
       this.setStageStatus("Synchronisation du son...", true);
-      this.recordPlayerSyncDiagnostic("seek-before-release", { drift, wanted, seekTime, current, state });
+      this.recordPlayerSyncDiagnostic("seek-before-release", { drift, wanted, current, state });
       return false;
     }
 
@@ -1121,24 +1117,12 @@ export class TvController {
       return false;
     }
 
-    const seekTime = this.getResyncTargetSeconds(wanted, duration);
-    if (!this.isSeekTargetBuffered(seekTime, duration, current)) {
+    if (!this.isSeekTargetBuffered(wanted, duration, current)) {
       this.recordPlayerSyncDiagnostic("skip-seek-unbuffered", { drift, wanted, current, state });
       return false;
     }
 
     return true;
-  }
-
-  getResyncTargetSeconds(wantedTime, durationSeconds = this.getPlayerDurationSeconds()) {
-    const wanted = Math.max(0, Number(wantedTime || 0));
-    const target = wanted + PLAYER_RESYNC_LEAD_SECONDS;
-    const duration = Number(durationSeconds || 0);
-    if (duration > 1) {
-      return Math.min(Math.max(0, duration - 0.25), target);
-    }
-
-    return target;
   }
 
   isPlayerBufferingState(state) {
