@@ -1,7 +1,7 @@
-import { renderQrSvg } from "../utils/qr.js?v=20260613-double-buffer";
-import { loadYouTubeIframeApi } from "../utils/youtube.js?v=20260613-double-buffer";
-import { escapeHtml, renderAvatar } from "../utils/ui.js?v=20260613-double-buffer";
-import { ClockSync, recordSyncDiagnostic } from "../utils/ClockSync.js?v=20260613-double-buffer";
+import { renderQrSvg } from "../utils/qr.js?v=20260613-tight-sync";
+import { loadYouTubeIframeApi } from "../utils/youtube.js?v=20260613-tight-sync";
+import { escapeHtml, renderAvatar } from "../utils/ui.js?v=20260613-tight-sync";
+import { ClockSync, recordSyncDiagnostic } from "../utils/ClockSync.js?v=20260613-tight-sync";
 
 const TV_TOKEN_STORAGE_KEY = "mq_tv_device_token";
 const TV_PAIRING_POLL_INTERVAL_MS = 1000;
@@ -17,6 +17,7 @@ const PLAYER_SYNC_COOLDOWN_MS = 8000;
 const PLAYER_BUFFERING_SEEK_GRACE_MS = 5000;
 const PLAYER_BUFFERING_HARD_DRIFT_SECONDS = 8;
 const PLAYER_PLAY_RETRY_COOLDOWN_MS = 1500;
+const PLAYER_WARMUP_LOOP_SECONDS = 1.8;
 const TV_ROUND_START_PLAY_LEAD_MS = 90;
 const TV_HARD_SEEK_MIN_DRIFT_SECONDS = 1.4;
 
@@ -36,7 +37,6 @@ export class TvController {
     this.lastRenderedLobbyKey = "";
     this.lastRenderedPlayersKey = "";
     this.lastRoundPresentationKey = "";
-    this.playerHostId = "tv-video-player";
     this.player = null;
     this.playerReady = false;
     this.playerVideoId = "";
@@ -47,12 +47,8 @@ export class TvController {
     this.playerAudioReleasedRoundId = 0;
     this.playerErrorVideoId = "";
     this.playerErrorMessage = "";
-    this.preloadPlayer = null;
-    this.preloadPlayerReady = false;
-    this.preloadPlayerHostId = "tv-video-preload-player";
-    this.preloadPlayerVideoId = "";
-    this.preloadPlayerRequestedVideoId = "";
-    this.preloadPlayerLastPlayAttemptAtMs = 0;
+    this.preloadedVideoId = "";
+    this.preloadRequestedVideoId = "";
 
     document.getElementById("btn-tv-new-pairing")?.addEventListener("click", () => this.resetPairing());
     document.getElementById("btn-tv-stage-new-pairing")?.addEventListener("click", () => this.resetPairing());
@@ -127,7 +123,8 @@ export class TvController {
     this.playerLastPlayAttemptAtMs = 0;
     this.playerErrorVideoId = "";
     this.playerErrorMessage = "";
-    this.destroyPreloadPlayer();
+    this.preloadedVideoId = "";
+    this.preloadRequestedVideoId = "";
     if (this.player && typeof this.player.stopVideo === "function") {
       this.player.stopVideo();
     }
@@ -298,6 +295,8 @@ export class TvController {
       this.playerAudioReleasedRoundId = 0;
       this.playerErrorVideoId = "";
       this.playerErrorMessage = "";
+      this.preloadedVideoId = "";
+      this.preloadRequestedVideoId = "";
       this.lastRoundPresentationKey = "";
     }
 
@@ -699,7 +698,7 @@ export class TvController {
   }
 
   async ensurePlayer(videoId, round) {
-    const host = document.getElementById(this.playerHostId);
+    const host = document.getElementById("tv-video-player");
     if (!host || !videoId || !round?.id) return;
 
     const pendingStart = this.isRoundPendingStart(round);
@@ -713,7 +712,7 @@ export class TvController {
         this.playerReady = false;
         this.playerVideoId = videoId;
         this.playerLastLoadAtMs = Date.now();
-        this.player = new YT.Player(this.playerHostId, {
+        this.player = new YT.Player("tv-video-player", {
           videoId,
           playerVars: {
             autoplay: 1,
@@ -752,17 +751,10 @@ export class TvController {
         return;
       }
 
-      if (this.promotePreloadPlayer(videoId)) {
+      if (this.preloadedVideoId === videoId) {
+        this.preloadedVideoId = "";
+        this.preloadRequestedVideoId = "";
         this.playerAudioReleasedRoundId = 0;
-        this.playerLastSeekAtMs = 0;
-        this.playerLastPlayAttemptAtMs = 0;
-        this.preparePlayerForRoundSync(round);
-        if (pendingStart) {
-          this.warmupPlayerForPendingStart(round);
-        } else {
-          this.syncPlayer(round, true);
-        }
-        return;
       }
 
       if (this.playerVideoId !== videoId && typeof this.player.loadVideoById === "function") {
@@ -799,46 +791,31 @@ export class TvController {
     const upcoming = this.getUpcomingTrack();
     const videoId = String(upcoming?.youtube_video_id || "").trim();
     if (!videoId || !this.shouldCueUpcomingTrack(videoId)) {
-      if (!videoId) {
-        this.destroyPreloadPlayer();
-      }
       return;
     }
 
-    await this.ensureUpcomingPlayer(upcoming);
-  }
-
-  async ensureUpcomingPlayer(track) {
-    const videoId = String(track?.youtube_video_id || "").trim();
-    if (!videoId || this.playerVideoId === videoId) {
-      this.destroyPreloadPlayer();
+    if (this.preloadedVideoId === videoId || this.preloadRequestedVideoId === videoId) {
       return;
     }
 
-    this.preloadPlayerRequestedVideoId = videoId;
-    const startOffset = this.getTrackStartOffsetSeconds(track);
-    let host = document.getElementById(this.preloadPlayerHostId);
-    if (!host) {
-      const shell = document.getElementById("tv-video") || document.body;
-      host = document.createElement("div");
-      host.id = this.preloadPlayerHostId;
-      host.className = "mq-video-preload-player";
-      shell.appendChild(host);
-    }
+    this.preloadRequestedVideoId = videoId;
+    const startOffset = this.getTrackStartOffsetSeconds(upcoming);
 
     try {
       const YT = await loadYouTubeIframeApi();
-      if (this.isDestroyed || this.preloadPlayerRequestedVideoId !== videoId || !this.shouldCueUpcomingTrack(videoId)) {
+      if (this.isDestroyed || this.preloadRequestedVideoId !== videoId || !this.shouldCueUpcomingTrack(videoId)) {
         return;
       }
 
-      if (!this.preloadPlayer) {
-        this.preloadPlayerReady = false;
-        this.preloadPlayerVideoId = videoId;
-        this.preloadPlayer = new YT.Player(this.preloadPlayerHostId, {
+      if (!this.player) {
+        this.playerReady = false;
+        this.playerVideoId = videoId;
+        this.preloadedVideoId = videoId;
+        this.playerLastLoadAtMs = Date.now();
+        this.player = new YT.Player("tv-video-player", {
           videoId,
           playerVars: {
-            autoplay: 1,
+            autoplay: 0,
             controls: 0,
             disablekb: 1,
             modestbranding: 1,
@@ -850,33 +827,35 @@ export class TvController {
           },
           events: {
             onReady: () => {
-              this.preloadPlayerReady = true;
-              this.preloadPlayerVideoId = videoId;
-              this.primeUpcomingPlayer(startOffset);
+              this.playerReady = true;
+              this.playerVideoId = videoId;
+              this.preloadedVideoId = videoId;
+              this.mutePlayer();
             },
             onError: (event) => this.handlePlayerError(event),
           },
         });
+        this.setVideoConcealed(true);
         return;
       }
 
-      if (!this.preloadPlayerReady) {
+      if (!this.playerReady || typeof this.player.cueVideoById !== "function") {
+        this.preloadRequestedVideoId = "";
         return;
       }
 
-      if (this.preloadPlayerVideoId === videoId) {
-        this.keepUpcomingPlayerWarm();
-        return;
-      }
-
-      this.preloadPlayerVideoId = videoId;
-      this.preloadPlayer.loadVideoById({
+      this.playerVideoId = videoId;
+      this.preloadedVideoId = videoId;
+      this.playerAudioReleasedRoundId = 0;
+      this.playerLastSeekAtMs = 0;
+      this.mutePlayer();
+      this.player.cueVideoById({
         videoId,
         startSeconds: Math.floor(startOffset),
       });
-      this.primeUpcomingPlayer(startOffset);
+      this.setVideoConcealed(true);
     } catch {
-      this.preloadPlayerRequestedVideoId = "";
+      this.preloadRequestedVideoId = "";
     }
   }
 
@@ -898,88 +877,16 @@ export class TvController {
       return false;
     }
 
-    return this.playerVideoId !== videoId;
-  }
-
-  primeUpcomingPlayer(startOffset = 0) {
-    if (!this.preloadPlayer || !this.preloadPlayerReady) {
-      return;
+    if (!round?.id) {
+      return true;
     }
 
-    const safeOffset = Math.floor(Math.max(0, Number(startOffset || 0)));
-    this.safePreloadPlayerCall(() => {
-      if (typeof this.preloadPlayer.mute === "function") this.preloadPlayer.mute();
-      if (typeof this.preloadPlayer.setVolume === "function") this.preloadPlayer.setVolume(0);
-      if (typeof this.preloadPlayer.seekTo === "function") this.preloadPlayer.seekTo(safeOffset, false);
-    });
-    this.keepUpcomingPlayerWarm();
-  }
-
-  keepUpcomingPlayerWarm() {
-    if (!this.preloadPlayer || !this.preloadPlayerReady) {
-      return;
-    }
-
-    this.safePreloadPlayerCall(() => {
-      if (typeof this.preloadPlayer.mute === "function") this.preloadPlayer.mute();
-      if (typeof this.preloadPlayer.setVolume === "function") this.preloadPlayer.setVolume(0);
-      if (
-        typeof this.preloadPlayer.playVideo === "function"
-        && (Date.now() - this.preloadPlayerLastPlayAttemptAtMs) >= PLAYER_PLAY_RETRY_COOLDOWN_MS
-      ) {
-        this.preloadPlayerLastPlayAttemptAtMs = Date.now();
-        this.preloadPlayer.playVideo();
-      }
-    });
-  }
-
-  promotePreloadPlayer(videoId) {
-    if (!this.preloadPlayer || !this.preloadPlayerReady || this.preloadPlayerVideoId !== videoId) {
-      return false;
-    }
-
-    const activeHost = document.getElementById(this.playerHostId);
-    const preloadHost = document.getElementById(this.preloadPlayerHostId);
-    if (activeHost && preloadHost) {
-      activeHost.id = "tv-video-player-swap";
-      preloadHost.id = this.playerHostId;
-      activeHost.id = this.preloadPlayerHostId;
-      preloadHost.classList.remove("mq-video-preload-player");
-      preloadHost.classList.add("mq-video-player");
-      activeHost.classList.remove("mq-video-player");
-      activeHost.classList.add("mq-video-preload-player");
-    }
-
-    const previousPlayer = this.player;
-    const previousReady = this.playerReady;
-    const previousVideoId = this.playerVideoId;
-    const previousRequestedVideoId = this.playerRequestedVideoId;
-
-    this.player = this.preloadPlayer;
-    this.playerReady = this.preloadPlayerReady;
-    this.playerVideoId = this.preloadPlayerVideoId;
-    this.playerRequestedVideoId = videoId;
-
-    this.preloadPlayer = previousPlayer;
-    this.preloadPlayerReady = previousReady;
-    this.preloadPlayerVideoId = previousVideoId;
-    this.preloadPlayerRequestedVideoId = previousRequestedVideoId;
-    this.preloadPlayerLastPlayAttemptAtMs = 0;
-
-    this.safePreloadPlayerCall(() => {
-      if (typeof this.preloadPlayer.mute === "function") this.preloadPlayer.mute();
-      if (typeof this.preloadPlayer.setVolume === "function") this.preloadPlayer.setVolume(0);
-    });
-
-    return true;
+    // A single YouTube iframe cannot cue the next track without replacing the
+    // current revealed video. Keep the player untouched until the next round.
+    return false;
   }
 
   handlePlayerError(event) {
-    if (event?.target && this.preloadPlayer && event.target === this.preloadPlayer) {
-      this.destroyPreloadPlayer();
-      return;
-    }
-
     const message = this.describeYouTubeError(event?.data);
     this.playerErrorVideoId = String(this.playerVideoId || this.playerRequestedVideoId || "");
     this.playerErrorMessage = message;
@@ -1024,32 +931,31 @@ export class TvController {
     this.playerAudioReleasedRoundId = 0;
   }
 
-  destroyPreloadPlayer() {
-    if (this.preloadPlayer) {
-      this.safePreloadPlayerCall(() => this.preloadPlayer.stopVideo());
-      this.safePreloadPlayerCall(() => this.preloadPlayer.destroy());
-    }
-
-    this.preloadPlayer = null;
-    this.preloadPlayerReady = false;
-    this.preloadPlayerVideoId = "";
-    this.preloadPlayerRequestedVideoId = "";
-    this.preloadPlayerLastPlayAttemptAtMs = 0;
-
-    document.getElementById(this.preloadPlayerHostId)?.remove();
-  }
-
   warmupPlayerForPendingStart(round) {
     if (!this.playerReady || !this.player || !this.isRoundPendingStart(round)) {
       return;
     }
 
-    const state = typeof this.player.getPlayerState === "function" ? Number(this.player.getPlayerState()) : -1;
     const nowMs = Date.now();
+    const state = typeof this.player.getPlayerState === "function" ? Number(this.player.getPlayerState()) : -1;
+    const startOffset = this.getTrackStartOffsetSeconds(round?.track, this.getPlayerDurationSeconds());
+    const current = typeof this.player.getCurrentTime === "function"
+      ? Number(this.player.getCurrentTime() || 0)
+      : startOffset;
 
     try {
       if (typeof this.player.mute === "function") this.player.mute();
       if (typeof this.player.setVolume === "function") this.player.setVolume(0);
+
+      if (
+        Number.isFinite(current)
+        && current > startOffset + PLAYER_WARMUP_LOOP_SECONDS
+        && typeof this.player.seekTo === "function"
+        && (nowMs - this.playerLastSeekAtMs) >= PLAYER_SYNC_COOLDOWN_MS
+      ) {
+        this.player.seekTo(startOffset, true);
+        this.playerLastSeekAtMs = nowMs;
+      }
 
       if (
         typeof this.player.playVideo === "function"
@@ -1079,6 +985,11 @@ export class TvController {
 
   syncPlayer(round, force = false) {
     if (!this.playerReady || !this.player || !round?.id || typeof this.player.getCurrentTime !== "function") {
+      return;
+    }
+
+    const currentVideoId = String(round?.track?.youtube_video_id || "").trim();
+    if (this.preloadedVideoId && this.playerVideoId === this.preloadedVideoId && currentVideoId !== this.playerVideoId) {
       return;
     }
 
@@ -1115,7 +1026,7 @@ export class TvController {
       && typeof this.player.seekTo === "function"
     ) {
       const seekTime = this.getResyncTargetSeconds(wanted, duration);
-      this.player.seekTo(seekTime, false);
+      this.player.seekTo(seekTime, true);
       this.playerLastSeekAtMs = nowMs;
       this.recordPlayerSyncDiagnostic("seek-recovery", { drift, delta, wanted, seekTime, current, state });
     }
@@ -1172,12 +1083,12 @@ export class TvController {
     const duration = this.getPlayerDurationSeconds();
     const seekTime = this.getResyncTargetSeconds(wanted, duration);
     if (
-      drift > PLAYER_START_SYNC_DRIFT_SECONDS
+      delta > TV_HARD_SEEK_MIN_DRIFT_SECONDS
       && typeof this.player.seekTo === "function"
       && (nowMs - this.playerLastSeekAtMs) >= PLAYER_SYNC_COOLDOWN_MS
       && this.isSeekTargetBuffered(seekTime, duration, current)
     ) {
-      this.player.seekTo(seekTime, false);
+      this.player.seekTo(seekTime, true);
       this.playerLastSeekAtMs = nowMs;
       this.setStageStatus("Synchronisation du son...", true);
       this.recordPlayerSyncDiagnostic("seek-before-release", { drift, delta, wanted, seekTime, current, state });
@@ -1354,18 +1265,6 @@ export class TvController {
     try {
       if (typeof this.player.mute === "function") this.player.mute();
       if (typeof this.player.setVolume === "function") this.player.setVolume(0);
-    } catch {
-      // noop
-    }
-  }
-
-  safePreloadPlayerCall(fn) {
-    if (!this.preloadPlayer || typeof fn !== "function") {
-      return;
-    }
-
-    try {
-      fn();
     } catch {
       // noop
     }

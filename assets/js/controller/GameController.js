@@ -1,7 +1,7 @@
 import { getCurrentLobby, setCurrentLobby, clearCurrentLobby } from "../utils/LobbyState.js";
-import { loadYouTubeIframeApi } from "../utils/youtube.js?v=20260613-double-buffer";
-import { escapeAttribute, escapeHtml, formatPlayerRole, formatRank, renderAvatar } from "../utils/ui.js?v=20260613-double-buffer";
-import { ClockSync, recordSyncDiagnostic } from "../utils/ClockSync.js?v=20260613-double-buffer";
+import { loadYouTubeIframeApi } from "../utils/youtube.js?v=20260613-tight-sync";
+import { escapeAttribute, escapeHtml, formatPlayerRole, formatRank, renderAvatar } from "../utils/ui.js?v=20260613-tight-sync";
+import { ClockSync, recordSyncDiagnostic } from "../utils/ClockSync.js?v=20260613-tight-sync";
 
 const PLAYER_VOLUME_STORAGE_KEY = "mq_game_volume";
 const PLAYER_ONLY_MODE_STORAGE_KEY = "mq_game_player_only_mode";
@@ -16,6 +16,7 @@ const PLAYER_SYNC_INTERVAL_MS = 500;
 const PLAYER_SYNC_COOLDOWN_MS = 1500;
 const PLAYER_PLAY_RETRY_COOLDOWN_MS = 1500;
 const ROUND_START_PLAY_LEAD_MS = 60;
+const PRELOAD_PRIME_MS = 1400;
 
 export class GameController {
   constructor() {
@@ -65,7 +66,7 @@ export class GameController {
     this.preloadPlayerHostId = "game-video-preload-player";
     this.preloadPlayerVideoId = "";
     this.preloadPlayerRequestedVideoId = "";
-    this.preloadPlayerLastPlayAttemptAtMs = 0;
+    this.preloadPrimeTimeout = null;
     this.playerVolume = this.loadStoredVolume();
     this.playerOnlyMode = this.loadPlayerOnlyMode();
     this.isLobbyCodeHidden = false;
@@ -1556,7 +1557,7 @@ export class GameController {
       this.player = new window.YT.Player(this.playerHostId, {
         videoId,
         playerVars: {
-          autoplay: 1,
+          autoplay: pendingStart ? 0 : 1,
           controls: 0,
           disablekb: 1,
           fs: 0,
@@ -1586,20 +1587,18 @@ export class GameController {
     }
 
     if (this.playerVideoId !== videoId) {
-      if (this.promotePreloadPlayer(videoId)) {
-        this.playerAudioReleasedRoundId = 0;
-        this.playerLastSeekAtMs = 0;
-        this.playerLastPlayAttemptAtMs = 0;
-        this.mutePlayer();
-        this.schedulePlayerSync(true, pendingStart ? 100 : 120);
-        return;
-      }
-
       this.playerVideoId = videoId;
-      this.safePlayerCall(() => this.player.loadVideoById({
-        videoId,
-        startSeconds: previewStartOffset,
-      }));
+      if (pendingStart && typeof this.player.cueVideoById === "function") {
+        this.safePlayerCall(() => this.player.cueVideoById({
+          videoId,
+          startSeconds: previewStartOffset,
+        }));
+      } else {
+        this.safePlayerCall(() => this.player.loadVideoById({
+          videoId,
+          startSeconds: previewStartOffset,
+        }));
+      }
       this.playerAudioReleasedRoundId = 0;
       this.playerLastPlayAttemptAtMs = 0;
       this.mutePlayer();
@@ -1624,11 +1623,6 @@ export class GameController {
     const videoId = String(track?.youtube_video_id || "").trim();
     const currentVideoId = String(currentRound?.track?.youtube_video_id || "").trim();
     if (!videoId || videoId === currentVideoId) {
-      this.destroyPreloadPlayer();
-      return;
-    }
-
-    if (this.playerVideoId === videoId) {
       this.destroyPreloadPlayer();
       return;
     }
@@ -1676,7 +1670,7 @@ export class GameController {
             this.preloadPlayerVideoId = videoId;
             this.primeUpcomingPlayer(startOffset);
           },
-          onError: (event) => this.handlePlayerError(event),
+          onError: () => this.destroyPreloadPlayer(),
         },
       });
       return;
@@ -1687,7 +1681,6 @@ export class GameController {
     }
 
     if (this.preloadPlayerVideoId === videoId) {
-      this.keepUpcomingPlayerWarm();
       return;
     }
 
@@ -1704,80 +1697,30 @@ export class GameController {
       return;
     }
 
+    if (this.preloadPrimeTimeout) {
+      window.clearTimeout(this.preloadPrimeTimeout);
+      this.preloadPrimeTimeout = null;
+    }
+
     const safeOffset = Math.floor(Math.max(0, Number(startOffset || 0)));
     this.safePreloadPlayerCall(() => {
       if (typeof this.preloadPlayer.mute === "function") this.preloadPlayer.mute();
       if (typeof this.preloadPlayer.setVolume === "function") this.preloadPlayer.setVolume(0);
-      if (typeof this.preloadPlayer.seekTo === "function") this.preloadPlayer.seekTo(safeOffset, false);
-    });
-    this.keepUpcomingPlayerWarm();
-  }
-
-  keepUpcomingPlayerWarm() {
-    if (!this.preloadPlayer || !this.preloadPlayerReady) {
-      return;
-    }
-
-    this.safePreloadPlayerCall(() => {
-      if (typeof this.preloadPlayer.mute === "function") this.preloadPlayer.mute();
-      if (typeof this.preloadPlayer.setVolume === "function") this.preloadPlayer.setVolume(0);
-      if (
-        typeof this.preloadPlayer.playVideo === "function"
-        && (Date.now() - this.preloadPlayerLastPlayAttemptAtMs) >= PLAYER_PLAY_RETRY_COOLDOWN_MS
-      ) {
-        this.preloadPlayerLastPlayAttemptAtMs = Date.now();
-        this.preloadPlayer.playVideo();
-      }
-    });
-  }
-
-  promotePreloadPlayer(videoId) {
-    if (!this.preloadPlayer || !this.preloadPlayerReady || this.preloadPlayerVideoId !== videoId) {
-      return false;
-    }
-
-    const activeHost = document.getElementById(this.playerHostId);
-    const preloadHost = document.getElementById(this.preloadPlayerHostId);
-    if (activeHost && preloadHost) {
-      activeHost.id = "game-video-player-swap";
-      preloadHost.id = this.playerHostId;
-      activeHost.id = this.preloadPlayerHostId;
-      preloadHost.classList.remove("mq-video-preload-player");
-      preloadHost.classList.add("mq-video-player");
-      activeHost.classList.remove("mq-video-player");
-      activeHost.classList.add("mq-video-preload-player");
-    }
-
-    const previousPlayer = this.player;
-    const previousReady = this.playerReady;
-    const previousVideoId = this.playerVideoId;
-    const previousRequestedVideoId = this.playerRequestedVideoId;
-
-    this.player = this.preloadPlayer;
-    this.playerReady = this.preloadPlayerReady;
-    this.playerVideoId = this.preloadPlayerVideoId;
-    this.playerRequestedVideoId = videoId;
-
-    this.preloadPlayer = previousPlayer;
-    this.preloadPlayerReady = previousReady;
-    this.preloadPlayerVideoId = previousVideoId;
-    this.preloadPlayerRequestedVideoId = previousRequestedVideoId;
-    this.preloadPlayerLastPlayAttemptAtMs = 0;
-
-    this.safePreloadPlayerCall(() => {
-      if (typeof this.preloadPlayer.mute === "function") this.preloadPlayer.mute();
-      if (typeof this.preloadPlayer.setVolume === "function") this.preloadPlayer.setVolume(0);
+      if (typeof this.preloadPlayer.seekTo === "function") this.preloadPlayer.seekTo(safeOffset, true);
+      if (typeof this.preloadPlayer.playVideo === "function") this.preloadPlayer.playVideo();
     });
 
-    return true;
+    this.preloadPrimeTimeout = window.setTimeout(() => {
+      this.preloadPrimeTimeout = null;
+      this.safePreloadPlayerCall(() => {
+        if (typeof this.preloadPlayer.pauseVideo === "function") this.preloadPlayer.pauseVideo();
+        if (typeof this.preloadPlayer.seekTo === "function") this.preloadPlayer.seekTo(safeOffset, true);
+      });
+    }, PRELOAD_PRIME_MS);
   }
 
   handlePlayerStateChange(event) {
     if (this.playerOnlyMode || !this.player || !this.playerReady || !window.YT?.PlayerState) {
-      return;
-    }
-
-    if (event?.target && event.target !== this.player) {
       return;
     }
 
@@ -1798,11 +1741,6 @@ export class GameController {
 
   handlePlayerError(event) {
     if (this.playerOnlyMode) {
-      return;
-    }
-
-    if (event?.target && this.preloadPlayer && event.target === this.preloadPlayer) {
-      this.destroyPreloadPlayer();
       return;
     }
 
@@ -1853,8 +1791,12 @@ export class GameController {
 
     if (pendingStart) {
       this.mutePlayer();
-      if (state !== window.YT.PlayerState.PLAYING && state !== window.YT.PlayerState.BUFFERING) {
-        this.ensurePlayerIsPlaying();
+      if (drift > 0.35 && typeof this.player.seekTo === "function") {
+        this.safePlayerCall(() => this.player.seekTo(expectedTime, true));
+        this.playerLastSeekAtMs = nowMs;
+      }
+      if (state === window.YT.PlayerState.PLAYING && typeof this.player.pauseVideo === "function") {
+        this.safePlayerCall(() => this.player.pauseVideo());
       }
 
       const remainingMs = this.getMsUntilRoundStart(this.roundState?.round);
@@ -1871,7 +1813,7 @@ export class GameController {
     const recoveryDecision = this.getPlayerRecoveryDecision({ force, drift, delta, state, nowMs, expectedTime, currentTime, duration });
     if (recoveryDecision.shouldSeek) {
       const seekTime = this.getResyncTargetSeconds(expectedTime, duration);
-      this.safePlayerCall(() => this.player.seekTo(seekTime, recoveryDecision.hard));
+      this.safePlayerCall(() => this.player.seekTo(seekTime, true));
       this.playerLastSeekAtMs = nowMs;
       this.recordPlayerSyncDiagnostic(recoveryDecision.hard ? "seek-hard-catchup" : "seek-recovery", {
         drift,
@@ -1938,7 +1880,7 @@ export class GameController {
     });
     if (recoveryDecision.shouldSeek && typeof this.player.seekTo === "function") {
       const seekTime = this.getResyncTargetSeconds(expectedTime, duration);
-      this.safePlayerCall(() => this.player.seekTo(seekTime, recoveryDecision.hard));
+      this.safePlayerCall(() => this.player.seekTo(seekTime, true));
       this.playerLastSeekAtMs = nowMs;
       this.recordPlayerSyncDiagnostic(recoveryDecision.hard ? "seek-hard-before-release" : "seek-before-release", {
         drift,
@@ -2206,6 +2148,11 @@ export class GameController {
   }
 
   destroyPreloadPlayer() {
+    if (this.preloadPrimeTimeout) {
+      window.clearTimeout(this.preloadPrimeTimeout);
+      this.preloadPrimeTimeout = null;
+    }
+
     if (this.preloadPlayer) {
       this.safePreloadPlayerCall(() => this.preloadPlayer.stopVideo());
       this.safePreloadPlayerCall(() => this.preloadPlayer.destroy());
@@ -2215,7 +2162,6 @@ export class GameController {
     this.preloadPlayerReady = false;
     this.preloadPlayerVideoId = "";
     this.preloadPlayerRequestedVideoId = "";
-    this.preloadPlayerLastPlayAttemptAtMs = 0;
 
     document.getElementById(this.preloadPlayerHostId)?.remove();
   }

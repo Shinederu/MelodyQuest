@@ -8,22 +8,22 @@ Ce depot contient uniquement le client navigateur. Le backend source vit dans `P
 
 ## Etat de pause - 2026-06-12
 
-Le projet est mis en pause dans un etat stable de reprise. Les changements applicatifs de reference ont restaure le mode TV sur un lecteur YouTube iframe simple, puis la passe `20260613-double-buffer` a introduit un double-buffer interne controle par MelodyQuest:
+Le projet est mis en pause dans un etat stable de reprise. Les changements applicatifs de reference ont restaure le mode TV sur un lecteur YouTube iframe simple, puis une passe player a reduit le buffering sans retenter le double lecteur:
 
-- cache-bust JS courant: `20260613-double-buffer`;
-- cache-bust CSS courant: `20260613-double-buffer-css`;
+- cache-bust JS courant: `20260613-tight-sync`;
+- cache-bust CSS courant: `20260613-tv-hidden-video`;
 - commit frontend applicatif de reference: `295dd11 Restore basic MelodyQuest TV player`;
 - commit API applicatif de reference: `28dbdda Remove MelodyQuest TV ready playback flow`;
 - fichiers deployes dans `P:\PROD\MelodyQuest` et `P:\PROD\API\melodyquest`.
 
-Etat player 2026-06-13: la qualite YouTube n'est plus forcee en 1080p, les domaines YouTube sont preconnectes, l'API iframe est prechauffee en entrant dans le lobby/game/TV, les erreurs YouTube sont affichees clairement et le timing backend reste la reference stricte. La passe `20260613-double-buffer` utilise deux lecteurs YouTube par vue video: le lecteur actif joue la manche courante, le lecteur cache charge et lit en muet la prochaine piste, puis les deux slots sont inverses a la manche suivante. Les joueurs PC/mobile gardent une correction stricte autour de `0.30s` avec cible `backend + 0.25s`; la TV n'utilise pas cette avance et reserve les seeks aux recalages bufferises pour limiter les spinners. Les iframes caches ne sont pas en `display:none`, afin de laisser YouTube bufferiser. Point sensible a reprendre plus tard: les Smart TV peuvent limiter deux iframes YouTube actifs selon leur navigateur. L'hebergement local de fichiers audio a ete refuse; YouTube doit rester la source principale.
+Etat player 2026-06-13: la qualite YouTube n'est plus forcee en 1080p, les domaines YouTube sont preconnectes, l'API iframe est prechauffee en entrant dans le lobby/game/TV, les erreurs YouTube sont affichees clairement et le timing backend reste la reference stricte. La passe `20260613-tight-sync` resserre les joueurs PC/mobile: recalage avant liberation du son a partir d'environ `0.28s`, recuperation en cours de lecture a partir d'environ `0.30s`, cible de seek `backend + 0.25s` pour compenser le delai de reprise YouTube. La TV garde un lecteur YouTube unique et plus prudent: pas d'avance `+0.25s`, pas de seek arriere, seeks espaces et reserves aux retards importants afin d'eviter le spinner/rechargement permanent. Pendant la phase solution/vote, le lecteur courant n'est plus touche: avec un iframe unique, cue la piste suivante remplace visuellement la video revelee. Point sensible a reprendre plus tard: le chargement YouTube sur TV peut encore avoir des delais ou coupures selon la video/le navigateur. Les essais avec double lecteur TV, prechargement TV actif et signal backend "TV prete" ont ete abandonnes car ils ont provoque des cas sans video/son. Ne pas les remettre sans nouvelle piste verifiee. L'hebergement local de fichiers audio a ete refuse; YouTube doit rester la source principale.
 
 Dernieres verifications connues:
 
 - `Get-ChildItem .\assets\js -Recurse -Filter *.js | % { node --check $_.FullName }`
 - `git -c safe.directory=* diff --check`
 - `rg -n "console\.|alert\(|debugger" assets`
-- smoke test `/tv`: QR affiche, script `20260613-double-buffer`, CSS `20260613-double-buffer-css`, aucune erreur console.
+- smoke test `/tv`: QR affiche, script `20260613-tight-sync`, CSS `20260613-tv-hidden-video`, aucun conteneur `tv-video-preload-player`, aucune erreur console.
 
 ## Reprise rapide agent
 
@@ -208,7 +208,7 @@ Les assets sont servis avec cache long. En cas de changement frontend, mettre a 
 
 Convention conseillee: `YYYYMMDD-sujet-court`, par exemple `20260610-agent-audit`.
 
-Le cache-bust `20260612-tv-basic-player` marque le rollback volontaire du mode TV vers un lecteur YouTube actif simple. Le cache-bust `20260613-player-warmup` garde ce lecteur simple, retire le 1080p force, prechauffe YouTube et ajoute les erreurs player explicites. Le cache-bust JS `20260613-tv-preload-loop` reduit la charge de la vue TV et ajoute le prechargement de la piste suivante via le lecteur unique. Le cache-bust JS `20260613-tv-reveal-fix` corrige l'affichage de la solution TV quand les champs de reponse arrivent dans un snapshot sans nouvelle revision. Le cache-bust JS `20260613-tv-no-reveal-cue` empeche le lecteur TV de cue la piste suivante pendant la phase solution/vote. Le cache-bust JS `20260613-player-clock-sync` ajoute la correction RTT de l'horloge client et rend les seeks de recuperation buffer-aware. Le cache-bust JS `20260613-player-subsecond-sync` resserre les seuils de recalage sous la seconde. Le cache-bust JS `20260613-mobile-catchup` autorise un rattrapage dur cote joueur quand le telephone reste nettement en retard. Le cache-bust JS `20260613-backend-late-sync` fixe le seuil de retard maximum a `0.65s` par rapport au timing backend. Le cache-bust JS `20260613-double-buffer` introduit deux lecteurs alternes sur game/TV: prochaine piste lue en muet et cachee, promotion du slot deja charge a la manche suivante, puis rechargement de l'ancien slot avec la piste d'apres. Le cache-bust CSS `20260613-double-buffer-css` force le rafraichissement du style des iframes caches.
+Le cache-bust `20260612-tv-basic-player` marque le rollback volontaire du mode TV vers un lecteur YouTube actif simple. Le cache-bust `20260613-player-warmup` garde ce lecteur simple, retire le 1080p force, prechauffe YouTube et ajoute les erreurs player explicites. Le cache-bust JS `20260613-tv-preload-loop` reduit la charge de la vue TV et ajoute le prechargement de la piste suivante via le lecteur unique. Le cache-bust JS `20260613-tv-reveal-fix` corrige l'affichage de la solution TV quand les champs de reponse arrivent dans un snapshot sans nouvelle revision. Le cache-bust JS `20260613-tv-no-reveal-cue` empeche le lecteur TV de cue la piste suivante pendant la phase solution/vote. Le cache-bust JS `20260613-player-clock-sync` ajoute la correction RTT de l'horloge client et rend les seeks de recuperation buffer-aware. Le cache-bust JS `20260613-player-subsecond-sync` resserre les seuils de recalage sous la seconde. Le cache-bust JS `20260613-mobile-catchup` autorise un rattrapage dur cote joueur quand le telephone reste nettement en retard. Le cache-bust JS `20260613-backend-late-sync` fixe le seuil de retard maximum a `0.65s` par rapport au timing backend. Le cache-bust JS `20260613-tight-sync` abaisse la tolerance PC/mobile autour de `0.30s` avec cible `backend + 0.25s`, et rend la TV moins agressive pour eviter les rechargements en boucle. Le cache-bust CSS `20260613-tv-hidden-video` force le rafraichissement du style qui reduit la surface de l'iframe TV quand la video est masquee.
 
 ## Diagnostics player
 
@@ -257,9 +257,9 @@ Get-ChildItem P:\PROD\MelodyQuest -Force |
 
 - Verifier que `P:\PROD` reflete bien le contenu servi par Nginx avant de conclure qu'un deploiement est live.
 - Tester un vrai salon avec au moins deux joueurs si le changement touche `#/lobby`, `#/game`, les votes, suggestions ou scores.
-- Tester `/tv` + `#/tv-link` avec le double-buffer actuel: un slot actif visible/revele et un slot cache en lecture muette pour la prochaine piste.
+- Tester `/tv` + `#/tv-link` uniquement avec le lecteur TV simple actuel, sans recreer de lecteur d'avance.
 - Garder `#/lobby-list` pour compatibilite, meme si la liste publique est maintenant visible depuis `#/main`.
-- Si la TV regresse, verifier d'abord le comportement des deux iframes actifs sur le modele de navigateur concerne avant de revenir au lecteur unique.
+- Les optimisations de chargement YouTube TV restent ouvertes, mais doivent etre traitees comme une nouvelle recherche technique, pas comme une restauration du double lecteur precedent.
 
 ## Nginx attendu
 
