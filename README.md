@@ -10,20 +10,20 @@ Ce depot contient uniquement le client navigateur. Le backend source vit dans `P
 
 Le projet est mis en pause dans un etat stable de reprise. Les changements applicatifs de reference ont restaure le mode TV sur un lecteur YouTube iframe simple, puis une passe player a reduit le buffering sans retenter le double lecteur:
 
-- cache-bust JS courant: `20260613-tv-no-reveal-cue`;
+- cache-bust JS courant: `20260613-player-sync-tight`;
 - cache-bust CSS courant: `20260613-tv-hidden-video`;
 - commit frontend applicatif de reference: `295dd11 Restore basic MelodyQuest TV player`;
 - commit API applicatif de reference: `28dbdda Remove MelodyQuest TV ready playback flow`;
 - fichiers deployes dans `P:\PROD\MelodyQuest` et `P:\PROD\API\melodyquest`.
 
-Etat player 2026-06-13: la qualite YouTube n'est plus forcee en 1080p, les domaines YouTube sont preconnectes, l'API iframe est prechauffee en entrant dans le lobby/game/TV, les erreurs YouTube sont affichees clairement et la resynchronisation du player joueur est moins agressive. La TV garde un lecteur YouTube unique: elle limite les re-renders via la revision backend, poll moins vite hors phase d'ecoute, met son timer a jour toutes les 500 ms, peut preparer la prochaine piste avec `cueVideoById` seulement quand aucune manche n'est active et reduit la surface reelle de l'iframe quand la video est masquee. La cle de rendu TV inclut les champs de solution pour eviter qu'un snapshot revele mais encore masque bloque l'affichage de la reponse. Pendant la phase solution/vote, le lecteur courant n'est plus touche: avec un iframe unique, cue la piste suivante remplace visuellement la video revelee. Point sensible a reprendre plus tard: le chargement YouTube sur TV peut encore avoir des delais ou coupures selon la video/le navigateur. Les essais avec double lecteur TV, prechargement TV actif et signal backend "TV prete" ont ete abandonnes car ils ont provoque des cas sans video/son. Ne pas les remettre sans nouvelle piste verifiee. L'hebergement local de fichiers audio a ete refuse; YouTube doit rester la source principale.
+Etat player 2026-06-13: la qualite YouTube n'est plus forcee en 1080p, les domaines YouTube sont preconnectes, l'API iframe est prechauffee en entrant dans le lobby/game/TV, les erreurs YouTube sont affichees clairement et la resynchronisation du player joueur/TV vise maintenant un drift inferieur a une seconde. L'horloge serveur est estimee avec le temps aller-retour HTTP et n'est plus recalee par chaque evenement Mercure recu, pour eviter que deux appareils calculent une position de lecture differente selon leur latence. La TV garde un lecteur YouTube unique: elle limite les re-renders via la revision backend, poll moins vite hors phase d'ecoute, met son timer a jour toutes les 500 ms, peut preparer la prochaine piste avec `cueVideoById` seulement quand aucune manche n'est active et reduit la surface reelle de l'iframe quand la video est masquee. La cle de rendu TV inclut les champs de solution pour eviter qu'un snapshot revele mais encore masque bloque l'affichage de la reponse. Pendant la phase solution/vote, le lecteur courant n'est plus touche: avec un iframe unique, cue la piste suivante remplace visuellement la video revelee. Point sensible a reprendre plus tard: le chargement YouTube sur TV peut encore avoir des delais ou coupures selon la video/le navigateur. Les essais avec double lecteur TV, prechargement TV actif et signal backend "TV prete" ont ete abandonnes car ils ont provoque des cas sans video/son. Ne pas les remettre sans nouvelle piste verifiee. L'hebergement local de fichiers audio a ete refuse; YouTube doit rester la source principale.
 
 Dernieres verifications connues:
 
 - `Get-ChildItem .\assets\js -Recurse -Filter *.js | % { node --check $_.FullName }`
 - `git -c safe.directory=* diff --check`
 - `rg -n "console\.|alert\(|debugger" assets`
-- smoke test `/tv`: QR affiche, script `20260613-tv-no-reveal-cue`, CSS `20260613-tv-hidden-video`, aucun conteneur `tv-video-preload-player`, aucune erreur console.
+- smoke test `/tv`: QR affiche, script `20260613-player-sync-tight`, CSS `20260613-tv-hidden-video`, aucun conteneur `tv-video-preload-player`, aucune erreur console.
 
 ## Reprise rapide agent
 
@@ -208,7 +208,7 @@ Les assets sont servis avec cache long. En cas de changement frontend, mettre a 
 
 Convention conseillee: `YYYYMMDD-sujet-court`, par exemple `20260610-agent-audit`.
 
-Le cache-bust `20260612-tv-basic-player` marque le rollback volontaire du mode TV vers un lecteur YouTube actif simple. Le cache-bust `20260613-player-warmup` garde ce lecteur simple, retire le 1080p force, prechauffe YouTube et ajoute les erreurs player explicites. Le cache-bust JS `20260613-tv-preload-loop` reduit la charge de la vue TV et ajoute le prechargement de la piste suivante via le lecteur unique. Le cache-bust JS `20260613-tv-reveal-fix` corrige l'affichage de la solution TV quand les champs de reponse arrivent dans un snapshot sans nouvelle revision. Le cache-bust JS `20260613-tv-no-reveal-cue` empeche le lecteur TV de cue la piste suivante pendant la phase solution/vote. Le cache-bust CSS `20260613-tv-hidden-video` force le rafraichissement du style qui reduit la surface de l'iframe TV quand la video est masquee.
+Le cache-bust `20260612-tv-basic-player` marque le rollback volontaire du mode TV vers un lecteur YouTube actif simple. Le cache-bust `20260613-player-warmup` garde ce lecteur simple, retire le 1080p force, prechauffe YouTube et ajoute les erreurs player explicites. Le cache-bust JS `20260613-tv-preload-loop` reduit la charge de la vue TV et ajoute le prechargement de la piste suivante via le lecteur unique. Le cache-bust JS `20260613-tv-reveal-fix` corrige l'affichage de la solution TV quand les champs de reponse arrivent dans un snapshot sans nouvelle revision. Le cache-bust JS `20260613-tv-no-reveal-cue` empeche le lecteur TV de cue la piste suivante pendant la phase solution/vote. Le cache-bust JS `20260613-player-sync-tight` resserre les seuils de drift game/TV et stabilise l'estimation d'horloge serveur via les timings HTTP. Le cache-bust CSS `20260613-tv-hidden-video` force le rafraichissement du style qui reduit la surface de l'iframe TV quand la video est masquee.
 
 ## Verifications
 

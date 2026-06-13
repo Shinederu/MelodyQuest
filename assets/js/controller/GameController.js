@@ -1,15 +1,17 @@
 import { getCurrentLobby, setCurrentLobby, clearCurrentLobby } from "../utils/LobbyState.js";
-import { loadYouTubeIframeApi } from "../utils/youtube.js?v=20260613-player-warmup";
-import { escapeAttribute, escapeHtml, formatPlayerRole, formatRank, renderAvatar } from "../utils/ui.js?v=20260610-shared-utils";
+import { loadYouTubeIframeApi } from "../utils/youtube.js?v=20260613-player-sync-tight";
+import { escapeAttribute, escapeHtml, formatPlayerRole, formatRank, renderAvatar } from "../utils/ui.js?v=20260613-player-sync-tight";
 
 const PLAYER_VOLUME_STORAGE_KEY = "mq_game_volume";
 const PLAYER_ONLY_MODE_STORAGE_KEY = "mq_game_player_only_mode";
 const DEFAULT_PLAYER_VOLUME = 70;
 const TIMER_RING_RADIUS = 44;
 const TIMER_RING_CIRCUMFERENCE = 2 * Math.PI * TIMER_RING_RADIUS;
-const PLAYER_SYNC_DRIFT_SECONDS = 1.15;
-const PLAYER_SYNC_INTERVAL_MS = 2500;
-const PLAYER_SYNC_COOLDOWN_MS = 1000;
+const PLAYER_SYNC_DRIFT_SECONDS = 0.55;
+const PLAYER_START_SYNC_DRIFT_SECONDS = 0.32;
+const PLAYER_START_SYNC_WINDOW_SECONDS = 6;
+const PLAYER_SYNC_INTERVAL_MS = 900;
+const PLAYER_SYNC_COOLDOWN_MS = 650;
 const PLAYER_PLAY_RETRY_COOLDOWN_MS = 1500;
 const ROUND_START_PLAY_LEAD_MS = 60;
 const PRELOAD_PRIME_MS = 1400;
@@ -41,6 +43,8 @@ export class GameController {
     this.autoNextEnabled = false;
     this.resultNavigationTriggered = false;
     this.serverClockOffsetMs = 0;
+    this.serverClockOffsetInitialized = false;
+    this.serverClockOffsetRttMs = Number.POSITIVE_INFINITY;
     this.realtimeConnected = false;
     this.hasRealtimeOpened = false;
     this.lastRealtimeRevision = "";
@@ -138,6 +142,9 @@ export class GameController {
       scoreboard: { items: scoreboard.data?.items ?? [] },
       round: roundState.data || { round: null, answers: [] },
       realtime: detail.data?.realtime ?? null,
+    }, {
+      roundTiming: roundState.meta?.timing,
+      clockSource: "http",
     });
 
     this.startRealtime();
@@ -145,7 +152,7 @@ export class GameController {
     this.startPlayerSyncLoop();
   }
 
-  applySnapshot(snapshot = {}) {
+  applySnapshot(snapshot = {}, options = {}) {
     if (this.isDestroyed) {
       return;
     }
@@ -162,9 +169,7 @@ export class GameController {
     }
     if (snapshot?.round) {
       const serverTimeUnix = Number(snapshot.round?.server_time_unix || 0);
-      if (serverTimeUnix > 0) {
-        this.serverClockOffsetMs = Date.now() - (serverTimeUnix * 1000);
-      }
+      this.updateServerClockOffset(serverTimeUnix, options.roundTiming ?? null, options.clockSource || "realtime");
       this.trackRoundChange(snapshot.round.round);
       this.roundState = snapshot.round;
     }
@@ -176,6 +181,39 @@ export class GameController {
     this.renderScoreboard();
     this.updateRoundPresentation();
     this.startTimerLoop();
+  }
+
+  updateServerClockOffset(serverTimeUnix, timing = null, source = "realtime") {
+    if (!(serverTimeUnix > 0)) {
+      return;
+    }
+
+    const timingMidpoint = Number(timing?.midpoint_at_ms || 0);
+    const rttMs = Number(timing?.rtt_ms || Number.POSITIVE_INFINITY);
+    const isHttpTiming = source === "http" && timingMidpoint > 0;
+
+    if (!isHttpTiming && this.serverClockOffsetInitialized) {
+      return;
+    }
+
+    const referenceClientTimeMs = isHttpTiming ? timingMidpoint : Date.now();
+    const nextOffsetMs = referenceClientTimeMs - (serverTimeUnix * 1000);
+
+    if (!this.serverClockOffsetInitialized) {
+      this.serverClockOffsetMs = nextOffsetMs;
+      this.serverClockOffsetInitialized = true;
+      this.serverClockOffsetRttMs = rttMs;
+      return;
+    }
+
+    if (!isHttpTiming) {
+      return;
+    }
+
+    const shouldTrustMore = rttMs <= this.serverClockOffsetRttMs + 80;
+    const smoothing = shouldTrustMore ? 0.35 : 0.12;
+    this.serverClockOffsetMs = (this.serverClockOffsetMs * (1 - smoothing)) + (nextOffsetMs * smoothing);
+    this.serverClockOffsetRttMs = Math.min(this.serverClockOffsetRttMs, rttMs);
   }
 
   trackRoundChange(round) {
@@ -1469,6 +1507,9 @@ export class GameController {
       scoreboard: { items: scoreRes.success ? (scoreRes.data?.items ?? this.scoreboard) : this.scoreboard },
       round: roundRes.data,
       realtime: this.realtimeConfig,
+    }, {
+      roundTiming: roundRes.meta?.timing,
+      clockSource: "http",
     });
   }
 
@@ -1782,7 +1823,7 @@ export class GameController {
 
     if (pendingStart) {
       this.mutePlayer();
-      if (drift > 0.35 && typeof this.player.seekTo === "function") {
+      if (drift > PLAYER_START_SYNC_DRIFT_SECONDS && typeof this.player.seekTo === "function") {
         this.safePlayerCall(() => this.player.seekTo(expectedTime, true));
         this.playerLastSeekAtMs = nowMs;
       }
@@ -1802,7 +1843,7 @@ export class GameController {
     }
 
     if (
-      (force || drift > PLAYER_SYNC_DRIFT_SECONDS)
+      (force || drift > this.getPlayerSyncDriftThreshold(this.roundState?.round))
       && (force || (nowMs - this.playerLastSeekAtMs) >= PLAYER_SYNC_COOLDOWN_MS)
     ) {
       this.safePlayerCall(() => this.player.seekTo(expectedTime, true));
@@ -1852,7 +1893,7 @@ export class GameController {
     }
 
     if (
-      drift > PLAYER_SYNC_DRIFT_SECONDS
+      drift > this.getPlayerSyncDriftThreshold(this.roundState?.round)
       && typeof this.player.seekTo === "function"
       && (nowMs - this.playerLastSeekAtMs) >= PLAYER_SYNC_COOLDOWN_MS
     ) {
@@ -1886,6 +1927,22 @@ export class GameController {
     }
 
     return startOffset + elapsedSeconds;
+  }
+
+  getPlayerSyncDriftThreshold(round = this.roundState?.round) {
+    if (!round?.id) {
+      return PLAYER_SYNC_DRIFT_SECONDS;
+    }
+
+    const startedAtUnix = Number(round?.started_at_unix || 0);
+    if (startedAtUnix > 0) {
+      const elapsedSeconds = Math.max(0, (this.getNowMs() / 1000) - startedAtUnix);
+      if (elapsedSeconds <= PLAYER_START_SYNC_WINDOW_SECONDS) {
+        return PLAYER_START_SYNC_DRIFT_SECONDS;
+      }
+    }
+
+    return PLAYER_SYNC_DRIFT_SECONDS;
   }
 
   getPlayerDurationSeconds() {

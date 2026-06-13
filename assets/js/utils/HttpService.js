@@ -40,6 +40,7 @@ export class HttpService {
   }
 
   async request(baseUrl, method, action, body = null) {
+    const requestStartedAtMs = Date.now();
     const url = new URL(baseUrl);
     url.searchParams.set("action", action);
 
@@ -69,12 +70,21 @@ export class HttpService {
     } catch {
       json = { message: "Server returned no JSON", data: null };
     }
+    const requestEndedAtMs = Date.now();
 
     return {
       success: json.success ?? false,
       message: json.message ?? "",
       error: json.error ?? "",
       data: json.data ?? null,
+      meta: {
+        timing: {
+          started_at_ms: requestStartedAtMs,
+          ended_at_ms: requestEndedAtMs,
+          midpoint_at_ms: requestStartedAtMs + ((requestEndedAtMs - requestStartedAtMs) / 2),
+          rtt_ms: Math.max(0, requestEndedAtMs - requestStartedAtMs),
+        },
+      },
     };
   }
 
