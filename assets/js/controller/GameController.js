@@ -1,15 +1,17 @@
 import { getCurrentLobby, setCurrentLobby, clearCurrentLobby } from "../utils/LobbyState.js";
-import { loadYouTubeIframeApi } from "../utils/youtube.js?v=20260613-player-warmup";
-import { escapeAttribute, escapeHtml, formatPlayerRole, formatRank, renderAvatar } from "../utils/ui.js?v=20260610-shared-utils";
+import { loadYouTubeIframeApi } from "../utils/youtube.js?v=20260613-player-clock-sync";
+import { escapeAttribute, escapeHtml, formatPlayerRole, formatRank, renderAvatar } from "../utils/ui.js?v=20260613-player-clock-sync";
+import { ClockSync, recordSyncDiagnostic } from "../utils/ClockSync.js?v=20260613-player-clock-sync";
 
 const PLAYER_VOLUME_STORAGE_KEY = "mq_game_volume";
 const PLAYER_ONLY_MODE_STORAGE_KEY = "mq_game_player_only_mode";
 const DEFAULT_PLAYER_VOLUME = 70;
 const TIMER_RING_RADIUS = 44;
 const TIMER_RING_CIRCUMFERENCE = 2 * Math.PI * TIMER_RING_RADIUS;
-const PLAYER_SYNC_DRIFT_SECONDS = 1.15;
+const PLAYER_START_SYNC_DRIFT_SECONDS = 1.15;
+const PLAYER_RECOVERY_DRIFT_SECONDS = 3.5;
 const PLAYER_SYNC_INTERVAL_MS = 2500;
-const PLAYER_SYNC_COOLDOWN_MS = 1000;
+const PLAYER_SYNC_COOLDOWN_MS = 7000;
 const PLAYER_PLAY_RETRY_COOLDOWN_MS = 1500;
 const ROUND_START_PLAY_LEAD_MS = 60;
 const PRELOAD_PRIME_MS = 1400;
@@ -40,7 +42,7 @@ export class GameController {
     this.videoRenderKey = "";
     this.autoNextEnabled = false;
     this.resultNavigationTriggered = false;
-    this.serverClockOffsetMs = 0;
+    this.clockSync = new ClockSync("game");
     this.realtimeConnected = false;
     this.hasRealtimeOpened = false;
     this.lastRealtimeRevision = "";
@@ -138,14 +140,14 @@ export class GameController {
       scoreboard: { items: scoreboard.data?.items ?? [] },
       round: roundState.data || { round: null, answers: [] },
       realtime: detail.data?.realtime ?? null,
-    });
+    }, roundState.meta);
 
     this.startRealtime();
     this.startHeartbeat();
     this.startPlayerSyncLoop();
   }
 
-  applySnapshot(snapshot = {}) {
+  applySnapshot(snapshot = {}, roundMeta = null) {
     if (this.isDestroyed) {
       return;
     }
@@ -161,10 +163,7 @@ export class GameController {
       this.scoreboard = snapshot.scoreboard.items;
     }
     if (snapshot?.round) {
-      const serverTimeUnix = Number(snapshot.round?.server_time_unix || 0);
-      if (serverTimeUnix > 0) {
-        this.serverClockOffsetMs = Date.now() - (serverTimeUnix * 1000);
-      }
+      this.updateClockFromRoundState(snapshot.round, roundMeta);
       this.trackRoundChange(snapshot.round.round);
       this.roundState = snapshot.round;
     }
@@ -176,6 +175,13 @@ export class GameController {
     this.renderScoreboard();
     this.updateRoundPresentation();
     this.startTimerLoop();
+  }
+
+  updateClockFromRoundState(roundState, responseMeta = null) {
+    const serverTimeUnix = Number(roundState?.server_time_unix || 0);
+    if (serverTimeUnix > 0) {
+      this.clockSync.updateFromServerTime(serverTimeUnix, responseMeta?.timing || null);
+    }
   }
 
   trackRoundChange(round) {
@@ -1116,7 +1122,7 @@ export class GameController {
   }
 
   getNowMs() {
-    return Date.now() - this.serverClockOffsetMs;
+    return this.clockSync.getNowMs();
   }
 
   getRoundStartMs(round) {
@@ -1469,7 +1475,7 @@ export class GameController {
       scoreboard: { items: scoreRes.success ? (scoreRes.data?.items ?? this.scoreboard) : this.scoreboard },
       round: roundRes.data,
       realtime: this.realtimeConfig,
-    });
+    }, roundRes.meta);
   }
 
   loadStoredVolume() {
@@ -1801,12 +1807,10 @@ export class GameController {
       return;
     }
 
-    if (
-      (force || drift > PLAYER_SYNC_DRIFT_SECONDS)
-      && (force || (nowMs - this.playerLastSeekAtMs) >= PLAYER_SYNC_COOLDOWN_MS)
-    ) {
+    if (this.shouldRecoverPlayerDrift({ force, drift, state, nowMs, expectedTime, currentTime, duration })) {
       this.safePlayerCall(() => this.player.seekTo(expectedTime, true));
       this.playerLastSeekAtMs = nowMs;
+      this.recordPlayerSyncDiagnostic("seek-recovery", { drift, expectedTime, currentTime, state });
     }
 
     if (state !== window.YT.PlayerState.PLAYING && state !== window.YT.PlayerState.BUFFERING) {
@@ -1852,18 +1856,89 @@ export class GameController {
     }
 
     if (
-      drift > PLAYER_SYNC_DRIFT_SECONDS
+      drift > PLAYER_START_SYNC_DRIFT_SECONDS
       && typeof this.player.seekTo === "function"
       && (nowMs - this.playerLastSeekAtMs) >= PLAYER_SYNC_COOLDOWN_MS
+      && this.isSeekTargetBuffered(expectedTime, this.getPlayerDurationSeconds(), this.safePlayerRead(() => Number(this.player.getCurrentTime()), 0))
     ) {
       this.safePlayerCall(() => this.player.seekTo(expectedTime, true));
       this.playerLastSeekAtMs = nowMs;
+      this.recordPlayerSyncDiagnostic("seek-before-release", { drift, expectedTime, state });
       return false;
+    }
+
+    if (drift > PLAYER_START_SYNC_DRIFT_SECONDS) {
+      this.recordPlayerSyncDiagnostic("release-with-drift", { drift, expectedTime, state });
     }
 
     this.playerAudioReleasedRoundId = roundId;
     this.applyPlayerVolume({ allowPlayback: true });
     return true;
+  }
+
+  shouldRecoverPlayerDrift({ force, drift, state, nowMs, expectedTime, currentTime, duration }) {
+    if ((nowMs - this.playerLastSeekAtMs) < PLAYER_SYNC_COOLDOWN_MS) {
+      return false;
+    }
+
+    const threshold = force
+      ? Math.min(PLAYER_RECOVERY_DRIFT_SECONDS, 2.5)
+      : PLAYER_RECOVERY_DRIFT_SECONDS;
+    if (!(drift > threshold)) {
+      return false;
+    }
+
+    if (this.isPlayerBufferingState(state)) {
+      this.recordPlayerSyncDiagnostic("skip-seek-buffering", { drift, expectedTime, currentTime, state });
+      return false;
+    }
+
+    if (!this.isSeekTargetBuffered(expectedTime, duration, currentTime)) {
+      this.recordPlayerSyncDiagnostic("skip-seek-unbuffered", { drift, expectedTime, currentTime, state });
+      return false;
+    }
+
+    return true;
+  }
+
+  isPlayerBufferingState(state) {
+    const playerState = window.YT?.PlayerState || {};
+    return state === playerState.UNSTARTED
+      || state === playerState.BUFFERING
+      || state === playerState.CUED;
+  }
+
+  isSeekTargetBuffered(targetSeconds, durationSeconds = this.getPlayerDurationSeconds(), currentSeconds = 0) {
+    const target = Number(targetSeconds || 0);
+    const current = Number(currentSeconds || 0);
+    if (!Number.isFinite(target) || target < 0) {
+      return false;
+    }
+
+    if (Number.isFinite(current) && current >= target) {
+      return true;
+    }
+
+    const duration = Number(durationSeconds || 0);
+    if (!(duration > 0) || !this.player || typeof this.player.getVideoLoadedFraction !== "function") {
+      return false;
+    }
+
+    const loadedFraction = this.safePlayerRead(() => Number(this.player.getVideoLoadedFraction()), 0);
+    if (!(loadedFraction > 0)) {
+      return false;
+    }
+
+    const loadedUntil = Math.max(0, Math.min(duration, loadedFraction * duration));
+    return target <= Math.max(0, loadedUntil - 0.75);
+  }
+
+  recordPlayerSyncDiagnostic(event, details = {}) {
+    recordSyncDiagnostic("game-player", event, {
+      roundId: Number(this.roundState?.round?.id || 0),
+      offsetMs: Math.round(this.clockSync.getOffsetMs()),
+      ...details,
+    });
   }
 
   getExpectedPlayerOffsetSeconds() {

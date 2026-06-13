@@ -1,6 +1,7 @@
-import { renderQrSvg } from "../utils/qr.js?v=20260613-tv-no-reveal-cue";
-import { loadYouTubeIframeApi } from "../utils/youtube.js?v=20260613-tv-no-reveal-cue";
-import { escapeHtml, renderAvatar } from "../utils/ui.js?v=20260613-tv-no-reveal-cue";
+import { renderQrSvg } from "../utils/qr.js?v=20260613-player-clock-sync";
+import { loadYouTubeIframeApi } from "../utils/youtube.js?v=20260613-player-clock-sync";
+import { escapeHtml, renderAvatar } from "../utils/ui.js?v=20260613-player-clock-sync";
+import { ClockSync, recordSyncDiagnostic } from "../utils/ClockSync.js?v=20260613-player-clock-sync";
 
 const TV_TOKEN_STORAGE_KEY = "mq_tv_device_token";
 const TV_PAIRING_POLL_INTERVAL_MS = 1000;
@@ -9,8 +10,9 @@ const TV_STATE_POLL_SLOW_MS = 1800;
 const TV_STATE_POLL_IDLE_MS = 2400;
 const TV_TIMER_INTERVAL_MS = 500;
 const TV_PLAYER_VOLUME = 100;
-const PLAYER_SYNC_DRIFT_SECONDS = 1.25;
-const PLAYER_SYNC_COOLDOWN_MS = 2500;
+const PLAYER_START_SYNC_DRIFT_SECONDS = 1.25;
+const PLAYER_RECOVERY_DRIFT_SECONDS = 4;
+const PLAYER_SYNC_COOLDOWN_MS = 7000;
 const PLAYER_BUFFERING_SEEK_GRACE_MS = 5000;
 const PLAYER_BUFFERING_HARD_DRIFT_SECONDS = 8;
 const PLAYER_PLAY_RETRY_COOLDOWN_MS = 1500;
@@ -27,7 +29,7 @@ export class TvController {
     this.stateInFlight = false;
     this.isDestroyed = false;
     this.snapshot = null;
-    this.serverClockOffsetMs = 0;
+    this.clockSync = new ClockSync("tv");
     this.currentRoundId = 0;
     this.lastSnapshotRevision = "";
     this.lastRenderedLobbyKey = "";
@@ -225,7 +227,7 @@ export class TvController {
         return;
       }
 
-      this.applySnapshot(response.data.snapshot);
+      this.applySnapshot(response.data.snapshot, response.meta);
       if (!this.playerErrorMessage) {
         this.setStageStatus("Synchronisé", true);
       }
@@ -269,12 +271,12 @@ export class TvController {
       || value.includes("salon");
   }
 
-  applySnapshot(snapshot) {
+  applySnapshot(snapshot, responseMeta = null) {
     this.snapshot = snapshot;
 
     const serverTimeUnix = Number(snapshot?.round?.server_time_unix || 0);
     if (serverTimeUnix > 0) {
-      this.serverClockOffsetMs = Date.now() - serverTimeUnix * 1000;
+      this.clockSync.updateFromServerTime(serverTimeUnix, responseMeta?.timing || null);
     }
 
     const revision = String(snapshot?.revision ?? "");
@@ -611,11 +613,11 @@ export class TvController {
   }
 
   getServerNowUnix() {
-    return (Date.now() - this.serverClockOffsetMs) / 1000;
+    return this.clockSync.getNowUnix();
   }
 
   getServerNowMs() {
-    return Date.now() - this.serverClockOffsetMs;
+    return this.clockSync.getNowMs();
   }
 
   getRoundStartMs(round) {
@@ -1007,11 +1009,20 @@ export class TvController {
     }
 
     if (
-      this.shouldSeekPlayer({ force, drift, state, nowMs })
+      this.shouldSeekPlayer({
+        force,
+        drift,
+        state,
+        nowMs,
+        wanted,
+        current,
+        duration: this.getPlayerDurationSeconds(),
+      })
       && typeof this.player.seekTo === "function"
     ) {
       this.player.seekTo(wanted, true);
       this.playerLastSeekAtMs = nowMs;
+      this.recordPlayerSyncDiagnostic("seek-recovery", { drift, wanted, current, state });
     }
 
     this.applyAudioState({ allowPlayback: false });
@@ -1061,11 +1072,24 @@ export class TvController {
       return false;
     }
 
-    if (drift > PLAYER_SYNC_DRIFT_SECONDS && typeof this.player.seekTo === "function") {
-      this.player.seekTo(this.getTargetVideoTime(round), true);
+    const wanted = this.getTargetVideoTime(round);
+    const current = typeof this.player.getCurrentTime === "function" ? Number(this.player.getCurrentTime() || 0) : 0;
+    const duration = this.getPlayerDurationSeconds();
+    if (
+      drift > PLAYER_START_SYNC_DRIFT_SECONDS
+      && typeof this.player.seekTo === "function"
+      && (nowMs - this.playerLastSeekAtMs) >= PLAYER_SYNC_COOLDOWN_MS
+      && this.isSeekTargetBuffered(wanted, duration, current)
+    ) {
+      this.player.seekTo(wanted, true);
       this.playerLastSeekAtMs = nowMs;
       this.setStageStatus("Synchronisation du son...", true);
+      this.recordPlayerSyncDiagnostic("seek-before-release", { drift, wanted, current, state });
       return false;
+    }
+
+    if (drift > PLAYER_START_SYNC_DRIFT_SECONDS) {
+      this.recordPlayerSyncDiagnostic("release-with-drift", { drift, wanted, current, state });
     }
 
     this.playerAudioReleasedRoundId = roundId;
@@ -1073,11 +1097,7 @@ export class TvController {
     return true;
   }
 
-  shouldSeekPlayer({ force, drift, state, nowMs }) {
-    if (force) {
-      return true;
-    }
-
+  shouldSeekPlayer({ force, drift, state, nowMs, wanted, current, duration }) {
     if ((nowMs - this.playerLastSeekAtMs) < PLAYER_SYNC_COOLDOWN_MS) {
       return false;
     }
@@ -1087,8 +1107,24 @@ export class TvController {
       return false;
     }
 
-    const threshold = isBuffering ? PLAYER_BUFFERING_HARD_DRIFT_SECONDS : PLAYER_SYNC_DRIFT_SECONDS;
-    return drift > threshold;
+    const threshold = isBuffering
+      ? PLAYER_BUFFERING_HARD_DRIFT_SECONDS
+      : (force ? Math.min(PLAYER_RECOVERY_DRIFT_SECONDS, 2.75) : PLAYER_RECOVERY_DRIFT_SECONDS);
+    if (!(drift > threshold)) {
+      return false;
+    }
+
+    if (isBuffering) {
+      this.recordPlayerSyncDiagnostic("skip-seek-buffering", { drift, wanted, current, state });
+      return false;
+    }
+
+    if (!this.isSeekTargetBuffered(wanted, duration, current)) {
+      this.recordPlayerSyncDiagnostic("skip-seek-unbuffered", { drift, wanted, current, state });
+      return false;
+    }
+
+    return true;
   }
 
   isPlayerBufferingState(state) {
@@ -1096,6 +1132,39 @@ export class TvController {
     return state === playerState.UNSTARTED
       || state === playerState.BUFFERING
       || state === playerState.CUED;
+  }
+
+  isSeekTargetBuffered(targetSeconds, durationSeconds = this.getPlayerDurationSeconds(), currentSeconds = 0) {
+    const target = Number(targetSeconds || 0);
+    const current = Number(currentSeconds || 0);
+    if (!Number.isFinite(target) || target < 0) {
+      return false;
+    }
+
+    if (Number.isFinite(current) && current >= target) {
+      return true;
+    }
+
+    const duration = Number(durationSeconds || 0);
+    if (!(duration > 0) || !this.player || typeof this.player.getVideoLoadedFraction !== "function") {
+      return false;
+    }
+
+    const loadedFraction = Number(this.player.getVideoLoadedFraction() || 0);
+    if (!(loadedFraction > 0)) {
+      return false;
+    }
+
+    const loadedUntil = Math.max(0, Math.min(duration, loadedFraction * duration));
+    return target <= Math.max(0, loadedUntil - 0.75);
+  }
+
+  recordPlayerSyncDiagnostic(event, details = {}) {
+    recordSyncDiagnostic("tv-player", event, {
+      roundId: Number(this.snapshot?.round?.round?.id || 0),
+      offsetMs: Math.round(this.clockSync.getOffsetMs()),
+      ...details,
+    });
   }
 
   getTargetVideoTime(round) {

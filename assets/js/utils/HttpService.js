@@ -61,7 +61,9 @@ export class HttpService {
       options.body = JSON.stringify(payload);
     }
 
+    const requestStartedAtMs = Date.now();
     const res = await fetch(url, options);
+    const responseReceivedAtMs = Date.now();
 
     let json;
     try {
@@ -75,6 +77,15 @@ export class HttpService {
       message: json.message ?? "",
       error: json.error ?? "",
       data: json.data ?? null,
+      meta: {
+        action,
+        method,
+        timing: {
+          requestStartedAtMs,
+          responseReceivedAtMs,
+          rttMs: Math.max(0, responseReceivedAtMs - requestStartedAtMs),
+        },
+      },
     };
   }
 
