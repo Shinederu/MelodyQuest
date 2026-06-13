@@ -1,16 +1,16 @@
 import { getCurrentLobby, setCurrentLobby, clearCurrentLobby } from "../utils/LobbyState.js";
-import { loadYouTubeIframeApi } from "../utils/youtube.js?v=20260613-tight-sync";
-import { escapeAttribute, escapeHtml, formatPlayerRole, formatRank, renderAvatar } from "../utils/ui.js?v=20260613-tight-sync";
-import { ClockSync, recordSyncDiagnostic } from "../utils/ClockSync.js?v=20260613-tight-sync";
+import { loadYouTubeIframeApi } from "../utils/youtube.js?v=20260613-resync-lead";
+import { escapeAttribute, escapeHtml, formatPlayerRole, formatRank, renderAvatar } from "../utils/ui.js?v=20260613-resync-lead";
+import { ClockSync, recordSyncDiagnostic } from "../utils/ClockSync.js?v=20260613-resync-lead";
 
 const PLAYER_VOLUME_STORAGE_KEY = "mq_game_volume";
 const PLAYER_ONLY_MODE_STORAGE_KEY = "mq_game_player_only_mode";
 const DEFAULT_PLAYER_VOLUME = 70;
 const TIMER_RING_RADIUS = 44;
 const TIMER_RING_CIRCUMFERENCE = 2 * Math.PI * TIMER_RING_RADIUS;
-const PLAYER_START_SYNC_DRIFT_SECONDS = 0.28;
-const PLAYER_RECOVERY_DRIFT_SECONDS = 0.3;
-const PLAYER_LATE_HARD_CATCHUP_SECONDS = 0.75;
+const PLAYER_START_SYNC_DRIFT_SECONDS = 0.65;
+const PLAYER_RECOVERY_DRIFT_SECONDS = 0.65;
+const PLAYER_LATE_HARD_CATCHUP_SECONDS = 0.65;
 const PLAYER_RESYNC_LEAD_SECONDS = 0.25;
 const PLAYER_SYNC_INTERVAL_MS = 500;
 const PLAYER_SYNC_COOLDOWN_MS = 1500;
