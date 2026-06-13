@@ -1,7 +1,7 @@
 import { getCurrentLobby, setCurrentLobby, clearCurrentLobby } from "../utils/LobbyState.js";
-import { loadYouTubeIframeApi } from "../utils/youtube.js?v=20260613-player-subsecond-sync";
-import { escapeAttribute, escapeHtml, formatPlayerRole, formatRank, renderAvatar } from "../utils/ui.js?v=20260613-player-subsecond-sync";
-import { ClockSync, recordSyncDiagnostic } from "../utils/ClockSync.js?v=20260613-player-subsecond-sync";
+import { loadYouTubeIframeApi } from "../utils/youtube.js?v=20260613-mobile-catchup";
+import { escapeAttribute, escapeHtml, formatPlayerRole, formatRank, renderAvatar } from "../utils/ui.js?v=20260613-mobile-catchup";
+import { ClockSync, recordSyncDiagnostic } from "../utils/ClockSync.js?v=20260613-mobile-catchup";
 
 const PLAYER_VOLUME_STORAGE_KEY = "mq_game_volume";
 const PLAYER_ONLY_MODE_STORAGE_KEY = "mq_game_player_only_mode";
@@ -10,8 +10,9 @@ const TIMER_RING_RADIUS = 44;
 const TIMER_RING_CIRCUMFERENCE = 2 * Math.PI * TIMER_RING_RADIUS;
 const PLAYER_START_SYNC_DRIFT_SECONDS = 0.75;
 const PLAYER_RECOVERY_DRIFT_SECONDS = 0.95;
-const PLAYER_SYNC_INTERVAL_MS = 2500;
-const PLAYER_SYNC_COOLDOWN_MS = 4500;
+const PLAYER_LATE_HARD_CATCHUP_SECONDS = 0.95;
+const PLAYER_SYNC_INTERVAL_MS = 1000;
+const PLAYER_SYNC_COOLDOWN_MS = 2500;
 const PLAYER_PLAY_RETRY_COOLDOWN_MS = 1500;
 const ROUND_START_PLAY_LEAD_MS = 60;
 const PRELOAD_PRIME_MS = 1400;
@@ -1784,6 +1785,7 @@ export class GameController {
     const duration = this.getPlayerDurationSeconds();
     const state = this.safePlayerRead(() => Number(this.player.getPlayerState()), -1);
     const drift = this.computePlaybackDriftSeconds(currentTime, expectedTime, duration);
+    const delta = this.computePlaybackDeltaSeconds(currentTime, expectedTime, duration);
     const pendingStart = this.isRoundPendingStart(this.roundState?.round);
 
     if (pendingStart) {
@@ -1803,14 +1805,21 @@ export class GameController {
     }
 
     if (this.playerAudioReleasedRoundId !== Number(this.roundState?.round?.id || 0)) {
-      this.releasePlayerAudioWhenReady(state, drift, nowMs, expectedTime);
+      this.releasePlayerAudioWhenReady(state, drift, delta, nowMs, expectedTime, currentTime, duration);
       return;
     }
 
-    if (this.shouldRecoverPlayerDrift({ force, drift, state, nowMs, expectedTime, currentTime, duration })) {
+    const recoveryDecision = this.getPlayerRecoveryDecision({ force, drift, delta, state, nowMs, expectedTime, currentTime, duration });
+    if (recoveryDecision.shouldSeek) {
       this.safePlayerCall(() => this.player.seekTo(expectedTime, true));
       this.playerLastSeekAtMs = nowMs;
-      this.recordPlayerSyncDiagnostic("seek-recovery", { drift, expectedTime, currentTime, state });
+      this.recordPlayerSyncDiagnostic(recoveryDecision.hard ? "seek-hard-catchup" : "seek-recovery", {
+        drift,
+        delta,
+        expectedTime,
+        currentTime,
+        state,
+      });
     }
 
     if (state !== window.YT.PlayerState.PLAYING && state !== window.YT.PlayerState.BUFFERING) {
@@ -1836,7 +1845,7 @@ export class GameController {
     }
   }
 
-  releasePlayerAudioWhenReady(state, drift, nowMs, expectedTime) {
+  releasePlayerAudioWhenReady(state, drift, delta, nowMs, expectedTime, currentTime, duration) {
     const roundId = Number(this.roundState?.round?.id || 0);
     if (!roundId || !this.player || !window.YT?.PlayerState) {
       return false;
@@ -1855,20 +1864,39 @@ export class GameController {
       return false;
     }
 
-    if (
-      drift > PLAYER_START_SYNC_DRIFT_SECONDS
-      && typeof this.player.seekTo === "function"
-      && (nowMs - this.playerLastSeekAtMs) >= PLAYER_SYNC_COOLDOWN_MS
-      && this.isSeekTargetBuffered(expectedTime, this.getPlayerDurationSeconds(), this.safePlayerRead(() => Number(this.player.getCurrentTime()), 0))
-    ) {
+    const recoveryDecision = this.getPlayerRecoveryDecision({
+      force: true,
+      drift,
+      delta,
+      state,
+      nowMs,
+      expectedTime,
+      currentTime,
+      duration,
+      startRelease: true,
+    });
+    if (recoveryDecision.shouldSeek && typeof this.player.seekTo === "function") {
       this.safePlayerCall(() => this.player.seekTo(expectedTime, true));
       this.playerLastSeekAtMs = nowMs;
-      this.recordPlayerSyncDiagnostic("seek-before-release", { drift, expectedTime, state });
+      this.recordPlayerSyncDiagnostic(recoveryDecision.hard ? "seek-hard-before-release" : "seek-before-release", {
+        drift,
+        delta,
+        expectedTime,
+        currentTime,
+        state,
+      });
+      return false;
+    }
+
+    if (delta > PLAYER_LATE_HARD_CATCHUP_SECONDS) {
+      this.mutePlayer();
+      this.ensurePlayerIsPlaying();
+      this.recordPlayerSyncDiagnostic("hold-muted-late", { drift, delta, expectedTime, currentTime, state });
       return false;
     }
 
     if (drift > PLAYER_START_SYNC_DRIFT_SECONDS) {
-      this.recordPlayerSyncDiagnostic("release-with-drift", { drift, expectedTime, state });
+      this.recordPlayerSyncDiagnostic("release-with-drift", { drift, delta, expectedTime, currentTime, state });
     }
 
     this.playerAudioReleasedRoundId = roundId;
@@ -1876,26 +1904,31 @@ export class GameController {
     return true;
   }
 
-  shouldRecoverPlayerDrift({ force, drift, state, nowMs, expectedTime, currentTime, duration }) {
+  getPlayerRecoveryDecision({ force, drift, delta, state, nowMs, expectedTime, currentTime, duration, startRelease = false }) {
     if ((nowMs - this.playerLastSeekAtMs) < PLAYER_SYNC_COOLDOWN_MS) {
-      return false;
+      return { shouldSeek: false, hard: false };
     }
 
-    if (!(drift > PLAYER_RECOVERY_DRIFT_SECONDS)) {
-      return false;
+    const threshold = startRelease ? PLAYER_START_SYNC_DRIFT_SECONDS : PLAYER_RECOVERY_DRIFT_SECONDS;
+    if (!(drift > threshold)) {
+      return { shouldSeek: false, hard: false };
     }
 
     if (this.isPlayerBufferingState(state)) {
-      this.recordPlayerSyncDiagnostic("skip-seek-buffering", { drift, expectedTime, currentTime, state });
-      return false;
+      this.recordPlayerSyncDiagnostic("skip-seek-buffering", { drift, delta, expectedTime, currentTime, state });
+      return { shouldSeek: false, hard: false };
     }
 
-    if (!this.isSeekTargetBuffered(expectedTime, duration, currentTime)) {
-      this.recordPlayerSyncDiagnostic("skip-seek-unbuffered", { drift, expectedTime, currentTime, state });
-      return false;
+    if (this.isSeekTargetBuffered(expectedTime, duration, currentTime)) {
+      return { shouldSeek: true, hard: false };
     }
 
-    return true;
+    if (delta > PLAYER_LATE_HARD_CATCHUP_SECONDS) {
+      return { shouldSeek: true, hard: true };
+    }
+
+    this.recordPlayerSyncDiagnostic("skip-seek-unbuffered", { drift, delta, expectedTime, currentTime, state });
+    return { shouldSeek: false, hard: false };
   }
 
   isPlayerBufferingState(state) {
@@ -1989,6 +2022,21 @@ export class GameController {
       Math.abs((currentTime + duration) - expectedTime),
       Math.abs(currentTime - (expectedTime + duration))
     );
+  }
+
+  computePlaybackDeltaSeconds(currentTime, expectedTime, duration) {
+    let delta = Number(expectedTime || 0) - Number(currentTime || 0);
+    if (!(duration > 1)) {
+      return delta;
+    }
+
+    const halfDuration = duration / 2;
+    if (delta > halfDuration) {
+      delta -= duration;
+    } else if (delta < -halfDuration) {
+      delta += duration;
+    }
+    return delta;
   }
 
   applyPlayerVolume({ allowPlayback = true } = {}) {
