@@ -2262,6 +2262,17 @@ body:has(.mq-tv-page) #footer {
     #04070c;
 }
 
+.mq-tv-video-shell.is-concealed .mq-video-player {
+  inset: 0 auto auto 0;
+  width: 192px;
+  height: 108px;
+}
+
+.mq-tv-video-shell.is-concealed .mq-video-player iframe {
+  width: 192px;
+  height: 108px;
+}
+
 .mq-tv-timer-readout {
   display: grid;
   justify-items: center;
