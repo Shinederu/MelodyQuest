@@ -1,7 +1,7 @@
-import { renderQrSvg } from "../utils/qr.js?v=20260613-player-subsecond-sync";
-import { loadYouTubeIframeApi } from "../utils/youtube.js?v=20260613-player-subsecond-sync";
-import { escapeHtml, renderAvatar } from "../utils/ui.js?v=20260613-player-subsecond-sync";
-import { ClockSync, recordSyncDiagnostic } from "../utils/ClockSync.js?v=20260613-player-subsecond-sync";
+import { renderQrSvg } from "../utils/qr.js?v=20260613-backend-late-sync";
+import { loadYouTubeIframeApi } from "../utils/youtube.js?v=20260613-backend-late-sync";
+import { escapeHtml, renderAvatar } from "../utils/ui.js?v=20260613-backend-late-sync";
+import { ClockSync, recordSyncDiagnostic } from "../utils/ClockSync.js?v=20260613-backend-late-sync";
 
 const TV_TOKEN_STORAGE_KEY = "mq_tv_device_token";
 const TV_PAIRING_POLL_INTERVAL_MS = 1000;
@@ -10,9 +10,9 @@ const TV_STATE_POLL_SLOW_MS = 1800;
 const TV_STATE_POLL_IDLE_MS = 2400;
 const TV_TIMER_INTERVAL_MS = 500;
 const TV_PLAYER_VOLUME = 100;
-const PLAYER_START_SYNC_DRIFT_SECONDS = 0.85;
-const PLAYER_RECOVERY_DRIFT_SECONDS = 0.95;
-const PLAYER_SYNC_COOLDOWN_MS = 5000;
+const PLAYER_START_SYNC_DRIFT_SECONDS = 0.65;
+const PLAYER_RECOVERY_DRIFT_SECONDS = 0.65;
+const PLAYER_SYNC_COOLDOWN_MS = 2500;
 const PLAYER_BUFFERING_SEEK_GRACE_MS = 5000;
 const PLAYER_BUFFERING_HARD_DRIFT_SECONDS = 8;
 const PLAYER_PLAY_RETRY_COOLDOWN_MS = 1500;
