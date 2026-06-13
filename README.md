@@ -174,8 +174,8 @@ hasPermission($userId, 'melodyquest', 'catalog.manage')
 - Topics documentes cote API:
   - `https://api.shinederu.ch/melodyquest/topics/public-lobbies`
   - `https://api.shinederu.ch/melodyquest/topics/lobbies/{LOBBY_CODE}`
-- Les anciens streams SSE restent un fallback de transition.
-- Apres une reconnexion ou une erreur temps reel, l'etat doit pouvoir etre reconstruit par API HTTP.
+- Il n'y a pas de fallback SSE supporte dans l'API actuelle.
+- Apres une reconnexion ou une erreur temps reel, l'etat est reconstruit par API HTTP (`listPublicLobbies`, `getLobbyByCode`, `getRoundState`).
 
 ## Dependances inter-projets
 
