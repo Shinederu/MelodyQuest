@@ -1,11 +1,13 @@
-import { renderQrSvg } from "../utils/qr.js?v=20260613-player-warmup";
-import { loadYouTubeIframeApi } from "../utils/youtube.js?v=20260613-player-warmup";
-import { escapeHtml, renderAvatar } from "../utils/ui.js?v=20260613-player-warmup";
+import { renderQrSvg } from "../utils/qr.js?v=20260613-tv-preload-loop";
+import { loadYouTubeIframeApi } from "../utils/youtube.js?v=20260613-tv-preload-loop";
+import { escapeHtml, renderAvatar } from "../utils/ui.js?v=20260613-tv-preload-loop";
 
 const TV_TOKEN_STORAGE_KEY = "mq_tv_device_token";
 const TV_PAIRING_POLL_INTERVAL_MS = 1000;
-const TV_STATE_POLL_INTERVAL_MS = 650;
-const TV_TIMER_INTERVAL_MS = 250;
+const TV_STATE_POLL_ACTIVE_MS = 750;
+const TV_STATE_POLL_SLOW_MS = 1800;
+const TV_STATE_POLL_IDLE_MS = 2400;
+const TV_TIMER_INTERVAL_MS = 500;
 const TV_PLAYER_VOLUME = 100;
 const PLAYER_SYNC_DRIFT_SECONDS = 1.25;
 const PLAYER_SYNC_COOLDOWN_MS = 2500;
@@ -23,9 +25,14 @@ export class TvController {
     this.timerInterval = null;
     this.pollInFlight = false;
     this.stateInFlight = false;
+    this.isDestroyed = false;
     this.snapshot = null;
     this.serverClockOffsetMs = 0;
     this.currentRoundId = 0;
+    this.lastSnapshotRevision = "";
+    this.lastRenderedLobbyKey = "";
+    this.lastRenderedPlayersKey = "";
+    this.lastRoundPresentationKey = "";
     this.player = null;
     this.playerReady = false;
     this.playerVideoId = "";
@@ -36,6 +43,8 @@ export class TvController {
     this.playerAudioReleasedRoundId = 0;
     this.playerErrorVideoId = "";
     this.playerErrorMessage = "";
+    this.preloadedVideoId = "";
+    this.preloadRequestedVideoId = "";
 
     document.getElementById("btn-tv-new-pairing")?.addEventListener("click", () => this.resetPairing());
     document.getElementById("btn-tv-stage-new-pairing")?.addEventListener("click", () => this.resetPairing());
@@ -65,6 +74,7 @@ export class TvController {
   }
 
   destroy() {
+    this.isDestroyed = true;
     this.stopPairingPolling();
     this.stopStatePolling();
     this.stopTimer();
@@ -109,6 +119,8 @@ export class TvController {
     this.playerLastPlayAttemptAtMs = 0;
     this.playerErrorVideoId = "";
     this.playerErrorMessage = "";
+    this.preloadedVideoId = "";
+    this.preloadRequestedVideoId = "";
     if (this.player && typeof this.player.stopVideo === "function") {
       this.player.stopVideo();
     }
@@ -184,25 +196,30 @@ export class TvController {
 
   startStatePolling() {
     this.stopStatePolling();
-    this.statePollInterval = window.setInterval(() => this.refreshState(), TV_STATE_POLL_INTERVAL_MS);
     this.refreshState();
   }
 
   stopStatePolling() {
     if (this.statePollInterval) {
-      window.clearInterval(this.statePollInterval);
+      window.clearTimeout(this.statePollInterval);
       this.statePollInterval = null;
     }
   }
 
   async refreshState() {
-    if (!this.deviceToken || this.stateInFlight) return;
+    if (this.isDestroyed || !this.deviceToken) return;
+    if (this.stateInFlight) {
+      this.scheduleNextStatePoll();
+      return;
+    }
 
     this.stateInFlight = true;
+    let shouldScheduleNextPoll = true;
     try {
       const response = await window.httpClient.getTvState(this.deviceToken);
       if (!response.success || !response.data?.snapshot) {
         if (this.shouldResetAfterStateError(response.error || response.message || "")) {
+          shouldScheduleNextPoll = false;
           await this.createPairing();
         }
         return;
@@ -216,7 +233,32 @@ export class TvController {
       this.setStageStatus("Connexion temporairement indisponible.", false);
     } finally {
       this.stateInFlight = false;
+      if (shouldScheduleNextPoll) {
+        this.scheduleNextStatePoll();
+      }
     }
+  }
+
+  scheduleNextStatePoll() {
+    if (this.isDestroyed || !this.deviceToken) {
+      return;
+    }
+
+    this.stopStatePolling();
+    this.statePollInterval = window.setTimeout(() => this.refreshState(), this.getStatePollDelayMs());
+  }
+
+  getStatePollDelayMs() {
+    const round = this.snapshot?.round?.round || null;
+    if (!round?.id) {
+      return TV_STATE_POLL_IDLE_MS;
+    }
+
+    if (this.isRoundPendingStart(round) || this.isRoundAnswerOpen(round)) {
+      return TV_STATE_POLL_ACTIVE_MS;
+    }
+
+    return TV_STATE_POLL_SLOW_MS;
   }
 
   shouldResetAfterStateError(message) {
@@ -235,27 +277,51 @@ export class TvController {
       this.serverClockOffsetMs = Date.now() - serverTimeUnix * 1000;
     }
 
+    const revision = String(snapshot?.revision ?? "");
+    const revisionChanged = !revision || revision !== this.lastSnapshotRevision;
+    if (revision) {
+      this.lastSnapshotRevision = revision;
+    }
+
     const roundId = Number(snapshot?.round?.round?.id || 0);
+    const roundChanged = roundId !== this.currentRoundId;
     if (roundId !== this.currentRoundId) {
       this.currentRoundId = roundId;
       this.playerRequestedVideoId = "";
       this.playerAudioReleasedRoundId = 0;
       this.playerErrorVideoId = "";
       this.playerErrorMessage = "";
+      this.preloadedVideoId = "";
+      this.preloadRequestedVideoId = "";
+      this.lastRoundPresentationKey = "";
     }
 
-    this.renderLobby();
-    this.renderPlayers();
-    this.updateRoundPresentation();
+    this.renderLobby(revisionChanged || roundChanged);
+    this.renderPlayers(revisionChanged || roundChanged);
+    this.updateRoundPresentation(revisionChanged || roundChanged);
     this.startTimer();
   }
 
-  renderLobby() {
+  renderLobby(force = false) {
     const lobby = this.snapshot?.lobby || {};
     const title = document.getElementById("tv-stage-title");
     const round = this.snapshot?.round?.round;
     const progress = document.getElementById("tv-stage-round");
     const code = document.getElementById("tv-stage-code");
+    const renderKey = [
+      lobby.id,
+      lobby.name,
+      lobby.lobby_code,
+      lobby.total_rounds,
+      lobby.current_round_number,
+      round?.id,
+      round?.round_number,
+    ].join(":");
+
+    if (!force && renderKey === this.lastRenderedLobbyKey) {
+      return;
+    }
+    this.lastRenderedLobbyKey = renderKey;
 
     if (title) {
       title.textContent = lobby.name || "MelodyQuest TV";
@@ -270,7 +336,7 @@ export class TvController {
     }
   }
 
-  renderPlayers() {
+  renderPlayers(force = false) {
     const list = document.getElementById("tv-scoreboard");
     if (!list) return;
 
@@ -292,6 +358,18 @@ export class TvController {
         if (b.score !== a.score) return b.score - a.score;
         return a._order - b._order;
       });
+    const renderKey = JSON.stringify(source.map((player) => [
+      player.user_id,
+      player.username,
+      player.avatar_url,
+      player.score,
+      solvedUsers.has(player.user_id),
+    ]));
+
+    if (!force && renderKey === this.lastRenderedPlayersKey) {
+      return;
+    }
+    this.lastRenderedPlayersKey = renderKey;
 
     list.innerHTML = source.length
       ? source.map((player, index) => `
@@ -309,13 +387,26 @@ export class TvController {
       : `<li class="mq-tv-empty">En attente des joueurs...</li>`;
   }
 
-  updateRoundPresentation() {
+  updateRoundPresentation(force = false) {
     const round = this.snapshot?.round?.round || null;
     const track = round?.track || null;
     const pendingStart = this.isRoundPendingStart(round);
     const revealVisible = this.isRoundRevealVisible(round);
     const acceptingAnswers = this.isRoundAnswerOpen(round);
     const hasRound = Boolean(round?.id);
+    const presentationKey = this.buildRoundPresentationKey({
+      round,
+      track,
+      pendingStart,
+      revealVisible,
+      acceptingAnswers,
+    });
+
+    if (!force && presentationKey === this.lastRoundPresentationKey) {
+      return;
+    }
+    this.lastRoundPresentationKey = presentationKey;
+
     const categoryEl = document.getElementById("tv-round-category");
     const phaseEl = document.getElementById("tv-round-phase");
     const hintEl = document.getElementById("tv-round-hint");
@@ -336,6 +427,7 @@ export class TvController {
       if (hintEl) hintEl.textContent = "Lance une manche depuis le salon pour démarrer l'écran TV.";
       if (overlayTitle) overlayTitle.textContent = "Salon prêt";
       if (overlayCopy) overlayCopy.textContent = "La musique apparaîtra ici.";
+      this.maybeCueUpcomingTrack();
       return;
     }
 
@@ -366,6 +458,7 @@ export class TvController {
     this.renderSolution(track, revealVisible);
     if (!track?.youtube_video_id) {
       this.stopPlayer();
+      this.maybeCueUpcomingTrack();
       return;
     }
 
@@ -376,10 +469,37 @@ export class TvController {
     }
     if (videoId && this.playerErrorVideoId === videoId) {
       this.renderPlayerError();
+      this.maybeCueUpcomingTrack();
       return;
     }
 
     this.ensurePlayer(videoId, round);
+    this.maybeCueUpcomingTrack();
+  }
+
+  buildRoundPresentationKey({ round, track, pendingStart, revealVisible, acceptingAnswers }) {
+    if (!round?.id) {
+      return [
+        "empty",
+        this.snapshot?.lobby?.id || "",
+        this.snapshot?.round?.next_track?.youtube_video_id || "",
+      ].join(":");
+    }
+
+    const pendingSeconds = pendingStart ? Math.ceil(this.getMsUntilRoundStart(round) / 1000) : "";
+    return [
+      round.id,
+      round.round_number,
+      round.status,
+      track?.youtube_video_id || "",
+      track?.category_name || "",
+      pendingStart ? "pending" : "",
+      pendingSeconds,
+      acceptingAnswers ? "answers" : "",
+      revealVisible ? "reveal" : "",
+      this.isNextVoteAvailable(round) ? "vote" : "",
+      this.playerErrorVideoId || "",
+    ].join(":");
   }
 
   renderSolution(track, visible) {
@@ -399,7 +519,9 @@ export class TvController {
     if (this.timerInterval) return;
     this.timerInterval = window.setInterval(() => {
       this.updateTimer();
+      this.updateRoundPresentation(false);
       this.syncPlayer(this.snapshot?.round?.round);
+      this.maybeCueUpcomingTrack();
     }, TV_TIMER_INTERVAL_MS);
     this.updateTimer();
   }
@@ -541,6 +663,11 @@ export class TvController {
     return status === "running" && deadlineMs > 0 && this.getServerNowMs() >= deadlineMs;
   }
 
+  isNextVoteAvailable(round) {
+    const deadline = Number(round?.next_vote_available_unix || 0);
+    return deadline > 0 && this.getServerNowUnix() >= deadline;
+  }
+
   setVideoConcealed(isConcealed) {
     const shell = document.getElementById("tv-video");
     const overlay = document.getElementById("tv-video-overlay");
@@ -602,6 +729,12 @@ export class TvController {
         return;
       }
 
+      if (this.preloadedVideoId === videoId) {
+        this.preloadedVideoId = "";
+        this.preloadRequestedVideoId = "";
+        this.playerAudioReleasedRoundId = 0;
+      }
+
       if (this.playerVideoId !== videoId && typeof this.player.loadVideoById === "function") {
         this.playerVideoId = videoId;
         this.playerLastLoadAtMs = Date.now();
@@ -630,6 +763,107 @@ export class TvController {
     } catch {
       this.setStageStatus("Impossible de charger le lecteur YouTube.", false);
     }
+  }
+
+  async maybeCueUpcomingTrack() {
+    const upcoming = this.getUpcomingTrack();
+    const videoId = String(upcoming?.youtube_video_id || "").trim();
+    if (!videoId || !this.shouldCueUpcomingTrack(videoId)) {
+      return;
+    }
+
+    if (this.preloadedVideoId === videoId || this.preloadRequestedVideoId === videoId) {
+      return;
+    }
+
+    this.preloadRequestedVideoId = videoId;
+    const startOffset = this.getTrackStartOffsetSeconds(upcoming);
+
+    try {
+      const YT = await loadYouTubeIframeApi();
+      if (this.isDestroyed || this.preloadRequestedVideoId !== videoId || !this.shouldCueUpcomingTrack(videoId)) {
+        return;
+      }
+
+      if (!this.player) {
+        this.playerReady = false;
+        this.playerVideoId = videoId;
+        this.preloadedVideoId = videoId;
+        this.playerLastLoadAtMs = Date.now();
+        this.player = new YT.Player("tv-video-player", {
+          videoId,
+          playerVars: {
+            autoplay: 0,
+            controls: 0,
+            disablekb: 1,
+            modestbranding: 1,
+            mute: 1,
+            playsinline: 1,
+            rel: 0,
+            start: Math.floor(startOffset),
+            origin: window.location.origin,
+          },
+          events: {
+            onReady: () => {
+              this.playerReady = true;
+              this.playerVideoId = videoId;
+              this.preloadedVideoId = videoId;
+              this.mutePlayer();
+            },
+            onError: (event) => this.handlePlayerError(event),
+          },
+        });
+        this.setVideoConcealed(true);
+        return;
+      }
+
+      if (!this.playerReady || typeof this.player.cueVideoById !== "function") {
+        this.preloadRequestedVideoId = "";
+        return;
+      }
+
+      this.playerVideoId = videoId;
+      this.preloadedVideoId = videoId;
+      this.playerAudioReleasedRoundId = 0;
+      this.playerLastSeekAtMs = 0;
+      this.mutePlayer();
+      this.player.cueVideoById({
+        videoId,
+        startSeconds: Math.floor(startOffset),
+      });
+      this.setVideoConcealed(true);
+    } catch {
+      this.preloadRequestedVideoId = "";
+    }
+  }
+
+  getUpcomingTrack() {
+    const roundState = this.snapshot?.round || {};
+    if (roundState.next_track?.youtube_video_id) {
+      return roundState.next_track;
+    }
+
+    return Array.isArray(roundState.upcoming_tracks)
+      ? roundState.upcoming_tracks.find((track) => track?.youtube_video_id)
+      : null;
+  }
+
+  shouldCueUpcomingTrack(videoId) {
+    const round = this.snapshot?.round?.round || null;
+    const currentVideoId = String(round?.track?.youtube_video_id || "").trim();
+    if (currentVideoId && currentVideoId === videoId) {
+      return false;
+    }
+
+    if (!round?.id) {
+      return true;
+    }
+
+    if (this.isRoundPendingStart(round) || this.isRoundAnswerOpen(round)) {
+      return false;
+    }
+
+    return this.isNextVoteAvailable(round);
   }
 
   handlePlayerError(event) {
@@ -731,6 +965,11 @@ export class TvController {
 
   syncPlayer(round, force = false) {
     if (!this.playerReady || !this.player || !round?.id || typeof this.player.getCurrentTime !== "function") {
+      return;
+    }
+
+    const currentVideoId = String(round?.track?.youtube_video_id || "").trim();
+    if (this.preloadedVideoId && this.playerVideoId === this.preloadedVideoId && currentVideoId !== this.playerVideoId) {
       return;
     }
 
